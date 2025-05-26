@@ -7,8 +7,16 @@
         @csrf
         @method('PUT')
         <div class="mb-3">
-            <label for="kode_kategori" class="form-label">Kode Kategori</label>
-            <input type="text" class="form-control" id="kode_kategori" name="kode_kategori" value="{{ old('kode_kategori', $bahan->kode_kategori) }}" required>
+            <label for="kode_kategori" class="form-label">Kategori</label>
+            <select class="form-control" id="kode_kategori" name="kode_kategori" required>
+                <option value="">-- Pilih Kategori --</option>
+                @foreach($kategori as $kat)
+                    <option value="{{ $kat->kode_kategori }}" 
+                        {{ old('kode_kategori', $bahan->kode_kategori) == $kat->kode_kategori ? 'selected' : '' }}>
+                        {{ $kat->jenis_kategori }}
+                    </option>
+                @endforeach
+            </select>
             @error('kode_kategori')
                 <div class="text-danger">{{ $message }}</div>
             @enderror

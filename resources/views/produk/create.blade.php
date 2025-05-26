@@ -2,15 +2,15 @@
 
 @section('content')
 <div class="container mt-5">
-    <h2>Tambah Bahan</h2>
-    <form action="{{ route('bahan.store') }}" method="POST">
+    <h2>Tambah Produk</h2>
+    <form action="{{ route('produk.store') }}" method="POST">
         @csrf
         <div class="mb-3">
-            <label for="kode_bahan" class="form-label">Kode Bahan</label>
-            <input type="text" class="form-control" id="kode_bahan" name="kode_bahan" value="{{ $kode_bahan }}" readonly>
+            <label for="kode_produk" class="form-label">Kode Produk</label>
+            <input type="text" class="form-control" id="kode_produk" name="kode_produk" value="{{ $kode_produk }}" readonly>
         </div>
         <div class="mb-3">
-            <label for="kode_kategori" class="form-label">Kategori</label>
+            <label for="kode_kategori" class="form-label">Kategori Produk</label>
             <select class="form-control" id="kode_kategori" name="kode_kategori" required>
                 <option value="">-- Pilih Kategori --</option>
                 @foreach($kategori as $kat)
@@ -24,9 +24,9 @@
             @enderror
         </div>
         <div class="mb-3">
-            <label for="nama_bahan" class="form-label">Nama Bahan</label>
-            <input type="text" class="form-control" id="nama_bahan" name="nama_bahan" value="{{ old('nama_bahan') }}" required>
-            @error('nama_bahan')
+            <label for="nama_produk" class="form-label">Nama Produk</label>
+            <input type="text" class="form-control" id="nama_produk" name="nama_produk" value="{{ old('nama_produk') }}" required>
+            @error('nama_produk')
                 <div class="text-danger">{{ $message }}</div>
             @enderror
         </div>
@@ -37,15 +37,8 @@
                 <div class="text-danger">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="stok_minimal" class="form-label">Stok Minimal</label>
-            <input type="number" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" required>
-            @error('stok_minimal')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
-        </div>
         <button type="submit" class="btn btn-success">Simpan</button>
-        <a href="{{ route('bahan.index') }}" class="btn btn-secondary">Kembali</a>
+        <a href="{{ route('produk.index') }}" class="btn btn-secondary">Kembali</a>
     </form>
 </div>
 @endsection

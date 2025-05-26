@@ -24,7 +24,9 @@ class BahanController extends Controller
         }
         $kode_bahan = 'B' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
 
-        return view('bahan.create', compact('kode_bahan'));
+        $kategori = \App\Models\Kategori::all(); // Ambil semua kategori
+
+        return view('bahan.create', compact('kode_bahan', 'kategori'));
     }
 
     public function store(Request $request)
@@ -60,7 +62,8 @@ class BahanController extends Controller
     public function edit($kode_bahan)
     {
         $bahan = Bahan::findOrFail($kode_bahan);
-        return view('bahan.edit', compact('bahan'));
+        $kategori = \App\Models\Kategori::all();
+        return view('bahan.edit', compact('bahan', 'kategori'));
     }
 
     public function update(Request $request, $kode_bahan)
