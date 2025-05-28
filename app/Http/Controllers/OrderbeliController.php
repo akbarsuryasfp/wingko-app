@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OrderBeli;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderBeliController extends Controller
 {
@@ -112,4 +113,26 @@ class OrderBeliController extends Controller
 
         return view('orderbeli.show', compact('order', 'details'));
     }
+
+    
+
+public function cetak($no_order_beli)
+{
+    $order = \App\Models\OrderBeli::with('supplier')->findOrFail($no_order_beli);
+
+    $details = \DB::table('t_order_detail')
+        ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+        ->where('t_order_detail.no_order_beli', $no_order_beli)
+        ->select(
+            't_order_detail.kode_bahan',
+            't_bahan.nama_bahan',
+            't_bahan.satuan',
+            't_order_detail.jumlah_beli'
+        )
+        ->get();
+
+    $pdf = Pdf::loadView('orderbeli.cetak', compact('order', 'details'));
+    return $pdf->stream('order_pembelian_' . $order->no_order_beli . '.pdf');
+}
+
 }

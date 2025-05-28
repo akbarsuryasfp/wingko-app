@@ -26,3 +26,4 @@ Route::resource('produk', ProdukController::class);
 // Route order beli
 Route::resource('orderbeli', OrderbeliController::class);
 Route::post('orderbeli/{no_order_beli}/setujui', [OrderbeliController::class, 'setujui'])->name('orderbeli.setujui');
+Route::get('/orderbeli/{no_order_beli}/cetak', [OrderBeliController::class, 'cetak'])->name('orderbeli.cetak');
