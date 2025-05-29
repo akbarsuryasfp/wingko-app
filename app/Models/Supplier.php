@@ -17,7 +17,7 @@ class Supplier extends Model
         'nama_supplier',
         'alamat',
         'no_telp',
-        'no_rek',
+        'rekening',
         'keterangan'
     ];
 }

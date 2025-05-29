@@ -35,7 +35,11 @@ class SupplierController extends Controller
             'no_telp' => 'required',
             'no_rek' => 'nullable',
             'keterangan' => 'nullable',
+            'jarak_kirim' => 'required|numeric',
+            'waktu_kirim' => 'required|numeric',
         ]);
+
+        $keterangan = 'Jarak kirim ' . $request->jarak_kirim . ' km, Waktu kirim ' . $request->waktu_kirim . ' hari setelah pesan';
 
         // Generate kode_supplier otomatis
         $last = Supplier::orderBy('kode_supplier', 'desc')->first();
@@ -47,13 +51,17 @@ class SupplierController extends Controller
         }
         $kode_supplier = 'S' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
 
+        // Gabungkan jenis bank dan no rekening
+        $rekening = $request->jenis_bank . ' ' . $request->no_rek;
+
         Supplier::create([
             'kode_supplier' => $kode_supplier,
             'nama_supplier' => $request->nama_supplier,
             'alamat' => $request->alamat,
             'no_telp' => $request->no_telp,
             'no_rek' => $request->no_rek,
-            'keterangan' => $request->keterangan,
+            'keterangan' => $keterangan,
+            'rekening' => $rekening,
         ]);
 
         return redirect()->route('supplier.index')->with('success', 'Data supplier berhasil ditambahkan.');
@@ -73,10 +81,25 @@ class SupplierController extends Controller
             'no_telp' => 'required',
             'no_rek' => 'nullable',
             'keterangan' => 'nullable',
+            'jarak_kirim' => 'required|numeric',
+            'waktu_kirim' => 'required|numeric',
         ]);
 
+        $keterangan = 'Jarak kirim ke gudang ' . $request->jarak_kirim . ' km, Waktu kirim ' . $request->waktu_kirim . ' hari setelah pesan';
+
         $supplier = Supplier::findOrFail($kode_supplier);
-        $supplier->update($request->all());
+
+        // Gabungkan jenis bank dan no rekening
+        $rekening = $request->jenis_bank . ' ' . $request->no_rek;
+
+        $supplier->update([
+            'nama_supplier' => $request->nama_supplier,
+            'alamat' => $request->alamat,
+            'no_telp' => $request->no_telp,
+            'no_rek' => $request->no_rek,
+            'keterangan' => $keterangan,
+            'rekening' => $rekening,
+        ]);
 
         return redirect()->route('supplier.index')->with('success', 'Data supplier berhasil diupdate.');
     }

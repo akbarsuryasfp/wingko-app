@@ -4,13 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Bahan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class BahanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bahan = Bahan::all();
-        return view('bahan.index', compact('bahan'));
+        $query = Bahan::query();
+
+        if ($request->filled('kode_kategori')) {
+            $query->where('kode_kategori', $request->kode_kategori);
+        }
+
+        // Ambil hanya kategori dengan kode depan B
+        $kategoriList = \App\Models\Kategori::where('kode_kategori', 'like', 'B%')->get();
+
+        $bahan = $query->get();
+
+        return view('bahan.index', compact('bahan', 'kategoriList'));
     }
 
     public function create()

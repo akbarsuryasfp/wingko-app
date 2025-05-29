@@ -5,43 +5,45 @@
     <h2>Tambah Bahan</h2>
     <form action="{{ route('bahan.store') }}" method="POST">
         @csrf
-        <div class="mb-3">
-            <label for="kode_bahan" class="form-label">Kode Bahan</label>
-            <input type="text" class="form-control" id="kode_bahan" name="kode_bahan" value="{{ $kode_bahan }}" readonly>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="kode_bahan" class="form-label mb-0" style="width:150px;">Kode Bahan</label>
+            <input type="text" class="form-control" id="kode_bahan" name="kode_bahan" value="{{ $kode_bahan }}" readonly style="width:300px;">
         </div>
-        <div class="mb-3">
-            <label for="kode_kategori" class="form-label">Kategori</label>
-            <select class="form-control" id="kode_kategori" name="kode_kategori" required>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="kode_kategori" class="form-label mb-0" style="width:150px;">Kategori</label>
+            <select class="form-control" id="kode_kategori" name="kode_kategori" required style="width:300px;">
                 <option value="">-- Pilih Kategori --</option>
                 @foreach($kategori as $kat)
-                    <option value="{{ $kat->kode_kategori }}" {{ old('kode_kategori') == $kat->kode_kategori ? 'selected' : '' }}>
-                        {{ $kat->jenis_kategori }}
-                    </option>
+                    @if(Str::startsWith($kat->kode_kategori, 'B'))
+                        <option value="{{ $kat->kode_kategori }}" {{ old('kode_kategori') == $kat->kode_kategori ? 'selected' : '' }}>
+                            {{ $kat->jenis_kategori }}
+                        </option>
+                    @endif
                 @endforeach
             </select>
             @error('kode_kategori')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="nama_bahan" class="form-label">Nama Bahan</label>
-            <input type="text" class="form-control" id="nama_bahan" name="nama_bahan" value="{{ old('nama_bahan') }}" required>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="nama_bahan" class="form-label mb-0" style="width:150px;">Nama Bahan</label>
+            <input type="text" class="form-control" id="nama_bahan" name="nama_bahan" value="{{ old('nama_bahan') }}" required style="width:300px;">
             @error('nama_bahan')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="satuan" class="form-label">Satuan</label>
-            <input type="text" class="form-control" id="satuan" name="satuan" value="{{ old('satuan') }}" required>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="satuan" class="form-label mb-0" style="width:150px;">Satuan</label>
+            <input type="text" class="form-control" id="satuan" name="satuan" value="{{ old('satuan') }}" required style="width:300px;">
             @error('satuan')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="stok_minimal" class="form-label">Stok Minimal</label>
-            <input type="number" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" required>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="stokmin" class="form-label mb-0" style="width:150px;">Stok Minimal</label>
+            <input type="number" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" required style="width:300px;">
             @error('stok_minimal')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
         <button type="submit" class="btn btn-success">Simpan</button>

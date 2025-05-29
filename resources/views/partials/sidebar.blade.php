@@ -5,6 +5,9 @@
         <li><a href="{{ route('bahan.index') }}" class="nav-link">Data Bahan</a></li>
         <li><a href="{{ route('produk.index') }}" class="nav-link">Data Produk</a></li>
         <li><a href="{{ route('supplier.index') }}" class="nav-link">Data Supplier</a></li>
+        <li><a href="{{ route('pelanggan.index') }}" class="nav-link">Data Pelanggan</a></li>
+        <li><a href="{{ route('consignor.index') }}" class="nav-link">Data Consignor</a></li>
+        <li><a href="{{ route('consignee.index') }}" class="nav-link">Data Consignee</a></li>
         <li class="mt-2 nav-item"><strong>Transaksi</strong></li>
         <li><a href="{{ route('orderbeli.index') }}" class="nav-link">Order Pembelian</a></li>
         <!-- Tambah menu transaksi lain di sini -->
