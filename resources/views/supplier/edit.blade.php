@@ -6,46 +6,71 @@
     <form action="{{ route('supplier.update', $supplier->kode_supplier) }}" method="POST">
         @csrf
         @method('PUT')
-        <div class="mb-3">
-            <label for="kode_supplier" class="form-label">Kode Supplier</label>
-            <input type="text" class="form-control" id="kode_supplier" name="kode_supplier" value="{{ old('kode_supplier', $supplier->kode_supplier) }}" required readonly>
-            @error('kode_supplier')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
+        <div class="mb-3 d-flex align-items-center">
+            <label for="kode_supplier" class="form-label mb-0" style="width:150px;">Kode Supplier</label>
+            <input type="text" class="form-control" id="kode_supplier" name="kode_supplier" value="{{ $supplier->kode_supplier }}" readonly style="width:300px;">
         </div>
-        <div class="mb-3">
-            <label for="nama_supplier" class="form-label">Nama Supplier</label>
-            <input type="text" class="form-control" id="nama_supplier" name="nama_supplier" value="{{ old('nama_supplier', $supplier->nama_supplier) }}" required>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="nama_supplier" class="form-label mb-0" style="width:150px;">Nama</label>
+            <input type="text" class="form-control" id="nama_supplier" name="nama_supplier" value="{{ old('nama_supplier', $supplier->nama_supplier) }}" required style="width:300px;">
             @error('nama_supplier')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="alamat" class="form-label">Alamat</label>
-            <textarea class="form-control" id="alamat" name="alamat" required>{{ old('alamat', $supplier->alamat) }}</textarea>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="alamat" class="form-label mb-0" style="width:150px;">Alamat</label>
+            <textarea class="form-control" id="alamat" name="alamat" required style="width:300px;">{{ old('alamat', $supplier->alamat) }}</textarea>
             @error('alamat')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="no_telp" class="form-label">No. Telp</label>
-            <input type="text" class="form-control" id="no_telp" name="no_telp" value="{{ old('no_telp', $supplier->no_telp) }}" required>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="no_telp" class="form-label mb-0" style="width:150px;">No. Telp</label>
+            <input type="text" class="form-control" id="no_telp" name="no_telp" value="{{ old('no_telp', $supplier->no_telp) }}" required style="width:300px;">
             @error('no_telp')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3">
-            <label for="no_rek" class="form-label">No. Rekening</label>
-            <input type="text" class="form-control" id="no_rek" name="no_rek" value="{{ old('no_rek', $supplier->no_rek) }}">
-            @error('no_rek')
-                <div class="text-danger">{{ $message }}</div>
-            @enderror
+        @php
+            $jenis_bank = '';
+            $no_rek = '';
+            if (!empty($supplier->rekening)) {
+                $parts = explode(' ', $supplier->rekening, 2);
+                $jenis_bank = $parts[0] ?? '';
+                $no_rek = $parts[1] ?? '';
+            }
+        @endphp
+        <div class="mb-3 d-flex align-items-center">
+            <label class="form-label mb-0" style="width:150px;">Rekening</label>
+            <span>Jenis Bank&nbsp;</span>
+            <input type="text" class="form-control mx-2" style="width:120px;" id="jenis_bank" name="jenis_bank" value="{{ old('jenis_bank', $jenis_bank) }}" required>
+            <span>&nbsp;No Rekening&nbsp;</span>
+            <input type="text" class="form-control mx-2" style="width:150px;" id="no_rek" name="no_rek" value="{{ old('rekening', $no_rek) }}" required>
         </div>
-        <div class="mb-3">
-            <label for="keterangan" class="form-label">Keterangan</label>
-            <input type="text" class="form-control" id="keterangan" name="keterangan" value="{{ old('keterangan', $supplier->keterangan) }}">
+        @php
+            // Pisahkan keterangan menjadi dua bagian jika sudah ada data
+            $jarak_kirim = '';
+            $waktu_kirim = '';
+            if (!empty($supplier->keterangan)) {
+                preg_match('/Jarak kirim ke gudang ([\d.,]+) km/', $supplier->keterangan, $matchJarak);
+                preg_match('/Waktu kirim (\d+) hari/', $supplier->keterangan, $matchWaktu);
+                $jarak_kirim = $matchJarak[1] ?? '';
+                $waktu_kirim = $matchWaktu[1] ?? '';
+            }
+        @endphp
+        <div class="mb-3 d-flex align-items-center">
+            <label class="form-label mb-0" style="width:150px;">Keterangan</label>
+            <span>Jarak Kirim ke Gudang&nbsp;</span>
+            <input type="number" step="0.01" class="form-control mx-2" style="width:80px;" id="jarak_kirim" name="jarak_kirim" value="{{ old('jarak_kirim', $jarak_kirim) }}" required>
+            <span>&nbsp;km</span>
+        </div>
+        <div class="mb-3 d-flex align-items-center">
+            <label class="form-label mb-0" style="width:150px;"></label>
+            <span>Waktu Kirim&nbsp;</span>
+            <input type="number" class="form-control mx-2" style="width:80px;" id="waktu_kirim" name="waktu_kirim" value="{{ old('waktu_kirim', $waktu_kirim) }}" required>
+            <span>&nbsp;hari setelah pesan</span>
             @error('keterangan')
-                <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
         <button type="submit" class="btn btn-success">Update</button>

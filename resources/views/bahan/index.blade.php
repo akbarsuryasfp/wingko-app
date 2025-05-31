@@ -10,6 +10,19 @@
 
     <a href="{{ route('bahan.create') }}" class="btn btn-primary mb-3">Tambah Bahan</a>
 
+    <form method="GET" action="{{ route('bahan.index') }}" class="mb-3 d-flex align-items-center gap-2">
+        <label for="kode_kategori" class="mb-0">Filter Berdasarkan Kategori Bahan:</label>
+        <select name="kode_kategori" id="kode_kategori" class="form-control" style="width:200px;">
+            <option value="">-- Semua Kategori --</option>
+            @foreach($kategoriList as $kategori)
+                <option value="{{ $kategori->kode_kategori }}" {{ request('kode_kategori') == $kategori->kode_kategori ? 'selected' : '' }}>
+                    {{ $kategori->jenis_kategori }}
+                </option>
+            @endforeach
+        </select>
+        <button type="submit" class="btn btn-info btn-sm">Filter</button>
+    </form>
+
     <table class="table table-bordered">
         <thead>
             <tr>

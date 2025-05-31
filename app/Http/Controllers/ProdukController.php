@@ -8,10 +8,19 @@ use Illuminate\Http\Request;
 
 class ProdukController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $produk = Produk::all();
-        return view('produk.index', compact('produk'));
+        // Ambil kategori dengan kode depan "P"
+        $kategoriList = Kategori::where('kode_kategori', 'like', 'P%')->get(); // Sudah benar
+
+        // Filter produk jika ada request kode_kategori
+        $query = Produk::query();
+        if ($request->filled('kode_kategori')) {
+            $query->where('kode_kategori', $request->kode_kategori);
+        }
+        $produk = $query->get();
+
+        return view('produk.index', compact('produk', 'kategoriList'));
     }
 
     public function create()

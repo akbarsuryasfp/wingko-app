@@ -30,9 +30,44 @@
         @endforeach
     </tbody>
 </table>
-<div class="d-flex justify-content-end gap-2">
-    <form action="{{ route('orderbeli.setujui', $order->no_order_beli) }}" method="POST" style="display:inline;">
+
+{{-- Tombol Setujui hanya muncul jika status belum Disetujui --}}
+@if($order->status !== 'Disetujui')
+    <div class="d-flex justify-content-end gap-2">
+        <form action="{{ route('orderbeli.setujui', $order->no_order_beli) }}" method="POST" style="display:inline;">
+            @csrf
+            <button type="submit" class="btn btn-success">Setujui</button>
+        </form>
+    </div>
+@else
+    <form action="{{ route('orderbeli.uangmuka', $order->no_order_beli) }}" method="POST" class="mt-3" onsubmit="return validateUangMuka{{ $order->no_order_beli }}();">
         @csrf
-        <button type="submit" class="btn btn-success">Setujui</button>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="uang_muka{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Uang Muka</label>
+            <input type="number" class="form-control" id="uang_muka{{ $order->no_order_beli }}" name="uang_muka" value="{{ old('uang_muka', $order->uang_muka) }}" style="width:300px;" required>
+        </div>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="metode_bayar{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Metode Bayar</label>
+            <select class="form-control" id="metode_bayar{{ $order->no_order_beli }}" name="metode_bayar" style="width:300px;" required>
+                <option value="">-- Pilih Metode --</option>
+                <option value="Transfer" {{ old('metode_bayar', $order->metode_bayar) == 'Transfer' ? 'selected' : '' }}>Transfer</option>
+                <option value="Tunai" {{ old('metode_bayar', $order->metode_bayar) == 'Tunai' ? 'selected' : '' }}>Tunai</option>
+            </select>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Simpan Pembayaran</button>
+            <a href="{{ route('orderbeli.index') }}" class="btn btn-secondary">Batal</a>
+        </div>
     </form>
-</div>
+    <script>
+        function validateUangMuka{{ $order->no_order_beli }}() {
+            var uangMuka = parseFloat(document.getElementById('uang_muka{{ $order->no_order_beli }}').value);
+            var grandTotal = {{ $grandTotal }};
+            if(uangMuka > grandTotal) {
+                alert('Uang muka tidak boleh melebihi total order!');
+                return false;
+            }
+            return true;
+        }
+    </script>
+@endif

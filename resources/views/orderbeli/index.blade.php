@@ -19,6 +19,8 @@
                 <th>Nama Supplier</th>
                 <th>Total Order</th>
                 <th>Status</th>
+                <th>Uang Muka</th>
+                <th>Metode Bayar</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -31,6 +33,8 @@
                     <td>{{ $order->supplier->nama_supplier ?? '-' }}</td>
                     <td>{{ number_format($order->total_order, 0, ',', '.') }}</td>
                     <td>{{ $order->status ?? '-' }}</td>
+                    <td>{{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
+                    <td>{{ $order->metode_bayar ?? '-' }}</td>
                     <td>
                         <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $order->no_order_beli }}">Detail</button>
                         @if($order->status !== 'Disetujui')
@@ -47,7 +51,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">Data tidak tersedia.</td>
+                    <td colspan="9" class="text-center">Data tidak tersedia.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -88,12 +92,56 @@
                     <td>{{ number_format($detail->total,0,',','.') }}</td>
                 </tr>
                 @endforeach
+                @php
+                    $grandTotal = $order->details->sum('total');
+                @endphp
+                <tr>
+                    <td colspan="5" class="text-end fw-bold">Grand Total</td>
+                    <td class="fw-bold">{{ number_format($grandTotal,0,',','.') }}</td>
+                </tr>
             </tbody>
         </table>
-        <form action="{{ route('orderbeli.setujui', $order->no_order_beli) }}" method="POST" style="display:inline;">
-            @csrf
-            <button type="submit" class="btn btn-success">Setujui</button>
-        </form>
+
+        @if($order->status !== 'Disetujui')
+            <form action="{{ route('orderbeli.setujui', $order->no_order_beli) }}" method="POST" style="display:inline;">
+                @csrf
+                <button type="submit" class="btn btn-success">Setujui</button>
+            </form>
+        @else
+            <form action="{{ route('orderbeli.uangmuka', $order->no_order_beli) }}" method="POST" class="mt-3" onsubmit="return validateUangMuka{{ $order->no_order_beli }}();">
+                @csrf
+                <div class="mb-3 d-flex align-items-center">
+                    <label for="uang_muka{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Uang Muka</label>
+                    <input type="number" class="form-control" id="uang_muka{{ $order->no_order_beli }}" name="uang_muka" value="{{ old('uang_muka', $order->uang_muka) }}" style="width:300px;" required>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label for="metode_bayar{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Metode Bayar</label>
+                    <select class="form-control" id="metode_bayar{{ $order->no_order_beli }}" name="metode_bayar" style="width:300px;" required>
+                        <option value="">-- Pilih Metode --</option>
+                        <option value="Transfer" {{ old('metode_bayar', $order->metode_bayar) == 'Transfer' ? 'selected' : '' }}>Transfer</option>
+                        <option value="Tunai" {{ old('metode_bayar', $order->metode_bayar) == 'Tunai' ? 'selected' : '' }}>Tunai</option>
+                    </select>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {{ ($order->uang_muka && $order->metode_bayar) ? 'Update Pembayaran' : 'Simpan Pembayaran' }}
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                </div>
+            </form>
+            <script>
+            function validateUangMuka{{ $order->no_order_beli }}() {
+                var uangMuka = parseFloat(document.getElementById('uang_muka{{ $order->no_order_beli }}').value);
+                var grandTotal = {{ $grandTotal }};
+                if(uangMuka > grandTotal) {
+                    alert('Uang muka tidak boleh melebihi Grand Total!');
+                    return false;
+                }
+                return true;
+            }
+            </script>
+        @endif
+
       </div>
     </div>
   </div>

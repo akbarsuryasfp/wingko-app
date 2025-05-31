@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -14,25 +13,25 @@
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>Kode Supplier</th>
-                <th>Nama Supplier</th>
-                <th>Alamat</th>
-                <th>No. Telp</th>
-                <th>No. Rekening</th>
-                <th>Keterangan</th>
-                <th>Aksi</th>
+                <th class="text-center align-middle" style="width:110px;">Kode Supplier</th>
+                <th class="text-center align-middle" style="width:150px;">Nama Supplier</th>
+                <th class="text-center align-middle" style="width:180px;">Alamat</th>
+                <th class="text-center align-middle" style="width:120px;">No. Telp</th>
+                <th class="text-center align-middle" style="width:180px;">No. Rekening</th>
+                <th class="text-center align-middle" style="width:220px;">Keterangan</th>
+                <th class="text-center align-middle" style="width:110px;">Aksi</th>
             </tr>
         </thead>
         <tbody>
             @forelse($supplier as $item)
                 <tr>
-                    <td>{{ $item->kode_supplier }}</td>
+                    <td class="text-center">{{ $item->kode_supplier }}</td>
                     <td>{{ $item->nama_supplier }}</td>
                     <td>{{ $item->alamat }}</td>
-                    <td>{{ $item->no_telp }}</td>
-                    <td>{{ $item->no_rek }}</td>
+                    <td class="text-center">{{ $item->no_telp }}</td>
+                    <td>{{ $item->rekening }}</td>
                     <td>{{ $item->keterangan }}</td>
-                    <td>
+                    <td class="text-center">
                         <a href="{{ route('supplier.edit', $item->kode_supplier) }}" class="btn btn-warning btn-sm">Edit</a>
                         <form action="{{ route('supplier.destroy', $item->kode_supplier) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                             @csrf
