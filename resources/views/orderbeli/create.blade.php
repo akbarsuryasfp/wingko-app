@@ -3,6 +3,7 @@
 @section('content')
 <div class="container">
     <h3 class="mb-4">INPUT PERMINTAAN PEMBELIAN</h3>
+    
     <form action="{{ route('orderbeli.store') }}" method="POST">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -25,6 +26,10 @@
                         @endforeach
                     </select>
                 </div>
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
+                    Lihat Kekurangan Bahan
+                </button>
+
             </div>
 
             <!-- Kolom Kanan: Data Bahan -->
@@ -46,7 +51,7 @@
                     <label class="me-2" style="width: 120px;">Harga/Satuan</label>
                     <input type="number" id="harga_beli" class="form-control">
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 d-flex gap-2">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="tambahBahan()">Tambah Bahan</button>
                 </div>
             </div>
@@ -87,6 +92,23 @@
 
         <input type="hidden" name="detail_json" id="detail_json">
     </form>
+</div>
+
+<!-- Modal Kekurangan Bahan -->
+<div class="modal fade" id="modalKekurangan" tabindex="-1" aria-labelledby="modalKekuranganLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalKekuranganLabel">Daftar Bahan Kurang</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="listKekurangan">
+          <!-- Akan diisi via JS -->
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -146,6 +168,47 @@
 
         document.getElementById('total_order').value = totalOrder;
         document.getElementById('detail_json').value = JSON.stringify(daftarBahan);
+    }
+
+    // Data bahan kurang dari controller (jika ada)
+    let bahanKurangList = [];
+    @if(isset($bahanKurang) && count($bahanKurang))
+        bahanKurangList = @json($bahanKurang);
+    @endif
+
+    // Tampilkan daftar bahan kurang di modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const listKekurangan = document.getElementById('listKekurangan');
+        if (listKekurangan && bahanKurangList.length) {
+            listKekurangan.innerHTML = '';
+            bahanKurangList.forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.style.cursor = 'pointer';
+                li.innerHTML = `
+                    <span>
+                        <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
+                        <small>Kurang: ${item.jumlah_beli}</small>
+                    </span>
+                    <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', ${item.jumlah_beli})" data-bs-dismiss="modal">Pilih</button>
+                `;
+                listKekurangan.appendChild(li);
+            });
+        } else if(listKekurangan) {
+            listKekurangan.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan yang kurang</li>';
+        }
+    });
+
+    // Fungsi untuk mengisi input bahan dari modal
+    function isiInputBahan(kode, nama, satuan, jumlah) {
+        const bahanSelect = document.getElementById('kode_bahan');
+        for (let i = 0; i < bahanSelect.options.length; i++) {
+            if (bahanSelect.options[i].value == kode) {
+                bahanSelect.selectedIndex = i;
+                break;
+            }
+        }
+        document.getElementById('jumlah_beli').value = jumlah;
     }
 </script>
 @endsection
