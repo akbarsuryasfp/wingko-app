@@ -25,10 +25,4 @@ class OrderBeli extends Model
         return $this->belongsTo(Supplier::class, 'kode_supplier', 'kode_supplier');
     }
 
-    // Relasi ke detail order (tanpa model khusus)
-    public function details()
-    {
-        return $this->hasMany(\stdClass::class, 'no_order_beli', 'no_order_beli')
-            ->from('t_order_detail');
-    }
 }

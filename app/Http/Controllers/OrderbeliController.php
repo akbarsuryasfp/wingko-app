@@ -13,10 +13,10 @@ class OrderBeliController extends Controller
 {
     public function index()
 {
-    $orders = OrderBeli::with('supplier')->get();
+    $orders = \App\Models\OrderBeli::with('supplier')->orderBy('tanggal_order', 'desc')->get();
 
     foreach ($orders as $order) {
-        $details = \DB::table('t_order_detail')
+        $order->details = \DB::table('t_order_detail')
             ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')
             ->where('t_order_detail.no_order_beli', $order->no_order_beli)
             ->select(
@@ -28,9 +28,6 @@ class OrderBeliController extends Controller
                 't_order_detail.total'
             )
             ->get();
-
-        // tambahkan manual ke objek $order
-        $order->details = $details;
     }
 
     return view('orderbeli.index', compact('orders'));
@@ -155,11 +152,11 @@ public function simpanUangMuka(Request $request, $no_order_beli)
 }
 public function edit($no_order_beli)
 {
-    $order = OrderBeli::with('details')->where('no_order_beli', $no_order_beli)->firstOrFail();
-    $suppliers = Supplier::all();
-    $bahans = Bahan::all();
+    $order = \App\Models\OrderBeli::with('supplier')->where('no_order_beli', $no_order_beli)->first();
+    $suppliers = \App\Models\Supplier::all();
+    $bahans = \App\Models\Bahan::all();
 
-    // Ambil detail dengan join ke tabel bahan
+    // Ambil detail order dengan query builder, bukan relasi
     $details = \DB::table('t_order_detail')
         ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')
         ->where('t_order_detail.no_order_beli', $no_order_beli)
@@ -169,7 +166,7 @@ public function edit($no_order_beli)
             't_bahan.satuan',
             't_order_detail.jumlah_beli',
             't_order_detail.harga_beli',
-            \DB::raw('t_order_detail.jumlah_beli * t_order_detail.harga_beli as total')
+            't_order_detail.total'
         )
         ->get();
 
@@ -211,5 +208,19 @@ public function update(Request $request, $no_order_beli)
     });
 
     return redirect()->route('orderbeli.index')->with('success', 'Order berhasil diupdate!');
+}
+public function getDetail($no_order_beli)
+{
+    $details = \DB::table('t_order_detail')
+        ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+        ->where('t_order_detail.no_order_beli', $no_order_beli)
+        ->select(
+            't_order_detail.kode_bahan',
+            't_bahan.nama_bahan',
+            't_order_detail.jumlah_beli',
+            't_order_detail.harga_beli'
+        )
+        ->get();
+    return response()->json($details);
 }
 }

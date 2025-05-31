@@ -131,6 +131,11 @@
         let totalOrder = 0;
 
         daftarBahan.forEach((item, index) => {
+            // Hitung ulang subtotal agar selalu akurat
+            item.jumlah_beli = parseFloat(item.jumlah_beli) || 0;
+            item.harga_beli = parseFloat(item.harga_beli) || 0;
+            item.total = item.jumlah_beli * item.harga_beli;
+
             totalOrder += item.total;
 
             const row = `
