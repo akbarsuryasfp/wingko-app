@@ -9,7 +9,6 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         table, th, td { border: 1px solid #000; }
         th, td { padding: 6px; text-align: center; }
-        .btn { margin-top: 20px; }
         .info-table { border: none; margin-bottom: 0; }
         .info-table td { border: none; text-align: left; padding: 2px 6px; }
     </style>
@@ -40,11 +39,7 @@
         </tr>
         <tr>
             <td><b>Keterangan</b></td>
-            <td>: {{ $penjualan->keterangan }}</td>
-        </tr>
-        <tr>
-            <td><b>User Input</b></td>
-            <td>: {{ $penjualan->kode_user }}</td>
+            <td>: {{ $penjualan->keterangan ?? '-' }}</td>
         </tr>
     </table>
 

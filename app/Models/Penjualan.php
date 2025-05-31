@@ -20,7 +20,6 @@ class Penjualan extends Model
         'metode_pembayaran',
         'status_pembayaran',
         'keterangan',
-        'kode_user',
     ];
 
     public function pelanggan()

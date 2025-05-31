@@ -33,6 +33,10 @@
             <td><b>Status Pembayaran</b></td>
             <td>: {{ ucfirst($pesanan->status_pembayaran) }}</td>
         </tr>
+        <tr>
+            <td><b>Keterangan</b></td>
+            <td>: {{ $pesanan->keterangan ?? '-' }}</td>
+        </tr>
     </table>
 
     <table>
@@ -75,17 +79,19 @@
                 <th>Pelanggan</th>
                 <th>Total</th>
                 <th>Status Pembayaran</th>
+                <th>Keterangan</th>
             </tr>
         </thead>
         <tbody>
             @foreach($laporan as $i => $row)
             <tr>
                 <td>{{ $i+1 }}</td>
-                <td>{{ $row->no_transaksi }}</td>
-                <td>{{ $row->tanggal }}</td>
+                <td>{{ $row->no_transaksi ?? $row->no_pesanan ?? '-' }}</td>
+                <td>{{ $row->tanggal ?? $row->tanggal_pesanan ?? '-' }}</td>
                 <td>{{ $row->nama_pelanggan ?? '-' }}</td>
                 <td>{{ number_format($row->total,0,',','.') }}</td>
                 <td>{{ ucfirst($row->status_pembayaran) }}</td>
+                <td>{{ $row->keterangan ?? '-' }}</td>
             </tr>
             @endforeach
         </tbody>

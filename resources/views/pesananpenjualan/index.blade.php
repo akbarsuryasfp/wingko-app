@@ -19,6 +19,7 @@
                 <th>Pelanggan</th>
                 <th>Total</th>
                 <th>Status Pembayaran</th>
+                <th>Keterangan</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -37,6 +38,7 @@
                             <span class="badge bg-warning text-dark">Belum Lunas</span>
                         @endif
                     </td>
+                    <td>{{ $psn->keterangan ?? '-' }}</td>
                     <td>
                         <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $psn->no_pesanan }}">Detail</button>
                         <a href="{{ route('pesananpenjualan.edit', $psn->no_pesanan) }}" class="btn btn-warning btn-sm">Edit</a>
@@ -45,13 +47,12 @@
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
                         </form>
-                        <!-- Tambahkan tombol cetak di bawah ini -->
                         <a href="{{ route('pesananpenjualan.cetak', $psn->no_pesanan) }}" target="_blank" class="btn btn-success btn-sm mt-1">Cetak</a>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">Data tidak tersedia.</td>
+                    <td colspan="8" class="text-center">Data tidak tersedia.</td>
                 </tr>
             @endforelse
         </tbody>

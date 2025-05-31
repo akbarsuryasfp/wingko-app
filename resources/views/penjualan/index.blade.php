@@ -49,6 +49,7 @@
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
                         </form>
+                        <a href="{{ route('penjualan.cetak', $jual->no_jual) }}" target="_blank" class="btn btn-success btn-sm mt-1">Cetak</a>
                     </td>
                 </tr>
             @empty

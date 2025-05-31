@@ -41,6 +41,10 @@
                         <option value="lunas">Lunas</option>
                     </select>
                 </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 160px;">Keterangan</label>
+                    <input type="text" name="keterangan" class="form-control" maxlength="255">
+                </div>
             </div>
 
             <!-- Kolom Kanan: Data Produk -->

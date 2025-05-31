@@ -3,20 +3,15 @@
 @section('content')
 <div class="container">
     <h3 class="mb-4">INPUT PENJUALAN</h3>
-    <?php
-    if ($errors->any())
-        {
-    ?>
-    <div class="alert alert-danger">
-        <ul>
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-    <?php
-        }
-    ?>
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <form action="{{ route('penjualan.store') }}" method="POST">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -57,7 +52,6 @@
                     <label class="me-2" style="width: 160px;">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control">
                 </div>
-                <input type="hidden" name="kode_user" value="{{ auth()->user()->kode_user ?? '' }}">
             </div>
 
             <!-- Kolom Kanan: Data Produk -->

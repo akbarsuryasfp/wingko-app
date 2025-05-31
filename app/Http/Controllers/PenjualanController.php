@@ -57,8 +57,7 @@ class PenjualanController extends Controller
             'total' => 'required|numeric',
             'metode_pembayaran' => 'required|in:tunai,kredit',
             'status_pembayaran' => 'required|in:belum lunas,lunas',
-            'keterangan' => 'nullable',
-            'kode_user' => 'required',
+            'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
 
@@ -71,7 +70,6 @@ class PenjualanController extends Controller
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'status_pembayaran' => $request->status_pembayaran,
                 'keterangan' => $request->keterangan,
-                'kode_user' => $request->kode_user,
             ]);
 
             // Insert detail
@@ -109,7 +107,6 @@ class PenjualanController extends Controller
             )
             ->get();
 
-        // Untuk JS, array asosiatif
         $detailsArr = [];
         foreach ($details as $d) {
             $detailsArr[] = [
@@ -137,8 +134,7 @@ class PenjualanController extends Controller
             'total' => 'required|numeric',
             'metode_pembayaran' => 'required|in:tunai,kredit',
             'status_pembayaran' => 'required|in:belum lunas,lunas',
-            'keterangan' => 'nullable',
-            'kode_user' => 'required',
+            'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
 
@@ -150,13 +146,10 @@ class PenjualanController extends Controller
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'status_pembayaran' => $request->status_pembayaran,
                 'keterangan' => $request->keterangan,
-                'kode_user' => $request->kode_user,
             ]);
 
-            // Hapus detail lama
             DB::table('t_penjualan_detail')->where('no_jual', $no_jual)->delete();
 
-            // Simpan detail baru
             $details = json_decode($request->detail_json, true);
             foreach ($details as $i => $detail) {
                 DB::table('t_penjualan_detail')->insert([
@@ -185,7 +178,7 @@ class PenjualanController extends Controller
 
     public function show($no_jual)
     {
-        $terima = DB::table('t_penjualan')
+        $penjualan = DB::table('t_penjualan')
             ->leftJoin('t_pelanggan', 't_penjualan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
             ->where('no_jual', $no_jual)
             ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan')
@@ -200,6 +193,26 @@ class PenjualanController extends Controller
             )
             ->get();
 
-        return view('penjualan.detail', compact('terima', 'details'));
+        return view('penjualan.detail', compact('penjualan', 'details'));
+    }
+
+    public function cetak($no_jual)
+    {
+        $penjualan = DB::table('t_penjualan')
+            ->leftJoin('t_pelanggan', 't_penjualan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+            ->where('no_jual', $no_jual)
+            ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan')
+            ->first();
+
+        $details = DB::table('t_penjualan_detail')
+            ->join('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->where('t_penjualan_detail.no_jual', $no_jual)
+            ->select(
+                't_penjualan_detail.*',
+                't_produk.nama_produk'
+            )
+            ->get();
+
+        return view('penjualan.cetak', compact('penjualan', 'details'));
     }
 }

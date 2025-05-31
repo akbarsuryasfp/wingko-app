@@ -30,6 +30,10 @@
                 @endif
             </td>
         </tr>
+        <tr>
+            <th>Keterangan</th>
+            <td>{{ $pesanan->keterangan ?? '-' }}</td>
+        </tr>
     </table>
 
     <h5>Detail Produk Pesanan</h5>

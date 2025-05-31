@@ -18,6 +18,7 @@ class PesananPenjualan extends Model
         'kode_pelanggan',
         'total',
         'status_pembayaran',
+        'keterangan',
     ];
 
     public function pelanggan()

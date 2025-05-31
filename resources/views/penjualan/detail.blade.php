@@ -6,28 +6,28 @@
     <table class="table">
         <tr>
             <th>No Penjualan</th>
-            <td>{{ $terima->no_jual }}</td>
+            <td>{{ $penjualan->no_jual }}</td>
         </tr>
         <tr>
             <th>Tanggal Jual</th>
-            <td>{{ $terima->tanggal_jual }}</td>
+            <td>{{ $penjualan->tanggal_jual }}</td>
         </tr>
         <tr>
             <th>Pelanggan</th>
-            <td>{{ $terima->nama_pelanggan ?? '-' }}</td>
+            <td>{{ $penjualan->nama_pelanggan ?? '-' }}</td>
         </tr>
         <tr>
             <th>Total Penjualan</th>
-            <td>{{ number_format($terima->total,0,',','.') }}</td>
+            <td>{{ number_format($penjualan->total,0,',','.') }}</td>
         </tr>
         <tr>
             <th>Metode Pembayaran</th>
-            <td>{{ ucfirst($terima->metode_pembayaran) }}</td>
+            <td>{{ ucfirst($penjualan->metode_pembayaran) }}</td>
         </tr>
         <tr>
             <th>Status Pembayaran</th>
             <td>
-                @if($terima->status_pembayaran == 'lunas')
+                @if($penjualan->status_pembayaran == 'lunas')
                     <span class="badge bg-success">Lunas</span>
                 @else
                     <span class="badge bg-warning text-dark">Belum Lunas</span>
@@ -36,11 +36,7 @@
         </tr>
         <tr>
             <th>Keterangan</th>
-            <td>{{ $terima->keterangan }}</td>
-        </tr>
-        <tr>
-            <th>User Input</th>
-            <td>{{ $terima->kode_user }}</td>
+            <td>{{ $penjualan->keterangan ?? '-' }}</td>
         </tr>
     </table>
 

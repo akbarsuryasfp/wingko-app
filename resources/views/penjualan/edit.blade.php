@@ -3,6 +3,15 @@
 @section('content')
 <div class="container">
     <h3 class="mb-4">EDIT PENJUALAN</h3>
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
     <form action="{{ route('penjualan.update', $penjualan->no_jual) }}" method="POST">
         @csrf
         @method('PUT')
@@ -44,7 +53,6 @@
                     <label class="me-2" style="width: 160px;">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control" value="{{ $penjualan->keterangan }}">
                 </div>
-                <input type="hidden" name="kode_user" value="{{ auth()->user()->kode_user ?? '' }}">
             </div>
 
             <!-- Kolom Kanan: Data Produk -->
@@ -165,5 +173,14 @@
 
     // Inisialisasi tabel saat halaman dibuka
     updateTabel();
+
+    // Cegah submit jika belum ada produk
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (daftarProduk.length === 0) {
+            alert('Minimal 1 produk harus ditambahkan!');
+            e.preventDefault();
+            return false;
+        }
+    });
 </script>
 @endsection

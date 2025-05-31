@@ -32,7 +32,6 @@ class PesananPenjualanController extends Controller
 
     public function create()
     {
-        // Generate kode pesanan otomatis
         $last = DB::table('t_pesanan')->orderBy('no_pesanan', 'desc')->first();
         if ($last) {
             $lastNumber = intval(substr($last->no_pesanan, 2));
@@ -56,6 +55,7 @@ class PesananPenjualanController extends Controller
             'kode_pelanggan' => 'required',
             'total' => 'required|numeric',
             'status_pembayaran' => 'required|in:belum lunas,lunas',
+            'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
 
@@ -66,9 +66,9 @@ class PesananPenjualanController extends Controller
                 'kode_pelanggan' => $request->kode_pelanggan,
                 'total' => $request->total,
                 'status_pembayaran' => $request->status_pembayaran,
+                'keterangan' => $request->keterangan,
             ]);
 
-            // Insert detail
             $details = json_decode($request->detail_json, true);
             foreach ($details as $i => $detail) {
                 DB::table('t_pesanan_detail')->insert([
@@ -103,7 +103,6 @@ class PesananPenjualanController extends Controller
             )
             ->get();
 
-        // Untuk JS, array asosiatif
         $detailsArr = [];
         foreach ($details as $d) {
             $detailsArr[] = [
@@ -130,6 +129,7 @@ class PesananPenjualanController extends Controller
             'kode_pelanggan' => 'required',
             'total' => 'required|numeric',
             'status_pembayaran' => 'required|in:belum lunas,lunas',
+            'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
 
@@ -139,12 +139,11 @@ class PesananPenjualanController extends Controller
                 'kode_pelanggan' => $request->kode_pelanggan,
                 'total' => $request->total,
                 'status_pembayaran' => $request->status_pembayaran,
+                'keterangan' => $request->keterangan,
             ]);
 
-            // Hapus detail lama
             DB::table('t_pesanan_detail')->where('no_pesanan', $no_pesanan)->delete();
 
-            // Simpan detail baru
             $details = json_decode($request->detail_json, true);
             foreach ($details as $i => $detail) {
                 DB::table('t_pesanan_detail')->insert([
