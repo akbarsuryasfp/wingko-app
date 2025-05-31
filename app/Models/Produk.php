@@ -18,4 +18,9 @@ class Produk extends Model
         'nama_produk',
         'satuan'
     ];
+
+    public function resep()
+    {
+        return $this->hasOne(Resep::class, 'kode_produk', 'kode_produk');
+    }
 }

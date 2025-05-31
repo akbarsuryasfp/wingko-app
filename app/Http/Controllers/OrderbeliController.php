@@ -6,6 +6,7 @@ use App\Models\OrderBeli;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\JadwalProduksi;
 
 class OrderBeliController extends Controller
 {
@@ -34,22 +35,79 @@ class OrderBeliController extends Controller
     return view('orderbeli.index', compact('orders'));
 }
 
-    public function create()
+    public function create(Request $request)
     {
-        // Generate kode order otomatis
         $last = OrderBeli::orderBy('no_order_beli', 'desc')->first();
-        if ($last) {
-            $lastNumber = intval(substr($last->no_order_beli, 2));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        $newNumber = $last ? intval(substr($last->no_order_beli, 2)) + 1 : 1;
         $no_order_beli = 'OB' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
 
-        $suppliers = Supplier::all();
-        $bahans = \App\Models\Bahan::all(); 
+        $suppliers = \App\Models\Supplier::all();
+        $bahans = \App\Models\Bahan::all();
 
-        return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans'));
+        // Ambil bahan kurang dari GET jika ada (dari jadwal produksi)
+        $bahanKurang = [];
+        if ($request->has('bahan_kurang')) {
+            $bahanKurang = json_decode($request->bahan_kurang, true);
+        } else {
+            // Cek semua bahan yang stok < stokmin
+            foreach ($bahans as $bahan) {
+                if ($bahan->stok < $bahan->stokmin) {
+                    $bahanKurang[] = [
+                        'kode_bahan' => $bahan->kode_bahan,
+                        'nama_bahan' => $bahan->nama_bahan,
+                        'satuan' => $bahan->satuan,
+                        'jumlah_beli' => $bahan->stokmin - $bahan->stok,
+                    ];
+                }
+            }
+        }
+
+        // Jika ada kebutuhan bahan dari request (misal dari halaman jadwal produksi)
+        if ($request->has('bahan_kurang')) {
+            $bahanKurang = json_decode($request->bahan_kurang, true);
+        } else {
+            // Ambil kebutuhan bahan dari jadwal produksi terakhir (atau sesuai kebutuhan)
+            $jadwal = JadwalProduksi::latest('tanggal_jadwal')->with('details.produk.resep.details.bahan')->first();
+            $kebutuhan = [];
+
+            if ($jadwal) {
+                foreach ($jadwal->details as $detail) {
+                    $produk = $detail->produk;
+                    $jumlah = $detail->jumlah;
+                    if ($produk && $produk->resep) {
+                        foreach ($produk->resep->details as $rdetail) {
+                            $kode_bahan = $rdetail->kode_bahan;
+                            $total = $jumlah * $rdetail->jumlah_kebutuhan;
+                            if (!isset($kebutuhan[$kode_bahan])) {
+                                $kebutuhan[$kode_bahan] = [
+                                    'kode_bahan' => $kode_bahan,
+                                    'nama_bahan' => $rdetail->bahan->nama_bahan ?? $kode_bahan,
+                                    'satuan' => $rdetail->satuan,
+                                    'jumlah' => 0,
+                                ];
+                            }
+                            $kebutuhan[$kode_bahan]['jumlah'] += $total;
+                        }
+                    }
+                }
+            }
+
+            // Bandingkan kebutuhan dengan stok
+            $bahanKurang = [];
+            foreach ($kebutuhan as $kode_bahan => $b) {
+                $stok = \App\Models\Bahan::where('kode_bahan', $kode_bahan)->value('stok') ?? 0;
+                if ($stok < $b['jumlah']) {
+                    $bahanKurang[] = [
+                        'kode_bahan' => $kode_bahan,
+                        'nama_bahan' => $b['nama_bahan'],
+                        'satuan' => $b['satuan'],
+                        'jumlah_beli' => $b['jumlah'] - $stok,
+                    ];
+                }
+            }
+        }
+
+        return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans', 'bahanKurang'));
     }
 
     public function store(Request $request)
