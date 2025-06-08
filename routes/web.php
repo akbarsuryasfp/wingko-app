@@ -16,6 +16,8 @@ use App\Http\Controllers\PermintaanProduksiController;
 use App\Http\Controllers\ResepController;
 use App\Http\Controllers\JadwalProduksiController;
 use App\Http\Controllers\ProduksiController;
+use App\Http\Controllers\HppController;
+use App\Http\Controllers\KaryawanController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -85,3 +87,13 @@ Route::delete('/jadwal/{kode_jadwal}', [JadwalProduksiController::class, 'destro
 Route::get('/produksi/create', [ProduksiController::class, 'create'])->name('produksi.create');
 Route::post('/produksi', [ProduksiController::class, 'store'])->name('produksi.store');
 Route::get('/produksi', [ProduksiController::class, 'index'])->name('produksi.index');
+
+// Route HPP
+Route::get('/hpp', [HppController::class, 'index'])->name('hpp.index');
+Route::get('/hpp/input/{no_detail}', [HppController::class, 'create'])->name('hpp.input');
+Route::post('/hpp/simpan', [HppController::class, 'store'])->name('hpp.store');
+Route::get('/hpp/edit/{no_detail}', [HppController::class, 'edit'])->name('hpp.edit');
+Route::put('/hpp/update/{no_detail}', [HppController::class, 'update'])->name('hpp.update');
+
+// Route karyawan
+Route::resource('karyawan', KaryawanController::class);
