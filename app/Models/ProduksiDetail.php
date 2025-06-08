@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProduksiDetail extends Model
 {
     protected $table = 't_produksi_detail';
-    protected $primaryKey = 'kode_produksi_detail';
+    protected $primaryKey = 'no_detail_produksi'; // pastikan ini benar!
     public $incrementing = false;
     protected $keyType = 'string';
     public $timestamps = false;

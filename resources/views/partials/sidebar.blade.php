@@ -1,67 +1,56 @@
-<div class="bg-light p-3" style="width: 250px; min-height: 100vh;">
-    <h4>Menu</h4>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<div id="sidebar" class="bg-light p-3">
+   
     <ul class="nav flex-column">
         <li class="nav-item"><strong>Master</strong></li>
-        <li><a href="{{ route('bahan.index') }}" class="nav-link">Data Bahan</a></li>
-        <li><a href="{{ route('produk.index') }}" class="nav-link">Data Produk</a></li>
-        <li><a href="{{ route('supplier.index') }}" class="nav-link">Data Supplier</a></li>
-        <li><a href="{{ route('pelanggan.index') }}" class="nav-link">Data Pelanggan</a></li>
-        <li><a href="{{ route('consignor.index') }}" class="nav-link">Data Consignor</a></li>
-        <li><a href="{{ route('consignee.index') }}" class="nav-link">Data Consignee</a></li>
+        <li><a href="{{ route('bahan.index') }}" class="nav-link"><i class="bi bi-box"></i><span>Data Bahan</span></a></li>
+        <li><a href="{{ route('produk.index') }}" class="nav-link"><i class="bi bi-cup-straw"></i><span>Data Produk</span></a></li>
+        <li><a href="{{ route('supplier.index') }}" class="nav-link"><i class="bi bi-truck"></i><span>Data Supplier</span></a></li>
+        <li><a href="{{ route('karyawan.index') }}" class="nav-link"><i class="bi bi-people"></i><span>Data Karyawan</span></a></li>
+        <li><a href="{{ route('pelanggan.index') }}" class="nav-link"><i class="bi bi-person"></i><span>Data Pelanggan</span></a></li>
+        <li><a href="{{ route('consignor.index') }}" class="nav-link"><i class="bi bi-person-badge"></i><span>Data Consignor</span></a></li>
+        <li><a href="{{ route('consignee.index') }}" class="nav-link"><i class="bi bi-person-bounding-box"></i><span>Data Consignee</span></a></li>
 
         <li class="mt-2 nav-item"><strong>Transaksi</strong></li>
-        <!-- Sub menu Transaksi -->
         <li>
-            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-pembelian')"><strong>Pembelian</strong></a>
+            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-pembelian')">
+                <i class="bi bi-cart"></i><span>Pembelian</span>
+            </a>
             <ul id="submenu-pembelian" class="nav flex-column ms-3" style="display:none;">
-                <li><a href="{{ route('orderbeli.index') }}" class="nav-link">Order Pembelian</a></li>
-                <li><a href="{{ route('terimabahan.index') }}" class="nav-link">Penerimaan Bahan</a></li>
-                <li><a href="#" class="nav-link">Pembelian</a></li>
-                <li><a href="#" class="nav-link">Retur Pembelian</a></li>
-                <li><a href="#" class="nav-link">Pelunasan Hutang</a></li>
+                <li><a href="{{ route('orderbeli.index') }}" class="nav-link"><i class="bi bi-bag-plus"></i><span>Order Pembelian</span></a></li>
+                <li><a href="{{ route('terimabahan.index') }}" class="nav-link"><i class="bi bi-bag-check"></i><span>Penerimaan Bahan</span></a></li>
+                <li><a href="#" class="nav-link"><i class="bi bi-cash"></i><span>Pembelian</span></a></li>
+                <li><a href="#" class="nav-link"><i class="bi bi-arrow-counterclockwise"></i><span>Retur Pembelian</span></a></li>
+                <li><a href="#" class="nav-link"><i class="bi bi-wallet2"></i><span>Pelunasan Hutang</span></a></li>
             </ul>
         </li>
         <li>
-            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-produksi')"><strong>Produksi</strong></a>
+            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-produksi')">
+                <i class="bi bi-gear"></i><span>Produksi</span>
+            </a>
             <ul id="submenu-produksi" class="nav flex-column ms-3" style="display:none;">
-                <li><a href="#" class="nav-link">Produksi</a></li>
-                <!-- Tambah sub menu produksi lain di sini -->
+                <li><a href="#" class="nav-link"><i class="bi bi-hammer"></i><span>Produksi</span></a></li>
+                <li><a href="{{ route('hpp.index') }}" class="nav-link"><i class="bi bi-calculator"></i><span>HPP</span></a></li>
             </ul>
         </li>
         <li>
-            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-penjualan')"><strong>Penjualan</strong></a>
+            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-penjualan')">
+                <i class="bi bi-basket"></i><span>Penjualan</span>
+            </a>
             <ul id="submenu-penjualan" class="nav flex-column ms-3" style="display:none;">
-                <li><a href="{{ route('penjualan.index') }}" class="nav-link">Penjualan</a></li>
-                <li><a href="{{ route('pesananpenjualan.index') }}" class="nav-link">Pesanan</a></li>
-                <!-- Tambah sub menu penjualan lain di sini -->
+                <li><a href="{{ route('penjualan.index') }}" class="nav-link"><i class="bi bi-bag"></i><span>Penjualan</span></a></li>
+                <li><a href="{{ route('pesananpenjualan.index') }}" class="nav-link"><i class="bi bi-bag-dash"></i><span>Pesanan</span></a></li>
             </ul>
         </li>
 
-        <li><a href="{{ route('resep.index') }}" class="nav-link">Resep Produk</a></li>
-
-        <li class="mt-2 nav-item"><strong>Transaksi</strong></li>
-        <li><a href="{{ route('orderbeli.index') }}" class="nav-link">Order Pembelian</a></li>
-        <li><a href="{{ route('permintaan_produksi.index') }}" class="nav-link">Permintaan Produksi</a></li> 
-        <li><a href="{{ route('jadwal.index') }}" class="nav-link">Jadwal Produksi</a></li>
-        <!-- Tambah menu transaksi lain di sini -->
+        <li><a href="{{ route('resep.index') }}" class="nav-link"><i class="bi bi-journal"></i><span>Resep Produk</span></a></li>
+        <li><a href="{{ route('orderbeli.index') }}" class="nav-link"><i class="bi bi-bag-plus"></i><span>Order Pembelian</span></a></li>
+        <li><a href="{{ route('permintaan_produksi.index') }}" class="nav-link"><i class="bi bi-clipboard-plus"></i><span>Permintaan Produksi</span></a></li>
+        <li><a href="{{ route('jadwal.index') }}" class="nav-link"><i class="bi bi-calendar-event"></i><span>Jadwal Produksi</span></a></li>
         <li class="mt-2 nav-item"><strong>Laporan</strong></li>
-        <li><a href="#" class="nav-link">Laporan Pembelian</a></li>
-        <li><a href="#" class="nav-link">Laporan Penjualan</a></li>
-        <!-- Tambah menu laporan lain di sini -->
+        <li><a href="#" class="nav-link"><i class="bi bi-file-earmark-text"></i><span>Laporan Pembelian</span></a></li>
+        <li><a href="#" class="nav-link"><i class="bi bi-file-earmark-bar-graph"></i><span>Laporan Penjualan</span></a></li>
     </ul>
 </div>
-<script>
-function toggleSubMenu(id) {
-    // Tutup semua submenu
-    document.querySelectorAll('ul[id^="submenu-"]').forEach(function(ul) {
-        if (ul.id !== id) ul.style.display = 'none';
-    });
-    // Toggle submenu yang diklik
-    var el = document.getElementById(id);
-    if (el.style.display === 'none' || el.style.display === '') {
-        el.style.display = 'block';
-    } else {
-        el.style.display = 'none';
-    }
-}
-</script>
