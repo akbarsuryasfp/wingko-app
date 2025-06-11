@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'SISTEM INFORMASI AKUNTANSI PRATAMA')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/build/assets/app-CT_xoRCA.css">
+    <link rel="stylesheet" href="/build/assets/app-eH_XXZR8.css">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
     <div id="topbar-fixed">
