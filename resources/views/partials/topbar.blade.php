@@ -9,4 +9,4 @@
             <button class="btn btn-outline-success" type="submit">Cari</button>
         </form>
     </div>
-</nav>
+</nav>  

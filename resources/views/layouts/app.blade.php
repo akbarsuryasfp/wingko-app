@@ -4,22 +4,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'SISTEM INFORMASI AKUNTANSI PRATAMA')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/build/assets/app-eH_XXZR8.css">
+    <link rel="stylesheet" href="/build/assets/app-BlSVBGgn.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
-    <div id="topbar-fixed">
-        @include('partials.topbar')
-    </div>
-    <div id="app-wrapper">
-        @include('partials.sidebar')
+    <div id="root-layout">
+        <div id="topbar-fixed">
+            @include('partials.topbar')
+        </div>
+            @include('partials.sidebar')
         <div class="main-content">
             @yield('content')
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
-    <script src="/build/assets/app-BCJKuDgl.js"></script>
+    <script src="/build/assets/app-CLPb047a.js"></script>
     <script>
     document.getElementById('sidebarToggle').onclick = function() {
         var sidebar = document.getElementById('sidebar');
