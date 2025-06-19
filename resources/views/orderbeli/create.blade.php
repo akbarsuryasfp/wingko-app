@@ -27,7 +27,10 @@
                     </select>
                 </div>
                 <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
-                    Lihat Kekurangan Bahan
+                Kekurangan Bahan
+                </button>
+                <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalStokMin">
+                Stok Minimal
                 </button>
 
             </div>
@@ -110,7 +113,22 @@
     </div>
   </div>
 </div>
-
+<!-- Modal Stok Minimal -->
+<div class="modal fade" id="modalStokMin" tabindex="-1" aria-labelledby="modalStokMinLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalStokMinLabel">Daftar Bahan Stok di Bawah Minimal</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="listStokMin">
+          <!-- Akan diisi via JS -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
     let daftarBahan = [];
 
@@ -210,5 +228,33 @@
         }
         document.getElementById('jumlah_beli').value = jumlah;
     }
+    // Data stok minimal dari controller
+let stokMinList = [];
+@if(isset($stokMinList) && count($stokMinList))
+    stokMinList = @json($stokMinList);
+@endif
+
+// Tampilkan daftar stok minimal di modal
+document.addEventListener('DOMContentLoaded', function() {
+    const listStokMin = document.getElementById('listStokMin');
+    if (listStokMin && stokMinList.length) {
+        listStokMin.innerHTML = '';
+        stokMinList.forEach((item, idx) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.style.cursor = 'pointer';
+            li.innerHTML = `
+                <span>
+                    <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
+                    <small>Stok Saat Ini: ${item.stok}</small>
+                </span>
+                <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', 1)" data-bs-dismiss="modal">Pilih</button>
+            `;
+            listStokMin.appendChild(li);
+        });
+    } else if(listStokMin) {
+        listStokMin.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan di bawah stok minimal</li>';
+    }
+});
 </script>
 @endsection

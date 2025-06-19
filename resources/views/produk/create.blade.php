@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mt-5">
-    <h2>Tambah Produk</h2>
+    <h2>Input Data Produk</h2>
     <form action="{{ route('produk.store') }}" method="POST">
         @csrf
         <div class="mb-3 d-flex align-items-center">
@@ -39,8 +39,9 @@
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <button type="submit" class="btn btn-success">Simpan</button>
-        <a href="{{ route('produk.index') }}" class="btn btn-secondary">Kembali</a>
+        <a href="{{ route('produk.index') }}" class="btn btn-secondary">Back</a>
+        <button type="reset" class="btn btn-warning">Reset</button>
+        <button type="submit" class="btn btn-success">Submit</button>
     </form>
 </div>
 @endsection

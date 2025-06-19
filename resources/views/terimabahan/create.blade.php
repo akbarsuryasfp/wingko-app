@@ -2,24 +2,23 @@
 
 @section('content')
 <div class="container mt-5">
-    <h3>Tambah Penerimaan Bahan</h3>
+    <h3>Input Penerimaan Pembelian Bahan</h3>
     <form action="{{ route('terimabahan.store') }}" method="POST">
         @csrf
         <div class="mb-3 d-flex align-items-center">
-            <label for="no_terima_bahan" class="form-label mb-0" style="width:180px;">No Terima Bahan</label>
+            <label for="no_terima_bahan" class="form-label mb-0" style="width:180px;">Kode Terima Bahan</label>
             <input type="text" class="form-control" id="no_terima_bahan" name="no_terima_bahan" value="{{ $kode }}" readonly style="width:300px;">
         </div>
         <div class="mb-3 d-flex align-items-center">
-            <label for="no_order_beli" class="form-label mb-0" style="width:180px;">No Order Beli</label>
+            <label for="no_order_beli" class="form-label mb-0" style="width:180px;">Kode Order</label>
             <select class="form-control" id="no_order_beli" name="no_order_beli" required onchange="ambilDetailOrderBeli()" style="width:300px;">
                 <option value="">-- Pilih Order Beli --</option>
                 @foreach($orderbeli as $order)
                     <option value="{{ $order->no_order_beli }}"
                         data-kode_supplier="{{ $order->kode_supplier }}"
                         data-nama_supplier="{{ $order->nama_supplier }}"
-                        data-tanggal="{{ $order->tanggal_order }}"
-                        data-bahan="{{ $order->ringkasan_bahan }}">
-                        {{ $order->no_order_beli }} | {{ $order->tanggal_order }} | {{ $order->ringkasan_bahan }}
+                        {{ (isset($order_selected) && $order_selected->no_order_beli == $order->no_order_beli) ? 'selected' : '' }}>
+                        {{ $order->no_order_beli }} | {{ $order->tanggal_order }} | {{ $order->nama_supplier }}
                     </option>
                 @endforeach
             </select>
@@ -30,33 +29,54 @@
         </div>
             <div class="mb-3 d-flex align-items-center">
                 <label for="nama_supplier" class="form-label mb-0" style="width:180px;">Supplier</label>
-                <input type="text" id="nama_supplier" class="form-control" readonly style="width:300px;">
-                <input type="hidden" id="kode_supplier" name="kode_supplier">
+                <input type="text" id="nama_supplier" class="form-control" readonly style="width:300px;" value="{{ $order_selected->nama_supplier ?? '' }}">
+                <input type="hidden" id="kode_supplier" name="kode_supplier" value="{{ $order_selected->kode_supplier ?? '' }}">
             </div>
 
         <hr>
-        <h5>Detail Bahan Diterima</h5>
+        <h5>DAFTAR PENERIMAAN BAHAN</h5>
         <table class="table table-bordered" id="tabel-detail">
             <thead>
                 <tr>
-                    <th>Kode Bahan</th>
                     <th>Nama Bahan</th>
+                    <th>Satuan</th>
                     <th>Jumlah Order</th>
-                    <th>Bahan Masuk</th>
+                    <th>Jumlah Masuk</th>
                     <th>Harga Beli</th>
-                    <th>Total</th>
-                    <th>Tanggal Exp</th>
+                    <th>Sub Total</th>
+                    <th>Tanggal Expired</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
-            <tbody></tbody>
+            <tbody>
+                @if(isset($order_details) && count($order_details))
+                    @foreach($order_details as $detail)
+                    <tr>
+                        <td>
+                            <input type="hidden" name="detail[{{ $loop->index }}][kode_bahan]" value="{{ $detail->kode_bahan }}">
+                            {{ $detail->nama_bahan }}
+                        </td>
+                        <td>{{ $detail->satuan }}</td>
+                        <td>
+                            <input type="number" class="form-control" name="detail[{{ $loop->index }}][jumlah_beli]" value="{{ $detail->jumlah_beli }}" readonly>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control" name="detail[{{ $loop->index }}][bahan_masuk]" value="{{ $detail->jumlah_beli }}">
+                        </td>
+                        <td>
+                            <input type="date" class="form-control" name="detail[{{ $loop->index }}][tanggal_exp]">
+                        </td>
+                    </tr>
+                    @endforeach
+                @endif
+            </tbody>
         </table>
 
         <input type="hidden" name="detail_json" id="detail_json">
 
         <div class="mt-4">
-            <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary">Kembali</a>
-            <button type="submit" class="btn btn-primary">Simpan</button>
+            <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary">Back</a>
+            <button type="submit" class="btn btn-primary">Submit</button>
         </div>
     </form>
 
@@ -175,24 +195,31 @@ function ambilDetailOrderBeli() {
                 .then(res2 => res2.json())
                 .then(sisaArr => {
                     daftarDetail = data.map(item => {
-                        // Cari sisa untuk bahan ini
-                        const sisaObj = sisaArr.find(s => s.kode_bahan === item.kode_bahan);
-                        const sisa = sisaObj ? sisaObj.sisa : item.jumlah_beli;
-                        return {
-                            kode_bahan: item.kode_bahan,
-                            nama_bahan: item.nama_bahan,
-                            jumlah_order: item.jumlah_beli,
-                            bahan_masuk: sisa, // default: sisa
-                            sisa: sisa,
-                            harga_beli: item.harga_beli,
-                            total: sisa * item.harga_beli,
-                            tanggal_exp: ''
-                        };
-                    });
+    // Cari sisa untuk bahan ini
+    const sisaObj = sisaArr.find(s => s.kode_bahan === item.kode_bahan);
+    const sisa = sisaObj ? sisaObj.sisa : item.jumlah_beli;
+    return {
+        kode_bahan: item.kode_bahan,
+        nama_bahan: item.nama_bahan,
+        jumlah_order: item.jumlah_beli,
+        bahan_masuk: sisa, // default: sisa
+        sisa: sisa,
+        harga_beli: item.harga_beli,
+        total: sisa * item.harga_beli,
+        tanggal_exp: ''
+    };
+});
                     updateTabel();
                 });
         });
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Jika ada order yang sudah terpilih (misal dari parameter ?order=...), panggil ambilDetailOrderBeli()
+    var orderSelect = document.getElementById('no_order_beli');
+    if (orderSelect && orderSelect.value) {
+        ambilDetailOrderBeli();
+    }
+});
 </script>
 @endsection

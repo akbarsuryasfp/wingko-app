@@ -23,4 +23,9 @@ class TerimaBahan extends Model
             ->where('no_terima_bahan', $this->no_terima_bahan)
             ->get();
     }
+    protected $dates = ['tanggal_terima']; 
+// atau pada Laravel versi lebih baru
+protected $casts = [
+    'tanggal_terima' => 'date',
+];
 }

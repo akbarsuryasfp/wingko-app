@@ -18,14 +18,19 @@ use App\Http\Controllers\JadwalProduksiController;
 use App\Http\Controllers\ProduksiController;
 use App\Http\Controllers\HppController;
 use App\Http\Controllers\KaryawanController;
+use App\Http\Controllers\ReturBeliController;
+use App\Http\Controllers\PembelianController;
+use App\Http\Controllers\HutangController;
+use App\Http\Controllers\KartuStokController;
+use App\Http\Controllers\KaskeluarController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-
 // Route bahan
 Route::resource('bahan', BahanController::class);
+Route::get('/bahan/sync-stok', [BahanController::class, 'updateSemuaStokBahan'])->name('bahan.syncStok');
 
 // Route kategori
 Route::resource('kategori', KategoriController::class);
@@ -37,10 +42,10 @@ Route::resource('supplier', SupplierController::class);
 Route::resource('produk', ProdukController::class);
 
 // Route order beli
-Route::resource('orderbeli', OrderbeliController::class);
-Route::post('orderbeli/{no_order_beli}/setujui', [OrderbeliController::class, 'setujui'])->name('orderbeli.setujui');
+Route::resource('orderbeli', OrderBeliController::class);
+Route::post('orderbeli/{no_order_beli}/setujui', [OrderBeliController::class, 'setujui'])->name('orderbeli.setujui');
 Route::get('/orderbeli/{no_order_beli}/cetak', [OrderBeliController::class, 'cetak'])->name('orderbeli.cetak');
-Route::post('orderbeli/{no_order_beli}/uangmuka', [OrderbeliController::class, 'simpanUangMuka'])->name('orderbeli.uangmuka');
+Route::post('orderbeli/{no_order_beli}/uangmuka', [OrderBeliController::class, 'simpanUangMuka'])->name('orderbeli.uangmuka');
 Route::get('orderbeli/{no_order_beli}/detail', [OrderBeliController::class, 'getDetail'])->name('orderbeli.detail');
 
 // Route pelanggan
@@ -54,7 +59,10 @@ Route::resource('consignee', ConsigneeController::class);
 
 // Route terima bahan
 Route::resource('terimabahan', TerimabahanController::class);
-Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimaBahanController::class, 'getSisaOrder']);
+Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimabahanController::class, 'getSisaOrder']);
+Route::get('/terimabahan/{id}/edit', [TerimabahanController::class, 'edit'])->name('terimabahan.edit');
+Route::get('/terimabahan/{no_terima_bahan}/detail', [PembelianController::class, 'detailTerimaBahan']);
+Route::get('/terimabahan/{no_terima_bahan}/data', [PembelianController::class, 'getTerimaBahan']);
 
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
@@ -64,7 +72,27 @@ Route::get('/penjualan/{no_jual}/cetak', [PenjualanController::class, 'cetak'])-
 Route::resource('pesananpenjualan', PesananPenjualanController::class);
 Route::get('/pesananpenjualan/{no_pesanan}/cetak', [PesananPenjualanController::class, 'cetak'])->name('pesananpenjualan.cetak');
 
+// Route pembelian khusus (AJAX dan form)
+Route::get('/pembelian/create', [PembelianController::class, 'create'])->name('pembelian.create');
+Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
 
+Route::get('/pembelian/langsung', [PembelianController::class, 'createLangsung'])->name('pembelian.langsung');
+Route::post('/pembelian/langsung', [PembelianController::class, 'storeLangsung'])->name('pembelian.storeLangsung');
+
+Route::get('/pembelian/detail-terima-bahan/{no_terima_bahan}', [PembelianController::class, 'detailTerimaBahan']);
+
+Route::get('/pembelian/{no_pembelian}', [PembelianController::class, 'show'])->name('pembelian.show');
+Route::get('/pembelian/{no_pembelian}/detail-json', [\App\Http\Controllers\PembelianController::class, 'getDetailPembelian']);
+
+Route::resource('pembelian', PembelianController::class);
+
+// Route retur pembelian
+Route::resource('returbeli', ReturBeliController::class);
+Route::get('/returbeli/create', [ReturBeliController::class, 'create'])->name('returbeli.create');
+Route::post('/returbeli/store', [ReturBeliController::class, 'store'])->name('returbeli.store');
+Route::get('/returbeli/detail-pembelian/{no_pembelian}', [ReturBeliController::class, 'getDetailPembelian']);
+Route::get('/returbeli/cetak/{no_retur_beli}', [ReturBeliController::class, 'cetak'])->name('returbeli.cetak');
+   
 // Route permintaan produksi
 Route::get('/permintaan-produksi', [PermintaanProduksiController::class, 'index'])->name('permintaan_produksi.index');
 Route::get('/permintaan-produksi/create', [PermintaanProduksiController::class, 'create'])->name('permintaan_produksi.create');
@@ -83,7 +111,6 @@ Route::get('/jadwal-produksi/{kode}', [JadwalProduksiController::class, 'show'])
 Route::delete('/jadwal/{kode_jadwal}', [JadwalProduksiController::class, 'destroy'])->name('jadwal.destroy');
 
 // Route produksi
-
 Route::get('/produksi/create', [ProduksiController::class, 'create'])->name('produksi.create');
 Route::post('/produksi', [ProduksiController::class, 'store'])->name('produksi.store');
 Route::get('/produksi', [ProduksiController::class, 'index'])->name('produksi.index');
@@ -97,3 +124,20 @@ Route::put('/hpp/update/{no_detail}', [HppController::class, 'update'])->name('h
 
 // Route karyawan
 Route::resource('karyawan', KaryawanController::class);
+
+// Route hutang
+Route::get('/hutang', [HutangController::class, 'index'])->name('hutang.index');
+Route::resource('hutang', HutangController::class);
+Route::get('/hutang/{no_utang}/detail', [HutangController::class, 'detail'])->name('hutang.detail');
+Route::get('/hutang/{no_utang}/bayar', [HutangController::class, 'bayar'])->name('hutang.bayar');
+Route::post('/utang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('utang.bayar.store');
+
+// Route kartu stok
+Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kartustok.bahan');
+Route::get('/kartustok/api/{kode_bahan}', [KartuStokController::class, 'getKartuPersBahan']);
+Route::get('/kartustok/produk', [KartuStokController::class, 'produk'])->name('kartustok.produk');
+Route::get('/kartustok/api-produk/{kode_produk}', [KartuStokController::class, 'getKartuPersProduk']);
+
+// Route kas keluar
+Route::resource('kaskeluar', KaskeluarController::class);
+

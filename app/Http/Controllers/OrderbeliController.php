@@ -14,7 +14,9 @@ class OrderBeliController extends Controller
 {
     public function index()
 {
-    $orders = \App\Models\OrderBeli::with('supplier')->orderBy('tanggal_order', 'desc')->get();
+    $orders = \App\Models\OrderBeli::with('supplier')
+        ->orderBy('no_order_beli', 'asc') // urutkan ASC berdasarkan kode order
+        ->get();
 
     foreach ($orders as $order) {
         $order->details = \DB::table('t_order_detail')
@@ -29,6 +31,45 @@ class OrderBeliController extends Controller
                 't_order_detail.total'
             )
             ->get();
+
+        $semuaDiterima = true;
+        $adaYangMasuk = false;
+
+        $noTerimaList = \DB::table('t_terimabahan')
+            ->where('no_order_beli', $order->no_order_beli)
+            ->pluck('no_terima_bahan')
+            ->toArray();
+
+        foreach ($order->details as $detail) {
+            $jumlah_beli = $detail->jumlah_beli;
+            $masuk = 0;
+            if (!empty($noTerimaList)) {
+                $masuk = \DB::table('t_terimab_detail')
+                    ->where('kode_bahan', trim($detail->kode_bahan))
+                    ->whereIn('no_terima_bahan', $noTerimaList)
+                    ->sum('bahan_masuk');
+            }
+            if ($masuk < $jumlah_beli) {
+                $semuaDiterima = false;
+            }
+            if ($masuk > 0) {
+                $adaYangMasuk = true;
+            }
+        }
+
+        if (!$order->status) {
+            $order->status_penerimaan = 'Baru';
+        } elseif ($order->status == 'Disetujui') {
+            if (!$adaYangMasuk) {
+                $order->status_penerimaan = 'Disetujui';
+            } elseif ($semuaDiterima) {
+                $order->status_penerimaan = 'Diterima Sepenuhnya';
+            } else {
+                $order->status_penerimaan = 'Diterima Sebagian';
+            }
+        } else {
+            $order->status_penerimaan = $order->status;
+        }
     }
 
     return view('orderbeli.index', compact('orders'));
@@ -42,6 +83,32 @@ class OrderBeliController extends Controller
 
         $suppliers = \App\Models\Supplier::all();
         $bahans = \App\Models\Bahan::all();
+
+// Ambil semua jadwal produksi beserta detail, resep, dan bahan
+$jadwalList = \App\Models\JadwalProduksi::with('details.produk.resep.details.bahan')->get();
+
+$kebutuhan = []; // [kode_bahan => ['nama_bahan'=>..., 'satuan'=>..., 'jumlah'=>...]]
+foreach ($jadwalList as $jadwal) {
+    foreach ($jadwal->details as $detail) {
+        $produk = $detail->produk;
+        $jumlah = $detail->jumlah;
+        if ($produk && $produk->resep) {
+            foreach ($produk->resep->details as $rdetail) {
+                $kode_bahan = $rdetail->kode_bahan;
+                $total = $jumlah * $rdetail->jumlah_kebutuhan;
+                if (!isset($kebutuhan[$kode_bahan])) {
+                    $kebutuhan[$kode_bahan] = [
+                        'kode_bahan' => $kode_bahan,
+                        'nama_bahan' => $rdetail->bahan->nama_bahan ?? $kode_bahan,
+                        'satuan'     => $rdetail->satuan,
+                        'jumlah'     => 0,
+                    ];
+                }
+                $kebutuhan[$kode_bahan]['jumlah'] += $total;
+            }
+        }
+    }
+}
 
         // Ambil bahan kurang dari GET jika ada (dari jadwal produksi)
         $bahanKurang = [];
@@ -97,16 +164,28 @@ class OrderBeliController extends Controller
                 $stok = \App\Models\Bahan::where('kode_bahan', $kode_bahan)->value('stok') ?? 0;
                 if ($stok < $b['jumlah']) {
                     $bahanKurang[] = [
-                        'kode_bahan' => $kode_bahan,
-                        'nama_bahan' => $b['nama_bahan'],
-                        'satuan' => $b['satuan'],
+                        'kode_bahan'  => $kode_bahan,
+                        'nama_bahan'  => $b['nama_bahan'],
+                        'satuan'      => $b['satuan'],
                         'jumlah_beli' => $b['jumlah'] - $stok,
                     ];
                 }
             }
         }
-
-        return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans', 'bahanKurang'));
+        // Ambil bahan yang stok < stokmin
+        $stokMinList = [];
+        foreach ($bahans as $bahan) {
+            if ($bahan->stok < $bahan->stokmin) {
+                $stokMinList[] = [
+                    'kode_bahan' => $bahan->kode_bahan,
+                    'nama_bahan' => $bahan->nama_bahan,
+                    'satuan'     => $bahan->satuan,
+                    'stok'       => $bahan->stok,
+                    'stokmin'    => $bahan->stokmin,
+                ];
+            }
+        }
+        return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans', 'bahanKurang', 'stokMinList'));
     }
 
     public function store(Request $request)
@@ -228,7 +307,19 @@ public function edit($no_order_beli)
         )
         ->get();
 
-    return view('orderbeli.edit', compact('order', 'suppliers', 'bahans', 'details'));
+$stokMinList = [];
+foreach ($bahans as $bahan) {
+    if ($bahan->stok < $bahan->stokmin) {
+        $stokMinList[] = [
+            'kode_bahan' => $bahan->kode_bahan,
+            'nama_bahan' => $bahan->nama_bahan,
+            'satuan'     => $bahan->satuan,
+            'stok'       => $bahan->stok,
+            'stokmin'    => $bahan->stokmin,
+        ];
+    }
+}
+return view('orderbeli.edit', compact('order', 'suppliers', 'bahans', 'details', 'stokMinList'));
 }
 
 public function update(Request $request, $no_order_beli)
@@ -281,4 +372,15 @@ public function getDetail($no_order_beli)
         ->get();
     return response()->json($details);
 }
-}
+
+public function destroy($no_order_beli)
+{
+    // Hapus detail terlebih dahulu jika perlu (jika pakai foreign key tanpa cascade delete)
+    DB::table('t_order_detail')->where('no_order_beli', $no_order_beli)->delete();
+
+    // Hapus order utama
+    $order = OrderBeli::findOrFail($no_order_beli);
+    $order->delete();
+
+    return redirect()->route('orderbeli.index')->with('success', 'Order pembelian berhasil dihapus.');
+}}

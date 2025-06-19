@@ -99,4 +99,22 @@ class BahanController extends Controller
 
         return redirect()->route('bahan.index')->with('success', 'Data bahan berhasil dihapus.');
     }
+    public function updateStokBahan($kode_bahan)
+{
+    $stok = \DB::table('t_kartupersbahan')
+        ->where('kode_bahan', $kode_bahan)
+        ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
+        ->value('stok');
+
+    \DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->update(['stok' => $stok]);
 }
+public function updateSemuaStokBahan()
+{
+    $kodeBahans = \DB::table('t_bahan')->pluck('kode_bahan');
+    foreach ($kodeBahans as $kode_bahan) {
+        $this->updateStokBahan($kode_bahan);
+    }
+    return redirect()->back()->with('success', 'Stok semua bahan telah disinkronkan.');
+}
+}
+
