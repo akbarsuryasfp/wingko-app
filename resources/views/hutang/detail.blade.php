@@ -14,7 +14,12 @@
         </tr>
         <tr>
             <th>Supplier</th>
-            <td>{{ $hutang->kode_supplier }}</td>
+            <td>
+                @php
+                    $nama_supplier = \DB::table('t_supplier')->where('kode_supplier', $hutang->kode_supplier)->value('nama_supplier');
+                    echo $nama_supplier ?? $hutang->kode_supplier;
+                @endphp
+            </td>
         </tr>
         <tr>
             <th>Total Tagihan</th>
@@ -52,18 +57,29 @@
         </thead>
         <tbody>
             @php
-                $pembayaran = \DB::table('t_kaskeluar')
-                    ->where('no_referensi', $hutang->no_utang)
-                    ->orderBy('tanggal', 'asc')
+                $pembayaran = \DB::table('t_jurnal_umum as ju')
+                    ->join('t_jurnal_detail as jd', function($join) {
+                        $join->on('ju.id_jurnal', '=', 'jd.id_jurnal')
+                             ->where('jd.kode_akun', '201') // kode akun utang
+                             ->where('jd.debit', '>', 0);
+                    })
+                    ->where('ju.keterangan', 'like', $hutang->no_utang . ' |%')
+                    ->orderBy('ju.tanggal', 'asc')
+                    ->select('ju.nomor_bukti', 'ju.tanggal', 'jd.debit as jumlah', 'ju.keterangan')
                     ->get();
             @endphp
             @forelse($pembayaran as $key => $bayar)
                 <tr>
                     <td>{{ $key + 1 }}</td>
-                    <td>{{ $bayar->no_BKK }}</td>
+                    <td>{{ $bayar->nomor_bukti }}</td>
                     <td>{{ $bayar->tanggal }}</td>
                     <td class="text-end">Rp{{ number_format($bayar->jumlah, 0, ',', '.') }}</td>
-                    <td>{{ $bayar->keterangan }}</td>
+                    <td>
+                        @php
+                            $parts = explode(' | ', $bayar->keterangan);
+                            echo trim(($parts[1] ?? '') . ' ' . ($parts[2] ?? ''));
+                        @endphp
+                    </td>
                 </tr>
             @empty
                 <tr>

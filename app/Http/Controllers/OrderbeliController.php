@@ -284,6 +284,42 @@ public function simpanUangMuka(Request $request, $no_order_beli)
     $order->metode_bayar = $request->metode_bayar;
     $order->save();
 
+    // === JURNAL UMUM & DETAIL ===
+    if ($order->uang_muka > 0) {
+        // Generate id_jurnal baru
+        $lastJurnal = DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
+        $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
+
+        // Insert ke t_jurnal_umum
+        DB::table('t_jurnal_umum')->insert([
+            'id_jurnal'   => $id_jurnal,
+            'tanggal'     => now(),
+            'keterangan'  => 'Uang Muka Order Pembelian ' . $order->no_order_beli,
+            'nomor_bukti' => $order->no_order_beli,
+        ]);
+
+        // Generate id_jurnal_detail baru
+        $lastDetail = DB::table('t_jurnal_detail')->orderBy('id_jurnal_detail', 'desc')->first();
+        $id_jurnal_detail = $lastDetail ? $lastDetail->id_jurnal_detail + 1 : 1;
+
+        // Debit Uang Muka Pembelian (113)
+        DB::table('t_jurnal_detail')->insert([
+            'id_jurnal_detail' => $id_jurnal_detail++,
+            'id_jurnal'        => $id_jurnal,
+            'kode_akun'        => '113',
+            'debit'            => $order->uang_muka,
+            'kredit'           => 0,
+        ]);
+        // Kredit Kas (101)
+        DB::table('t_jurnal_detail')->insert([
+            'id_jurnal_detail' => $id_jurnal_detail++,
+            'id_jurnal'        => $id_jurnal,
+            'kode_akun'        => '101',
+            'debit'            => 0,
+            'kredit'           => $order->uang_muka,
+        ]);
+    }
+
     return redirect()->route('orderbeli.index', $no_order_beli)
         ->with('success', 'Pembayaran uang muka berhasil disimpan.');
 }

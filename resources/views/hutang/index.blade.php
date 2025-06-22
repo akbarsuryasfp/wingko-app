@@ -23,7 +23,12 @@
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $hutang->no_utang }}</td>
                     <td>{{ $hutang->no_pembelian }}</td>
-                    <td>{{ $hutang->kode_supplier }}</td>
+                    <td>
+                        @php
+                            $nama_supplier = \DB::table('t_supplier')->where('kode_supplier', $hutang->kode_supplier)->value('nama_supplier');
+                            echo $nama_supplier ?? $hutang->kode_supplier;
+                        @endphp
+                    </td>
                     <td class="text-end">Rp{{ number_format($hutang->total_tagihan, 0, ',', '.') }}</td>
                     <td class="text-end">
                         @if ($hutang->sisa_utang == 0)

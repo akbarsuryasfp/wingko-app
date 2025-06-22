@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Bahan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class BahanController extends Controller
 {
@@ -115,6 +117,55 @@ public function updateSemuaStokBahan()
         $this->updateStokBahan($kode_bahan);
     }
     return redirect()->back()->with('success', 'Stok semua bahan telah disinkronkan.');
+}
+public function reminderKadaluarsa()
+{
+    $today = Carbon::today();
+
+    // Ambil semua batch bahan yang masih punya stok
+    $data = DB::table('t_terimab_detail as d')
+        ->join('t_bahan as b', 'd.kode_bahan', '=', 'b.kode_bahan')
+        ->select(
+            'd.no_terimab_detail',
+            'd.kode_bahan',
+            'b.nama_bahan',
+            'd.tanggal_exp',
+            'd.harga_beli',
+            'd.bahan_masuk'
+        )
+        ->whereNotNull('d.tanggal_exp')
+        ->orderBy('d.tanggal_exp')
+        ->get()
+        ->filter(function($row) {
+            // Hitung total keluar untuk batch ini (berdasarkan kode_bahan, harga_beli, tanggal_exp)
+            $keluar = DB::table('t_kartupersbahan')
+                ->where('kode_bahan', $row->kode_bahan)
+                ->where('harga', $row->harga_beli)
+                ->where('tanggal_exp', $row->tanggal_exp)
+                ->sum('keluar');
+            return ($row->bahan_masuk - $keluar) > 0;
+        });
+
+    return view('bahan.reminder', compact('data'));
+}
+public static function getReminderKadaluarsa($days = 7)
+{
+    $today = \Carbon\Carbon::today();
+
+    // Ambil batch bahan yang exp <= hari ini + $days dan masih ada stok
+    $data = \DB::table('t_terimab_detail as d')
+        ->join('t_bahan as b', 'd.kode_bahan', '=', 'b.kode_bahan')
+        ->select(
+            'd.kode_bahan',
+            'b.nama_bahan',
+            'd.tanggal_exp'
+        )
+        ->whereNotNull('d.tanggal_exp')
+        ->where('d.tanggal_exp', '<=', $today->copy()->addDays($days))
+        ->orderBy('d.tanggal_exp')
+        ->get();
+
+    return $data;
 }
 }
 

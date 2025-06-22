@@ -23,14 +23,17 @@ use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\HutangController;
 use App\Http\Controllers\KartuStokController;
 use App\Http\Controllers\KaskeluarController;
+use App\Http\Controllers\StokOpnameController;
 
 Route::get('/', function () {
-    return view('welcome');
+    $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
+    return view('welcome', compact('reminder'));
 });
 
 // Route bahan
 Route::resource('bahan', BahanController::class);
 Route::get('/bahan/sync-stok', [BahanController::class, 'updateSemuaStokBahan'])->name('bahan.syncStok');
+Route::get('/bahan/reminder', [BahanController::class, 'reminderKadaluarsa'])->name('bahan.reminder');
 
 // Route kategori
 Route::resource('kategori', KategoriController::class);
@@ -127,10 +130,11 @@ Route::resource('karyawan', KaryawanController::class);
 
 // Route hutang
 Route::get('/hutang', [HutangController::class, 'index'])->name('hutang.index');
-Route::resource('hutang', HutangController::class);
+Route::get('/hutang/create', [HutangController::class, 'create'])->name('hutang.create');
+Route::post('/hutang', [HutangController::class, 'store'])->name('hutang.store');
 Route::get('/hutang/{no_utang}/detail', [HutangController::class, 'detail'])->name('hutang.detail');
 Route::get('/hutang/{no_utang}/bayar', [HutangController::class, 'bayar'])->name('hutang.bayar');
-Route::post('/utang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('utang.bayar.store');
+Route::post('/hutang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('hutang.bayar.store');
 
 // Route kartu stok
 Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kartustok.bahan');
@@ -141,3 +145,9 @@ Route::get('/kartustok/api-produk/{kode_produk}', [KartuStokController::class, '
 // Route kas keluar
 Route::resource('kaskeluar', KaskeluarController::class);
 
+// Route stok opname
+Route::get('/stokopname/bahan', [StokOpnameController::class, 'create'])->name('stokopname.create');
+Route::post('/stokopname/bahan', [StokOpnameController::class, 'store'])->name('stokopname.store');
+
+Route::get('/stokopname/produk', [StokOpnameController::class, 'produk'])->name('stokopname.produk');
+Route::post('/stokopname/produk', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
