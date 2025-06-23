@@ -20,11 +20,14 @@
         </div>
     </form>
 
-    <h5 class="mb-3 mt-4">PERSEDIAAN PRODUK</h5>
+    <div id="riwayat-title-produk" class="mb-2" style="display:none;">
+        <span style="font-size:1.2em;">🔍</span>
+        <b>Riwayat Masuk dan Keluar <span id="nama-produk-title"></span></b>
+    </div>
 
     <div class="table-responsive">
-        <table id="tabel-persediaan-produk" class="table table-bordered text-center">
-            <thead class="table-light">
+        <table id="tabel-persediaan-produk" class="table table-bordered text-center align-middle">
+            <thead class="table-dark">
                 <tr>
                     <th>No</th>
                     <th>No Transaksi</th>
@@ -32,7 +35,7 @@
                     <th>Harga</th>
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
-                    <th>Saldo</th>
+                    <th>Sisa (Qty)</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,13 +43,13 @@
                     <td colspan="7" class="text-center">Tidak ada data persediaan.</td>
                 </tr>
             </tbody>
-            <tfoot>
-                <tr class="table-secondary">
-                    <td colspan="6" class="text-end"><strong>Saldo Qty & Harga</strong></td>
-                    <td id="tfoot-saldo-produk"></td>
-                </tr>
-            </tfoot>
         </table>
+    </div>
+
+    <div id="stok-akhir-box-produk" class="mt-4" style="display:none;">
+        <span style="font-size:1.2em;">📊</span>
+        <b>Stok Akhir <span id="nama-produk-stok"></span></b>
+        <ul id="stok-akhir-list-produk" class="mt-2"></ul>
     </div>
 </div>
 @endsection
@@ -57,15 +60,20 @@ function setSatuanProdukOtomatis() {
     var satuan = select.options[select.selectedIndex].getAttribute('data-satuan') || '';
     document.getElementById('satuan_produk').value = satuan;
 
-    var kode_produk = select.value;
-    if (kode_produk) {
-        fetch('/kartustok/api-produk/' + kode_produk)
+    // Ambil nama produk untuk judul
+    var namaProduk = select.options[select.selectedIndex].text || '';
+    document.getElementById('nama-produk-title').innerText = namaProduk;
+    document.getElementById('nama-produk-stok').innerText = namaProduk;
+
+    if (select.value) {
+        document.getElementById('riwayat-title-produk').style.display = '';
+        fetch('/kartustok/api-produk/' + select.value)
             .then(res => res.json())
             .then(data => {
                 let tbody = '';
                 let fifoStack = []; // Array of {qty, harga}
                 let saldoQty = 0;
-
+                let saldoPerRow = [];
                 if (data.length === 0) {
                     tbody = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
                 } else {
@@ -93,13 +101,14 @@ function setSatuanProdukOtomatis() {
 
                         // Hitung saldo qty total (akumulasi semua harga)
                         saldoQty = fifoStack.reduce((sum, item) => sum + item.qty, 0);
+                        saldoPerRow.push(saldoQty);
 
                         tbody += `
                             <tr>
                                 <td>${idx + 1}</td>
                                 <td>${row.no_transaksi}</td>
-                                <td>${row.tanggal}</td>
-                                <td>${harga.toLocaleString('id-ID')}</td>
+                                <td>${formatTanggal(row.tanggal)}</td>
+                                <td>Rp${harga.toLocaleString('id-ID')}</td>
                                 <td>${masuk}</td>
                                 <td>${keluar}</td>
                                 <td>${saldoQty}</td>
@@ -108,21 +117,42 @@ function setSatuanProdukOtomatis() {
                     });
                 }
 
-                // Saldo akhir FIFO per harga (untuk footer)
+                document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
+
+                // Stok akhir FIFO per harga (untuk box bawah)
                 let saldoAkhirMap = {};
                 fifoStack.forEach(item => {
                     if (!saldoAkhirMap[item.harga]) saldoAkhirMap[item.harga] = 0;
                     saldoAkhirMap[item.harga] += item.qty;
                 });
-                let saldoFooter = Object.keys(saldoAkhirMap).length === 0
-                    ? '0'
-                    : Object.entries(saldoAkhirMap).map(([h, q]) => `${q} @ Rp${parseFloat(h).toLocaleString('id-ID')}`).join('<br>');
 
-                document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
-                document.getElementById('tfoot-saldo-produk').innerHTML = saldoFooter;
+                let stokAkhirList = '';
+                if (Object.keys(saldoAkhirMap).length === 0) {
+                    stokAkhirList = `<li>0</li>`;
+                } else {
+                    stokAkhirList = Object.entries(saldoAkhirMap)
+                        .map(([h, q]) => `<li><b>${q}</b> ${satuan} dengan harga <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b>/${satuan}</li>`)
+                        .join('');
+                }
+                document.getElementById('stok-akhir-list-produk').innerHTML = stokAkhirList;
+                document.getElementById('stok-akhir-box-produk').style.display = '';
             });
     } else {
+        document.getElementById('riwayat-title-produk').style.display = 'none';
         document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+        document.getElementById('stok-akhir-box-produk').style.display = 'none';
     }
+}
+
+// Format tanggal ke format lokal (misal: 15 Juni 2025)
+function formatTanggal(tgl) {
+    if (!tgl) return '';
+    const bulan = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const d = new Date(tgl);
+    if (isNaN(d)) return tgl;
+    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
 }
 </script>
