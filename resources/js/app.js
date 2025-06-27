@@ -61,6 +61,19 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.classList.remove('active');
         };
     }
+
+       document.querySelectorAll('.btn-toggle-detail').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var kode = this.getAttribute('data-resep');
+            var detailRow = document.getElementById('resep-detail-' + kode);
+            // Toggle tampil/sembunyi
+            if (detailRow.style.display === 'none' || detailRow.style.display === '') {
+                detailRow.style.display = 'table-row';
+            } else {
+                detailRow.style.display = 'none';
+            }
+        });
+    });
 });
 
 // Pastikan ini di JS-mu

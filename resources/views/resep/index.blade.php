@@ -20,14 +20,13 @@
                     <td>{{ $resep->produk->nama_produk ?? '-' }}</td>
                     <td>{{ $resep->keterangan }}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#resep-detail-{{ $resep->kode_resep }}">
+                        <button class="btn btn-sm btn-primary btn-toggle-detail" type="button"
+                            data-resep="{{ $resep->kode_resep }}">
                             Lihat Bahan
                         </button>
                     </td>
                 </tr>
-                <tr class="collapse" id="resep-detail-{{ $resep->kode_resep }}">
+                <tr class="resep-detail-row" id="resep-detail-{{ $resep->kode_resep }}" style="display: none;">
                     <td colspan="4">
                         <table class="table table-sm mt-2">
                             <thead>
@@ -56,3 +55,4 @@
     </table>
 </div>
 @endsection
+

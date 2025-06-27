@@ -49,7 +49,9 @@
         <li><a href="{{ route('permintaan_produksi.index') }}" class="nav-link"><i class="bi bi-clipboard-plus"></i><span>Permintaan Produksi</span></a></li>
         <li><a href="{{ route('jadwal.index') }}" class="nav-link"><i class="bi bi-calendar-event"></i><span>Jadwal Produksi</span></a></li>
         <li><a href="{{ route('kaskeluar.index') }}" class="nav-link"><i class="bi bi-cash-stack"></i><span>Pengeluaran Kas</span></a></li>
+        <li class="mt-2 nav-item"><strong>Penyesuaian</strong></li>
         <li class="mt-2 nav-item"><strong>Laporan</strong></li>
+        
         <li>
     <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-kartustok')">
         <i class="bi bi-cart"></i><span>Kartu Persediaan Produk</span>
