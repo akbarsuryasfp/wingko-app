@@ -43,28 +43,28 @@
                                 <td>{{ $produk->satuan }}</td>
                                 <td>
                                     <input type="number"
-                                           name="stok_sistem[{{ $produk->id }}]"
+                                           name="stok_sistem[{{ $produk->kode_produk }}]"
                                            class="form-control text-end"
                                            value="{{ $produk->stok }}"
                                            readonly
-                                           data-id="{{ $produk->id }}"
+                                           data-id="{{ $produk->kode_produk }}"
                                            data-kategori="PU">
                                 </td>
                                 <td>
                                     <input type="number"
-                                           name="stok_fisik[{{ $produk->id }}]"
+                                           name="stok_fisik[{{ $produk->kode_produk }}]"
                                            class="form-control text-end stok-fisik-input"
-                                           data-id="{{ $produk->id }}"
+                                           data-id="{{ $produk->kode_produk }}"
                                            data-kategori="PU">
                                 </td>
                                 <td>
                                     <input type="text"
-                                           id="selisih_{{ $produk->id }}_PU"
+                                           id="selisih_{{ $produk->kode_produk }}_PU"
                                            class="form-control text-end bg-light"
                                            readonly>
                                 </td>
                                 <td>
-                                    <input type="text" name="keterangan[{{ $produk->id }}]" class="form-control">
+                                    <input type="text" name="keterangan[{{ $produk->kode_produk }}]" class="form-control">
                                 </td>
                             </tr>
                             @endforeach
@@ -103,28 +103,28 @@
                                 <td>{{ $produk->satuan }}</td>
                                 <td>
                                     <input type="number"
-                                           name="stok_sistem[{{ $produk->id }}]"
+                                           name="stok_sistem[{{ $produk->kode_produk }}]"
                                            class="form-control text-end"
                                            value="{{ $produk->stok }}"
                                            readonly
-                                           data-id="{{ $produk->id }}"
+                                           data-id="{{ $produk->kode_produk }}"
                                            data-kategori="PK">
                                 </td>
                                 <td>
                                     <input type="number"
-                                           name="stok_fisik[{{ $produk->id }}]"
+                                           name="stok_fisik[{{ $produk->kode_produk }}]"
                                            class="form-control text-end stok-fisik-input"
-                                           data-id="{{ $produk->id }}"
+                                           data-id="{{ $produk->kode_produk }}"
                                            data-kategori="PK">
                                 </td>
                                 <td>
                                     <input type="text"
-                                           id="selisih_{{ $produk->id }}_PK"
+                                           id="selisih_{{ $produk->kode_produk }}_PK"
                                            class="form-control text-end bg-light"
                                            readonly>
                                 </td>
                                 <td>
-                                    <input type="text" name="keterangan[{{ $produk->id }}]" class="form-control">
+                                    <input type="text" name="keterangan[{{ $produk->kode_produk }}]" class="form-control">
                                 </td>
                             </tr>
                             @endforeach
@@ -194,5 +194,21 @@ window.addEventListener('DOMContentLoaded', function() {
         input.dispatchEvent(new Event('input'));
     });
 });
+function setTabInputState() {
+    document.querySelectorAll('.tab-pane').forEach(function(tab) {
+        const isActive = tab.classList.contains('active') && tab.classList.contains('show');
+        tab.querySelectorAll('input, select, textarea').forEach(function(input) {
+            if (!isActive) {
+                input.setAttribute('disabled', 'disabled');
+            } else {
+                input.removeAttribute('disabled');
+            }
+        });
+    });
+}
+document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(btn) {
+    btn.addEventListener('shown.bs.tab', setTabInputState);
+});
+window.addEventListener('DOMContentLoaded', setTabInputState);
 </script>
 @endsection
