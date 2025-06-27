@@ -20,6 +20,8 @@
     <form action="{{ route('stokopname.store') }}" method="POST">
         @csrf
 
+        <input type="hidden" name="tab_aktif" id="tab_aktif" value="BB">
+
         <div class="tab-content" id="kategoriTabContent">
             @php
                 $kategoriMap = [
@@ -55,28 +57,28 @@
                                 <td>{{ $bahan->satuan }}</td>
                                 <td>
                                     <input type="number" 
-                                           name="stok_sistem[{{ $bahan->id }}]" 
+                                           name="stok_sistem[{{ $bahan->kode_bahan }}]" 
                                            class="form-control text-end" 
-                                           value="{{ $bahan->stok }}" 
+                                           value="{{ $bahan->stok_sistem }}" 
                                            readonly
-                                           data-id="{{ $bahan->id }}"
+                                           data-id="{{ $bahan->kode_bahan }}"
                                            data-kategori="{{ $kodeKategori }}"> <!-- Tambahkan data-kategori di sini -->
                                 </td>
                                 <td>
                                     <input type="number" 
-                                           name="stok_fisik[{{ $bahan->id }}]" 
+                                           name="stok_fisik[{{ $bahan->kode_bahan }}]" 
                                            class="form-control text-end stok-fisik-input" 
-                                           data-id="{{ $bahan->id }}"
+                                           data-id="{{ $bahan->kode_bahan }}"
                                            data-kategori="{{ $kodeKategori }}">
                                 </td>
                                 <td>
                                     <input type="text" 
-                                           id="selisih_{{ $bahan->id }}_{{ $kodeKategori }}" 
+                                           id="selisih_{{ $bahan->kode_bahan }}_{{ $kodeKategori }}" 
                                            class="form-control text-end bg-light" 
                                            readonly>
                                 </td>
                                 <td>
-                                    <input type="text" name="keterangan[{{ $bahan->id }}]" class="form-control">
+                                    <input type="text" name="keterangan[{{ $bahan->kode_bahan }}]" class="form-control">
                                 </td>
                             </tr>
                             @endforeach
@@ -157,5 +159,19 @@ window.addEventListener('DOMContentLoaded', function() {
         input.dispatchEvent(new Event('input'));
     });
 });
+
+
+// Jalankan saat tab berubah
+document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(btn) {
+    btn.addEventListener('shown.bs.tab', function(e) {
+        // Ambil kode kategori dari data-kategori tab yang aktif
+        let tabId = e.target.getAttribute('data-bs-target');
+        let kode = 'BB';
+        if (tabId === '#bahan-penolong') kode = 'BP';
+        if (tabId === '#bahan-habis') kode = 'BHP';
+        document.getElementById('tab_aktif').value = kode;
+    });
+});
+
 </script>
 @endsection

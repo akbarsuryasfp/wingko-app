@@ -71,18 +71,17 @@
 </div>
 <!-- jQuery dulu -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Baru script custom -->
+<!-- Baru script Anda -->
 <script>
-var $jq = jQuery.noConflict();
-$jq(document).ready(function() {
-    $jq('#kode_pembelian').change(function() {
-        var no_pembelian = $jq(this).val();
+jQuery(document).ready(function() {
+    jQuery('#kode_pembelian').change(function() {
+        var no_pembelian = jQuery(this).val();
         if (no_pembelian) {
-            $jq.get('/returbeli/detail-pembelian/' + no_pembelian, function(response) {
-                $jq('#detail_table tbody').empty();
+            jQuery.get('/returbeli/detail-pembelian/' + no_pembelian, function(response) {
+                jQuery('#detail_table tbody').empty();
                 let idx = 1;
                 response.details.forEach(function(item) {
-                    $jq('#detail_table tbody').append(`
+                    jQuery('#detail_table tbody').append(`
                         <tr>
                             <td>${idx++}</td>
                             <td>
@@ -104,19 +103,19 @@ $jq(document).ready(function() {
                 updateSubtotal();
             });
         } else {
-            $jq('#detail_table tbody').empty();
+            jQuery('#detail_table tbody').empty();
             updateSubtotal();
         }
     });
 
-    $jq('#no_terima_bahan').change(function() {
-        var no_terima_bahan = $jq(this).val();
+    jQuery('#no_terima_bahan').change(function() {
+        var no_terima_bahan = jQuery(this).val();
         if (no_terima_bahan) {
-            $jq.get('/returbeli/detail-pembelian/' + no_terima_bahan, function(response) {
-                $jq('#detail_table tbody').empty();
+            jQuery.get('/returbeli/detail-pembelian/' + no_terima_bahan, function(response) {
+                jQuery('#detail_table tbody').empty();
                 let idx = 1;
                 response.details.forEach(function(item) {
-                    $jq('#detail_table tbody').append(`
+                    jQuery('#detail_table tbody').append(`
                         <tr>
                             <td>${idx++}</td>
                             <td>
@@ -141,23 +140,23 @@ $jq(document).ready(function() {
                 updateSubtotal();
             });
         } else {
-            $jq('#detail_table tbody').empty();
+            jQuery('#detail_table tbody').empty();
             updateSubtotal();
         }
     });
 
     // Update nama supplier otomatis
-    $jq('#kode_pembelian').change(function() {
+    jQuery('#kode_pembelian').change(function() {
         var selected = this.options[this.selectedIndex];
-        $jq('#nama_supplier').val(selected.getAttribute('data-supplier') || '');
+        jQuery('#nama_supplier').val(selected.getAttribute('data-supplier') || '');
     });
 
-    $('#no_pembelian').on('change', function() {
-        var no_pembelian = $(this).val();
+    jQuery('#no_pembelian').on('change', function() {
+        var no_pembelian = jQuery(this).val();
         if(no_pembelian) {
-            $.get('/returbeli/detail-pembelian/' + no_pembelian, function(res) {
+            jQuery.get('/returbeli/detail-pembelian/' + no_pembelian, function(res) {
                 var html = '';
-                $.each(res.details, function(i, d) {
+                jQuery.each(res.details, function(i, d) {
                     html += '<tr>';
                     html += '<td><input type="hidden" name="kode_bahan[]" value="'+d.kode_bahan+'">'+d.nama_bahan+'</td>';
                     html += '<td><input type="number" class="form-control" value="'+d.jumlah_terima+'" readonly></td>';
@@ -167,26 +166,26 @@ $jq(document).ready(function() {
                     html += '<td><input type="text" name="alasan[]" class="form-control"></td>';
                     html += '</tr>';
                 });
-                $('#detail_bahan').html('<table class="table"><thead><tr><th>Nama Bahan</th><th>Jumlah Terima</th><th>Harga Beli</th><th>Jumlah Retur</th><th>Subtotal</th><th>Alasan</th></tr></thead><tbody>'+html+'</tbody></table>');
+                jQuery('#detail_bahan').html('<table class="table"><thead><tr><th>Nama Bahan</th><th>Jumlah Terima</th><th>Harga Beli</th><th>Jumlah Retur</th><th>Subtotal</th><th>Alasan</th></tr></thead><tbody>'+html+'</tbody></table>');
             });
         } else {
-            $('#detail_bahan').html('');
+            jQuery('#detail_bahan').html('');
         }
     });
 
     // Script hitung subtotal otomatis saat jumlah_retur berubah
-    $('input[name="jumlah_retur[]"]').on('input', function() {
-        var idx = $(this).closest('tr').index();
-        var harga = $('input[name="harga_beli[]"]').eq(idx).val();
-        var jumlah = $(this).val();
+    jQuery('input[name="jumlah_retur[]"]').on('input', function() {
+        var idx = jQuery(this).closest('tr').index();
+        var harga = jQuery('input[name="harga_beli[]"]').eq(idx).val();
+        var jumlah = jQuery(this).val();
         var subtotal = harga * jumlah;
-        $('input[name="subtotal[]"]').eq(idx).val(subtotal);
+        jQuery('input[name="subtotal[]"]').eq(idx).val(subtotal);
         // Update total retur
         var total = 0;
-        $('input[name="subtotal[]"]').each(function() {
-            total += parseFloat($(this).val()) || 0;
+        jQuery('input[name="subtotal[]"]').each(function() {
+            total += parseFloat(jQuery(this).val()) || 0;
         });
-        $('#total_retur').val(total);
+        jQuery('#total_retur').val(total);
     });
 });
 
@@ -212,14 +211,14 @@ function cekRetur(input, max) {
 
 function updateSubtotal() {
     let total = 0;
-    $jq('#detail_table tbody tr').each(function () {
-        let jumlah = parseFloat($jq(this).find('.jumlah').val()) || 0;
-        let harga = parseFloat($jq(this).find('.harga').val()) || 0;
+    $('#detail_table tbody tr').each(function () {
+        let jumlah = parseFloat($(this).find('.jumlah').val()) || 0;
+        let harga = parseFloat($(this).find('.harga').val()) || 0;
         let subtotal = jumlah * harga;
-        $jq(this).find('input[name="total[]"]').val(subtotal);
+        $(this).find('input[name="total[]"]').val(subtotal);
         total += subtotal;
     });
-    $jq('#total_retur').val(total);
+    $('#total_retur').val(total);
 }
 
 document.addEventListener('DOMContentLoaded', function() {

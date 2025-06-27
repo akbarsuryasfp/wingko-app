@@ -4,6 +4,7 @@
    
     <ul class="nav flex-column">
         <li class="nav-item"><strong>Master</strong></li>
+        
         <li><a href="{{ route('bahan.index') }}" class="nav-link"><i class="bi bi-box"></i><span>Data Bahan</span></a></li>
         <li><a href="{{ route('produk.index') }}" class="nav-link"><i class="bi bi-cup-straw"></i><span>Data Produk</span></a></li>
         <li><a href="{{ route('supplier.index') }}" class="nav-link"><i class="bi bi-truck"></i><span>Data Supplier</span></a></li>

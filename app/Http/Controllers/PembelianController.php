@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PembelianController extends Controller
 {
@@ -156,6 +157,100 @@ class PembelianController extends Controller
             ]);
         }
 
+        // --- JURNAL UMUM & DETAIL ---
+        $lastJurnal = DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
+        $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
+
+        DB::table('t_jurnal_umum')->insert([
+            'id_jurnal'   => $id_jurnal,
+            'tanggal'     => $request->tanggal_pembelian,
+            'keterangan'  => 'Pembelian ' . $request->kode_pembelian,
+            'nomor_bukti' => $request->kode_pembelian,
+        ]);
+
+        $lastDetail = DB::table('t_jurnal_detail')->orderBy('id_jurnal_detail', 'desc')->first();
+        $id_detail = $lastDetail ? $lastDetail->id_jurnal_detail + 1 : 1;
+
+        // Nilai-nilai jurnal
+        $nilai_persediaan = $request->total_harga;
+        $ongkir           = $request->ongkir;
+        $diskon           = $request->diskon;
+        $dibayar_sekarang = $request->total_bayar;
+        $uang_muka        = $uang_muka_dipakai ?? 0; // dari logika sebelumnya
+        $sisa_hutang      = $kurang_bayar;
+
+        // Kode akun (bisa juga diambil dari master akun atau request)
+        $kode_akun_persediaan = '103'; // contoh: Persediaan Barang
+        $kode_akun_ongkir     = '515'; // contoh: Ongkos Kirim
+        $kode_akun_diskon     = '513'; // contoh: Diskon Pembelian
+        $kode_akun_kas        = '101'; // contoh: Kas/Bank
+        $kode_akun_uangmuka   = '113'; // contoh: Uang Muka Pembelian
+        $kode_akun_hutang     = '201'; // contoh: Hutang Usaha
+
+        // 1. Persediaan Barang (Debit)
+        DB::table('t_jurnal_detail')->insert([
+            'id_jurnal_detail' => $id_detail++,
+            'id_jurnal'        => $id_jurnal,
+            'kode_akun'        => $kode_akun_persediaan,
+            'debit'            => $nilai_persediaan,
+            'kredit'           => 0,
+        ]);
+
+        // 2. Ongkos Kirim (Debit)
+        if ($ongkir > 0) {
+            DB::table('t_jurnal_detail')->insert([
+                'id_jurnal_detail' => $id_detail++,
+                'id_jurnal'        => $id_jurnal,
+                'kode_akun'        => $kode_akun_ongkir,
+                'debit'            => $ongkir,
+                'kredit'           => 0,
+            ]);
+        }
+
+        // 3. Diskon Pembelian (Kredit)
+        if ($diskon > 0) {
+            DB::table('t_jurnal_detail')->insert([
+                'id_jurnal_detail' => $id_detail++,
+                'id_jurnal'        => $id_jurnal,
+                'kode_akun'        => $kode_akun_diskon,
+                'debit'            => 0,
+                'kredit'           => $diskon,
+            ]);
+        }
+
+        // 4. Kas/Bank (Kredit)
+        if ($dibayar_sekarang > 0) {
+            DB::table('t_jurnal_detail')->insert([
+                'id_jurnal_detail' => $id_detail++,
+                'id_jurnal'        => $id_jurnal,
+                'kode_akun'        => $kode_akun_kas,
+                'debit'            => 0,
+                'kredit'           => $dibayar_sekarang,
+            ]);
+        }
+
+        // 5. Uang Muka (Kredit)
+        if ($uang_muka > 0) {
+            DB::table('t_jurnal_detail')->insert([
+                'id_jurnal_detail' => $id_detail++,
+                'id_jurnal'        => $id_jurnal,
+                'kode_akun'        => $kode_akun_uangmuka,
+                'debit'            => 0,
+                'kredit'           => $uang_muka,
+            ]);
+        }
+
+        // 6. Hutang Usaha (Kredit)
+        if ($sisa_hutang > 0) {
+            DB::table('t_jurnal_detail')->insert([
+                'id_jurnal_detail' => $id_detail++,
+                'id_jurnal'        => $id_jurnal,
+                'kode_akun'        => $kode_akun_hutang,
+                'debit'            => 0,
+                'kredit'           => $sisa_hutang,
+            ]);
+        }
+
         return redirect()->route('pembelian.index')->with('success', 'Data pembelian berhasil disimpan.');
     }
 
@@ -265,31 +360,21 @@ $no_terima_bahan = $last
     public function index(Request $request)
 {
     $query = DB::table('t_pembelian')
-        ->leftJoin('t_terimabahan', 't_pembelian.no_terima_bahan', '=', 't_terimabahan.no_terima_bahan')
-        ->leftJoin('t_order_beli', 't_terimabahan.no_order_beli', '=', 't_order_beli.no_order_beli')
         ->leftJoin('t_supplier', 't_pembelian.kode_supplier', '=', 't_supplier.kode_supplier')
-        ->select(
-            't_pembelian.no_pembelian',
-            't_pembelian.tanggal_pembelian',
-            't_pembelian.no_terima_bahan',
-            't_supplier.nama_supplier',
-            't_pembelian.total_pembelian',
-            't_pembelian.uang_muka',
-            't_pembelian.total_bayar',
-            't_pembelian.hutang',
-            't_pembelian.status',
-            't_order_beli.uang_muka as uang_muka_order'
-        );
+        ->select('t_pembelian.*', 't_supplier.nama_supplier');
 
-
-        if ($request->jenis_pembelian) {
-            $query->where('t_pembelian.jenis_pembelian', $request->jenis_pembelian);
-        }
-
-        $pembelian = $query->orderBy('t_pembelian.no_pembelian', 'asc')->get();
-
-        return view('pembelian.index', compact('pembelian'));
+    if ($request->jenis_pembelian) {
+        $query->where('t_pembelian.jenis_pembelian', $request->jenis_pembelian);
     }
+
+    $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
+    $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+    $query->whereBetween('t_pembelian.tanggal_pembelian', [$tanggal_mulai, $tanggal_selesai]);
+
+    $pembelian = $query->orderBy('t_pembelian.no_pembelian', 'asc')->get();
+
+    return view('pembelian.index', compact('pembelian'));
+}
 
     public function show($no_pembelian)
     {
@@ -379,6 +464,13 @@ $no_terima_bahan = $last
         // Hapus data pembelian dan utang
         DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->delete();
         DB::table('t_utang')->where('no_pembelian', $no_pembelian)->delete();
+
+        // Hapus jurnal umum & detail
+        $id_jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $no_pembelian)->value('id_jurnal');
+        if ($id_jurnal) {
+            DB::table('t_jurnal_detail')->where('id_jurnal', $id_jurnal)->delete();
+            DB::table('t_jurnal_umum')->where('id_jurnal', $id_jurnal)->delete();
+        }
 
         // Ambil data pembelian
         $pembelian = DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->first();
@@ -553,6 +645,108 @@ if ($kurang_bayar > 0) {
         DB::table('t_utang')->where('no_pembelian', $no_pembelian)->delete();
     }
 }
+
+// Hapus jurnal lama
+$id_jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $no_pembelian)->value('id_jurnal');
+if ($id_jurnal) {
+    DB::table('t_jurnal_detail')->where('id_jurnal', $id_jurnal)->delete();
+    DB::table('t_jurnal_umum')->where('id_jurnal', $id_jurnal)->delete();
+}
+
+// Insert jurnal baru
+$lastJurnal = DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
+$id_jurnal_baru = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
+
+DB::table('t_jurnal_umum')->insert([
+    'id_jurnal'   => $id_jurnal_baru,
+    'tanggal'     => $request->tanggal_pembelian,
+    'keterangan'  => 'Pembelian ' . $no_pembelian,
+    'nomor_bukti' => $no_pembelian,
+]);
+
+$lastDetail = DB::table('t_jurnal_detail')->orderBy('id_jurnal_detail', 'desc')->first();
+$id_detail = $lastDetail ? $lastDetail->id_jurnal_detail + 1 : 1;
+
+// Nilai-nilai jurnal
+$nilai_persediaan = $total_harga;
+$ongkir           = $request->ongkir;
+$diskon           = $request->diskon;
+$dibayar_sekarang = $request->total_bayar;
+$uang_muka        = $uang_muka_dipakai ?? 0;
+$sisa_hutang      = $kurang_bayar;
+
+// Kode akun
+$kode_akun_persediaan = '103';
+$kode_akun_ongkir     = '515';
+$kode_akun_diskon     = '513';
+$kode_akun_kas        = '101';
+$kode_akun_uangmuka   = '113';
+$kode_akun_hutang     = '201';
+
+// 1. Persediaan Barang (Debit)
+DB::table('t_jurnal_detail')->insert([
+    'id_jurnal_detail' => $id_detail++,
+    'id_jurnal'        => $id_jurnal_baru,
+    'kode_akun'        => $kode_akun_persediaan,
+    'debit'            => $nilai_persediaan,
+    'kredit'           => 0,
+]);
+
+// 2. Ongkos Kirim (Debit)
+if ($ongkir > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'id_jurnal_detail' => $id_detail++,
+        'id_jurnal'        => $id_jurnal_baru,
+        'kode_akun'        => $kode_akun_ongkir,
+        'debit'            => $ongkir,
+        'kredit'           => 0,
+    ]);
+}
+
+// 3. Diskon Pembelian (Kredit)
+if ($diskon > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'id_jurnal_detail' => $id_detail++,
+        'id_jurnal'        => $id_jurnal_baru,
+        'kode_akun'        => $kode_akun_diskon,
+        'debit'            => 0,
+        'kredit'           => $diskon,
+    ]);
+}
+
+// 4. Kas/Bank (Kredit)
+if ($dibayar_sekarang > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'id_jurnal_detail' => $id_detail++,
+        'id_jurnal'        => $id_jurnal_baru,
+        'kode_akun'        => $kode_akun_kas,
+        'debit'            => 0,
+        'kredit'           => $dibayar_sekarang,
+    ]);
+}
+
+// 5. Uang Muka (Kredit)
+if ($uang_muka > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'id_jurnal_detail' => $id_detail++,
+        'id_jurnal'        => $id_jurnal_baru,
+        'kode_akun'        => $kode_akun_uangmuka,
+        'debit'            => 0,
+        'kredit'           => $uang_muka,
+    ]);
+}
+
+// 6. Hutang Usaha (Kredit)
+if ($sisa_hutang > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'id_jurnal_detail' => $id_detail++,
+        'id_jurnal'        => $id_jurnal_baru,
+        'kode_akun'        => $kode_akun_hutang,
+        'debit'            => 0,
+        'kredit'           => $sisa_hutang,
+    ]);
+}
+
         return redirect()->route('pembelian.index')->with('success', 'Data pembelian berhasil diupdate.');
     }
 
@@ -580,5 +774,33 @@ if ($kurang_bayar > 0) {
         }
 
         return response()->json(['details' => $details]);
+    }
+
+    public function laporanPdf(Request $request)
+    {
+        $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+
+        $query = \DB::table('t_pembelian')
+            ->join('t_supplier', 't_pembelian.kode_supplier', '=', 't_supplier.kode_supplier')
+            ->select(
+                't_pembelian.*',
+                't_supplier.nama_supplier'
+            )
+            ->whereBetween('t_pembelian.tanggal_pembelian', [$tanggal_mulai, $tanggal_selesai]);
+
+        if ($request->jenis_pembelian) {
+            $query->where('jenis_pembelian', $request->jenis_pembelian);
+        }
+
+        $pembelian = $query->get();
+
+        $periode = [
+            'mulai' => $tanggal_mulai,
+            'selesai' => $tanggal_selesai,
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pembelian.laporan', compact('pembelian', 'periode'));
+        return $pdf->stream('laporan_pembelian.pdf');
     }
 }

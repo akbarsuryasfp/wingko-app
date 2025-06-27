@@ -24,6 +24,7 @@ use App\Http\Controllers\HutangController;
 use App\Http\Controllers\KartuStokController;
 use App\Http\Controllers\KaskeluarController;
 use App\Http\Controllers\StokOpnameController;
+use App\Http\Controllers\PenyesuaianBarangController;
 
 Route::get('/', function () {
     $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
@@ -95,6 +96,8 @@ Route::get('/returbeli/create', [ReturBeliController::class, 'create'])->name('r
 Route::post('/returbeli/store', [ReturBeliController::class, 'store'])->name('returbeli.store');
 Route::get('/returbeli/detail-pembelian/{no_pembelian}', [ReturBeliController::class, 'getDetailPembelian']);
 Route::get('/returbeli/cetak/{no_retur_beli}', [ReturBeliController::class, 'cetak'])->name('returbeli.cetak');
+Route::get('/returbeli/laporan', [ReturBeliController::class, 'laporan'])->name('returbeli.laporan');
+Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
    
 // Route permintaan produksi
 Route::get('/permintaan-produksi', [PermintaanProduksiController::class, 'index'])->name('permintaan_produksi.index');
@@ -150,4 +153,11 @@ Route::get('/stokopname/bahan', [StokOpnameController::class, 'create'])->name('
 Route::post('/stokopname/bahan', [StokOpnameController::class, 'store'])->name('stokopname.store');
 
 Route::get('/stokopname/produk', [StokOpnameController::class, 'produk'])->name('stokopname.produk');
-Route::post('/stokopname/produk', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
+Route::post('/stokopname/store-produk', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
+
+// Route laporan pembelian
+Route::get('/pembelian/laporan/pdf', [PembelianController::class, 'laporanPdf'])->name('pembelian.laporan.pdf');
+
+// Route penyesuaian barang
+Route::get('/penyesuaian/exp', [PenyesuaianBarangController::class, 'index'])->name('penyesuaian.exp');
+Route::post('/penyesuaian/exp', [PenyesuaianBarangController::class, 'store'])->name('penyesuaian.store');

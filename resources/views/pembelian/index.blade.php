@@ -2,21 +2,52 @@
 
 @section('content')
 <div class="container mt-5">
-    <h4>DAFTAR PEMBELIAN BAHAN</h4>
-    <div class="mb-2 d-flex justify-content-between align-items-center">
-        <form method="GET" class="d-flex align-items-center">
-            <label class="me-2 mb-0">Filter:</label>
-            <select name="jenis_pembelian" class="form-select form-select-sm w-auto me-2" onchange="this.form.submit()">
-                <option value="">Semua Jenis</option>
-                <option value="pembelian langsung" {{ request('jenis_pembelian') == 'pembelian langsung' ? 'selected' : '' }}>Pembelian Langsung</option>
-                <option value="pembelian berdasarkan order" {{ request('jenis_pembelian') == 'pembelian berdasarkan order' ? 'selected' : '' }}>Pembelian Berdasarkan Order</option>
-            </select>
+    <h4 class="mb-3">DAFTAR PEMBELIAN BAHAN</h4>
+
+    @php
+        use Carbon\Carbon;
+        $now = Carbon::now();
+        $tanggal_mulai = request('tanggal_mulai') ?? $now->copy()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = request('tanggal_selesai') ?? $now->copy()->endOfMonth()->format('Y-m-d');
+    @endphp
+
+    {{-- Baris 1: Filter Jenis --}}
+    <form method="GET" class="mb-2 d-flex align-items-center gap-2 flex-wrap">
+        <label class="mb-0">Filter:</label>
+        <select name="jenis_pembelian" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+            <option value="">Semua Jenis</option>
+            <option value="pembelian langsung" {{ request('jenis_pembelian') == 'pembelian langsung' ? 'selected' : '' }}>Pembelian Langsung</option>
+            <option value="pembelian berdasarkan order" {{ request('jenis_pembelian') == 'pembelian berdasarkan order' ? 'selected' : '' }}>Pembelian Berdasarkan Order</option>
+        </select>
+    </form>
+
+    {{-- Baris 2: Periode & Tombol --}}
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+            {{-- Hidden untuk mempertahankan jenis_pembelian saat submit --}}
+            <input type="hidden" name="jenis_pembelian" value="{{ request('jenis_pembelian') }}">
+
+            <label class="mb-0">Periode:</label>
+            <input type="date" name="tanggal_mulai" value="{{ $tanggal_mulai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+            <span class="mb-0">s.d.</span>
+            <input type="date" name="tanggal_selesai" value="{{ $tanggal_selesai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+
+            <a href="{{ route('pembelian.laporan.pdf', request()->all()) }}"
+               class="btn btn-success btn-sm d-flex align-items-center ms-2"
+               target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Cetak Laporan
+            </a>
         </form>
-        <div>
-            <a href="{{ route('pembelian.langsung') }}" class="btn btn-primary btn-sm">Pembelian Langsung</a>    
-            <a href="{{ route('pembelian.create') }}" class="btn btn-primary btn-sm">Pembelian berdasarkan order</a>
+
+        {{-- Tombol Aksi --}}
+        <div class="d-flex gap-2">
+            <a href="{{ route('pembelian.langsung') }}" class="btn btn-primary btn-sm">Pembelian Langsung</a>
+            <a href="{{ route('pembelian.create') }}" class="btn btn-primary btn-sm">Pembelian Berdasarkan Order</a>
         </div>
     </div>
+</div>
+
+
     <table class="table table-bordered text-center">
         <thead class="table-light">
             <tr>

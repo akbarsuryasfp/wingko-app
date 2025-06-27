@@ -127,6 +127,7 @@ class TerimaBahanController extends Controller
                     'id'           => $nextId,
                     'no_transaksi' => $request->no_terima_bahan,
                     'tanggal'      => $request->tanggal_terima,
+                    'tanggal_exp' => $detail['tanggal_exp'] ?? null,
                     'kode_bahan'   => $detail['kode_bahan'],
                     'masuk'        => $detail['bahan_masuk'],
                     'keluar'       => 0,

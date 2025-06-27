@@ -71,9 +71,10 @@ function setSatuanProdukOtomatis() {
             .then(res => res.json())
             .then(data => {
                 let tbody = '';
-                let fifoStack = []; // Array of {qty, harga}
                 let saldoQty = 0;
                 let saldoPerRow = [];
+                // Akumulasi stok akhir per harga
+                let stokAkhirMap = {};
                 if (data.length === 0) {
                     tbody = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
                 } else {
@@ -82,25 +83,12 @@ function setSatuanProdukOtomatis() {
                         let keluar = parseFloat(row.keluar) || 0;
                         let harga = parseFloat(row.harga);
 
-                        // Barang masuk: push ke FIFO stack
-                        if (masuk > 0) {
-                            fifoStack.push({qty: masuk, harga: harga});
-                        }
+                        // Akumulasi stok akhir per harga
+                        if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
+                        stokAkhirMap[harga].masuk += masuk;
+                        stokAkhirMap[harga].keluar += keluar;
 
-                        // Barang keluar: keluarkan dari FIFO stack
-                        let sisaKeluar = keluar;
-                        while (sisaKeluar > 0 && fifoStack.length > 0) {
-                            if (fifoStack[0].qty > sisaKeluar) {
-                                fifoStack[0].qty -= sisaKeluar;
-                                sisaKeluar = 0;
-                            } else {
-                                sisaKeluar -= fifoStack[0].qty;
-                                fifoStack.shift();
-                            }
-                        }
-
-                        // Hitung saldo qty total (akumulasi semua harga)
-                        saldoQty = fifoStack.reduce((sum, item) => sum + item.qty, 0);
+                        saldoQty += masuk - keluar;
                         saldoPerRow.push(saldoQty);
 
                         tbody += `
@@ -119,21 +107,18 @@ function setSatuanProdukOtomatis() {
 
                 document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
 
-                // Stok akhir FIFO per harga (untuk box bawah)
-                let saldoAkhirMap = {};
-                fifoStack.forEach(item => {
-                    if (!saldoAkhirMap[item.harga]) saldoAkhirMap[item.harga] = 0;
-                    saldoAkhirMap[item.harga] += item.qty;
-                });
-
+                // Tampilkan stok akhir per harga
                 let stokAkhirList = '';
-                if (Object.keys(saldoAkhirMap).length === 0) {
-                    stokAkhirList = `<li>0</li>`;
-                } else {
-                    stokAkhirList = Object.entries(saldoAkhirMap)
-                        .map(([h, q]) => `<li><b>${q}</b> ${satuan} dengan harga <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b>/${satuan}</li>`)
-                        .join('');
-                }
+                let adaStok = false;
+                Object.entries(stokAkhirMap).forEach(([h, v]) => {
+                    let sisa = v.masuk - v.keluar;
+                    if (sisa > 0) {
+                        adaStok = true;
+                        stokAkhirList += `<li><b>${sisa}</b> ${satuan} dengan harga <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b>/${satuan}</li>`;
+                    }
+                });
+                if (!adaStok) stokAkhirList = `<li>0</li>`;
+
                 document.getElementById('stok-akhir-list-produk').innerHTML = stokAkhirList;
                 document.getElementById('stok-akhir-box-produk').style.display = '';
             });
