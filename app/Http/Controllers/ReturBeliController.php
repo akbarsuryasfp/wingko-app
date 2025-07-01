@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\JurnalHelper;
 
 class ReturBeliController extends Controller
 {
@@ -164,39 +165,32 @@ $tanggal_exp = DB::table('t_terimab_detail')
         }
 
         // --- JURNAL UMUM & DETAIL ---
-        $lastJurnal = DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
-        $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
 
         if ($total_retur > 0) {
+            $no_jurnal = JurnalHelper::generateNoJurnal();
             DB::table('t_jurnal_umum')->insert([
-                'id_jurnal'   => $id_jurnal,
+                'no_jurnal'   => $no_jurnal,
                 'tanggal'     => $request->tanggal_retur_beli,
                 'keterangan'  => 'Retur Pembelian ' . $no_retur_beli,
                 'nomor_bukti' => $no_retur_beli,
             ]);
 
-            $id_jurnal_detail = DB::table('t_jurnal_detail')->max('id_jurnal_detail') ?? 0;
-            $id_jurnal_detail++;
-
-            // Tambahkan baris ini agar $status terdefinisi
             $sisa_utang = DB::table('t_utang')->where('no_pembelian', $request->kode_pembelian)->value('sisa_utang');
             $status = ($sisa_utang > 0) ? 'Hutang' : 'Lunas';
-
-            $akun_debit = ($status === 'Hutang') ? '201' : '101'; // Hutang Usaha atau Kas
-            $kode_akun_persediaan = '103';
+            $akun_debit = ($status === 'Hutang') ? '201' : '101';
 
             DB::table('t_jurnal_detail')->insert([
                 [
-                    'id_jurnal_detail' => $id_jurnal_detail++,
-                    'id_jurnal'        => $id_jurnal,
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                    'no_jurnal'        => $no_jurnal,
                     'kode_akun'        => $akun_debit,
                     'debit'            => $total_retur,
                     'kredit'           => 0,
                 ],
                 [
-                    'id_jurnal_detail' => $id_jurnal_detail++,
-                    'id_jurnal'        => $id_jurnal,
-                    'kode_akun'        => '103', // Persediaan Bahan
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => '103',
                     'debit'            => 0,
                     'kredit'           => $total_retur,
                 ],
@@ -354,43 +348,37 @@ $tanggal_exp = DB::table('t_terimab_detail')
     app('App\Http\Controllers\BahanController')->updateStokBahan($kode_bahan);
 
     // Hapus jurnal lama
-    $id_jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $no_retur_beli)->value('id_jurnal');
-    if ($id_jurnal) {
-        DB::table('t_jurnal_detail')->where('id_jurnal', $id_jurnal)->delete();
-        DB::table('t_jurnal_umum')->where('id_jurnal', $id_jurnal)->delete();
+    $no_jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $no_retur_beli)->value('no_jurnal');
+    if ($no_jurnal) {
+        DB::table('t_jurnal_detail')->where('no_jurnal', $no_jurnal)->delete();
+        DB::table('t_jurnal_umum')->where('no_jurnal', $no_jurnal)->delete();
     }
 
     // Insert jurnal baru (sama seperti di store)
-    $lastJurnal = DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
-    $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
-
     if ($total_retur > 0) {
+        $no_jurnal = JurnalHelper::generateNoJurnal();
         DB::table('t_jurnal_umum')->insert([
-            'id_jurnal'   => $id_jurnal,
+            'no_jurnal'   => $no_jurnal,
             'tanggal'     => $request->tanggal_retur_beli,
             'keterangan'  => 'Retur Pembelian ' . $no_retur_beli,
             'nomor_bukti' => $no_retur_beli,
         ]);
 
-        $id_jurnal_detail = DB::table('t_jurnal_detail')->max('id_jurnal_detail') ?? 0;
-        $id_jurnal_detail++;
-        
         $sisa_utang = DB::table('t_utang')->where('no_pembelian', $request->kode_pembelian)->value('sisa_utang');
-$status = ($sisa_utang > 0) ? 'Hutang' : 'Lunas';
-
-        $akun_debit = ($status === 'Hutang') ? '201' : '101'; // Hutang Usaha atau Kas (pastikan '111' ada di t_akun)
+        $status = ($sisa_utang > 0) ? 'Hutang' : 'Lunas';
+        $akun_debit = ($status === 'Hutang') ? '201' : '101';
 
         DB::table('t_jurnal_detail')->insert([
             [
-                'id_jurnal_detail' => $id_jurnal_detail++,
-                'id_jurnal'        => $id_jurnal,
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $akun_debit,
                 'debit'            => $total_retur,
                 'kredit'          => 0,
         ],
             [
-                'id_jurnal_detail' => $id_jurnal_detail++,
-                'id_jurnal'        => $id_jurnal,
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => '103', // Persediaan Bahan (pastikan '103' ada di t_akun)
                 'debit'            => 0,
                 'kredit'           => $total_retur,
@@ -420,10 +408,10 @@ public function destroy($no_retur_beli)
     DB::table('t_returbeli')->where('no_retur_beli', $no_retur_beli)->delete();
 
     // Hapus jurnal umum & detail untuk retur ini
-    $id_jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $no_retur_beli)->value('id_jurnal');
-    if ($id_jurnal) {
-        DB::table('t_jurnal_detail')->where('id_jurnal', $id_jurnal)->delete();
-        DB::table('t_jurnal_umum')->where('id_jurnal', $id_jurnal)->delete();
+    $no_jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $no_retur_beli)->value('no_jurnal');
+    if ($no_jurnal) {
+        DB::table('t_jurnal_detail')->where('no_jurnal', $no_jurnal)->delete();
+        DB::table('t_jurnal_umum')->where('no_jurnal', $no_jurnal)->delete();
     }
 
     // Update stok untuk semua bahan yang terlibat

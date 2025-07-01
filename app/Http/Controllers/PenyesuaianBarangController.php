@@ -7,38 +7,66 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\PenyesuaianBarang;
 use Carbon\Carbon;
+use App\Helpers\JurnalHelper;
 
 class PenyesuaianBarangController extends Controller
 {
     public function index()
     {
-        $today = Carbon::today()->toDateString();
+        $today = \Carbon\Carbon::today()->toDateString();
 
         $bahanKadaluarsa = DB::table('t_kartupersbahan')
-            ->select('kode_bahan', 'harga', 'tanggal_exp', DB::raw('SUM(masuk) as total_masuk'), DB::raw('SUM(keluar) as total_keluar'))
-            ->where('tanggal_exp', '<', $today)
-            ->groupBy('kode_bahan', 'harga', 'tanggal_exp')
+            ->select(
+                't_kartupersbahan.kode_bahan',
+                't_bahan.nama_bahan',
+                't_kartupersbahan.tanggal_exp',
+                't_kartupersbahan.harga',
+                't_bahan.satuan',
+                DB::raw('SUM(masuk) as total_masuk'),
+                DB::raw('SUM(keluar) as total_keluar')
+            )
+            ->join('t_bahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
+            ->where('t_kartupersbahan.tanggal_exp', '<=', $today)
+            ->groupBy(
+                't_kartupersbahan.kode_bahan',
+                't_kartupersbahan.tanggal_exp',
+                't_kartupersbahan.harga',
+                't_bahan.nama_bahan',
+                't_bahan.satuan'
+            )
             ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
-            ->get();
-
-        foreach ($bahanKadaluarsa as $item) {
-            $item->nama_bahan = DB::table('t_bahan')->where('kode_bahan', $item->kode_bahan)->value('nama_bahan');
-            $item->satuan = DB::table('t_bahan')->where('kode_bahan', $item->kode_bahan)->value('satuan'); // Tambah baris ini
-            $item->stok = $item->total_masuk - $item->total_keluar;
-        }
+            ->get()
+            ->map(function($item) {
+                $item->stok = $item->total_masuk - $item->total_keluar;
+                return $item;
+            });
 
         $produkKadaluarsa = DB::table('t_kartupersproduk')
-            ->select('kode_produk', 'harga', 'tanggal_exp', DB::raw('SUM(masuk) as total_masuk'), DB::raw('SUM(keluar) as total_keluar'))
-            ->where('tanggal_exp', '<', $today)
-            ->groupBy('kode_produk', 'harga', 'tanggal_exp')
+            ->select(
+                't_kartupersproduk.kode_produk',
+                't_produk.nama_produk',
+                't_kartupersproduk.tanggal_exp',
+                't_kartupersproduk.hpp', // GANTI 'harga' MENJADI 'hpp'
+                't_produk.satuan',
+                DB::raw('SUM(masuk) as total_masuk'),
+                DB::raw('SUM(keluar) as total_keluar')
+            )
+            ->join('t_produk', 't_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
+            ->where('t_kartupersproduk.tanggal_exp', '<=', $today)
+            ->groupBy(
+                't_kartupersproduk.kode_produk',
+                't_kartupersproduk.tanggal_exp',
+                't_kartupersproduk.hpp', // GANTI 'harga' MENJADI 'hpp'
+                't_produk.nama_produk',
+                't_produk.satuan'
+            )
             ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
-            ->get();
-
-        foreach ($produkKadaluarsa as $item) {
-            $item->nama_produk = DB::table('t_produk')->where('kode_produk', $item->kode_produk)->value('nama_produk');
-            $item->satuan = DB::table('t_produk')->where('kode_produk', $item->kode_produk)->value('satuan'); // Tambah baris ini
-            $item->stok = $item->total_masuk - $item->total_keluar;
-        }
+            ->get()
+            ->map(function($item) {
+                $item->stok = $item->total_masuk - $item->total_keluar;
+                $item->harga = $item->hpp; // AGAR DI BLADE TETAP BISA $item->harga
+                return $item;
+            });
 
         return view('penyesuaianbarang.exp', compact('bahanKadaluarsa', 'produkKadaluarsa'));
     }
@@ -86,11 +114,12 @@ class PenyesuaianBarangController extends Controller
 
                 DB::table('t_penyesuaian_detail')->insert([
                     'no_penyesuaian' => $no_penyesuaian,
-                    'tipe_item' => $item['tipe_item'],
-                    'kode_item' => $item['kode_item'],
-                    'jumlah' => $item['jumlah'],
-                    'harga_satuan' => $item['harga_satuan'],
-                    'alasan' => $item['alasan'] ?? null,
+                    'tipe_item'      => $item['tipe_item'],
+                    'kode_item'      => $item['kode_item'],
+                    'jumlah'         => $item['jumlah'],
+                    'harga_satuan'   => $item['harga_satuan'],
+                    'total_nilai'    => $nilai, // <-- tambahkan baris ini
+                    'alasan'         => $item['alasan'] ?? null,
                 ]);
 
                 if ($item['tipe_item'] === 'bahan') {
@@ -113,7 +142,7 @@ class PenyesuaianBarangController extends Controller
                         'kode_produk' => $item['kode_item'],
                         'masuk' => 0,
                         'keluar' => $item['jumlah'],
-                        'harga' => $item['harga_satuan'],
+                        'hpp' => $item['harga_satuan'], // GANTI 'harga' MENJADI 'hpp'
                         'satuan' => $item['satuan'] ?? null,
                         'keterangan' => $item['alasan'] ?? 'Penyesuaian Exp',
                     ]);
@@ -121,9 +150,12 @@ class PenyesuaianBarangController extends Controller
             }
 
             // ============ BUAT JURNAL UMUM ============
-            $id_jurnal = DB::table('t_jurnal_umum')->insertGetId([
-                'tanggal' => $request->tanggal,
-                'keterangan' => 'Penyesuaian barang kadaluarsa',
+            $no_jurnal = JurnalHelper::generateNoJurnal();
+
+            DB::table('t_jurnal_umum')->insert([
+                'no_jurnal'   => $no_jurnal,
+                'tanggal'     => $request->tanggal,
+                'keterangan'  => 'Penyesuaian persediaan',
                 'nomor_bukti' => $no_penyesuaian,
             ]);
 
@@ -131,15 +163,17 @@ class PenyesuaianBarangController extends Controller
 
             // Beban kerugian persediaan (debit)
             $jurnal[] = [
-                'id_jurnal' => $id_jurnal,
-                'kode_akun' => 511,
-                'debit' => $totalKerugian,
-                'kredit' => 0,
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal'        => $no_jurnal,
+                'kode_akun'        => '511', // contoh kode akun kerugian
+                'debit'            => $totalKerugian,
+                'kredit'           => 0,
             ];
 
             if ($kreditBahan > 0) {
                 $jurnal[] = [
-                    'id_jurnal' => $id_jurnal,
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                    'no_jurnal' => $no_jurnal,
                     'kode_akun' => 103,
                     'debit' => 0,
                     'kredit' => $kreditBahan,
@@ -148,7 +182,8 @@ class PenyesuaianBarangController extends Controller
 
             if ($kreditProduk > 0) {
                 $jurnal[] = [
-                    'id_jurnal' => $id_jurnal,
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                    'no_jurnal' => $no_jurnal,
                     'kode_akun' => 105,
                     'debit' => 0,
                     'kredit' => $kreditProduk,

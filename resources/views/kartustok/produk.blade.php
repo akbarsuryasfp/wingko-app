@@ -4,6 +4,12 @@
 <div class="container mt-5">
     <h4 class="mb-4">KARTU PERSEDIAAN PRODUK</h4>
 
+        <div class="mb-3">
+        <a href="{{ route('transferproduk.create') }}" class="btn btn-primary">
+            <i class="bi bi-truck"></i> Transfer/Pengiriman Produk
+        </a>
+    </div>
+    
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-4">
             <label for="kode_produk" class="form-label">Nama Produk</label>
@@ -17,6 +23,15 @@
         <div class="col-md-4">
             <label for="satuan_produk" class="form-label">Satuan</label>
             <input type="text" id="satuan_produk" name="satuan_produk" class="form-control" value="{{ $satuan ?? '' }}" readonly>
+        </div>
+        <div class="col-md-4">
+            <label for="lokasi" class="form-label">Lokasi</label>
+            <select id="lokasi" name="lokasi" class="form-control" onchange="setSatuanProdukOtomatis()">
+                <option value="">-- Semua Lokasi --</option>
+                <option value="Gudang">Gudang</option>
+                <option value="Toko 1">Toko 1</option>
+                <option value="Toko 2">Toko 2</option>
+            </select>
         </div>
     </form>
 
@@ -36,11 +51,12 @@
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
                     <th>Sisa (Qty)</th>
+                    <th>HPP</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data persediaan.</td>
+                    <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
                 </tr>
             </tbody>
         </table>
@@ -67,7 +83,8 @@ function setSatuanProdukOtomatis() {
 
     if (select.value) {
         document.getElementById('riwayat-title-produk').style.display = '';
-        fetch('/kartustok/api-produk/' + select.value)
+        var lokasi = document.getElementById('lokasi').value;
+        fetch('/kartustok/api-produk/' + select.value + '?lokasi=' + encodeURIComponent(lokasi))
             .then(res => res.json())
             .then(data => {
                 let tbody = '';
@@ -76,12 +93,13 @@ function setSatuanProdukOtomatis() {
                 // Akumulasi stok akhir per harga
                 let stokAkhirMap = {};
                 if (data.length === 0) {
-                    tbody = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+                    tbody = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
                 } else {
                     data.forEach(function(row, idx) {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
-                        let harga = parseFloat(row.harga);
+                        let harga = parseFloat(row.hpp) || 0; // harga = hpp
+                        let hpp = parseFloat(row.hpp) || 0;
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
@@ -100,6 +118,7 @@ function setSatuanProdukOtomatis() {
                                 <td>${masuk}</td>
                                 <td>${keluar}</td>
                                 <td>${saldoQty}</td>
+                                <td>Rp${hpp.toLocaleString('id-ID')}</td>
                             </tr>
                         `;
                     });
@@ -124,7 +143,7 @@ function setSatuanProdukOtomatis() {
             });
     } else {
         document.getElementById('riwayat-title-produk').style.display = 'none';
-        document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+        document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
         document.getElementById('stok-akhir-box-produk').style.display = 'none';
     }
 }

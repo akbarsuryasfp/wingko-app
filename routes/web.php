@@ -24,11 +24,12 @@ use App\Http\Controllers\HutangController;
 use App\Http\Controllers\KartuStokController;
 use App\Http\Controllers\KaskeluarController;
 use App\Http\Controllers\StokOpnameController;
+use App\Http\Controllers\PenyesuaianBarangController;
+use App\Http\Controllers\TransferProdukController;
 
 Route::get('/', function () {
-    $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
-    return view('welcome', compact('reminder'));
-});
+    return view('welcome');
+})->name('welcome');
 
 // Route login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -174,3 +175,7 @@ Route::post('/overhead/store', [OverheadController::class, 'store'])->name('over
 
 // Route Aset Tetap
 Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'create', 'store']);
+
+// Route transfer produk
+Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
+Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])->name('transferproduk.store');

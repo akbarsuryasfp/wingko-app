@@ -54,7 +54,7 @@
         
         <li>
     <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-kartustok')">
-        <i class="bi bi-cart"></i><span>Kartu Persediaan Produk</span>
+        <i class="bi bi-cart"></i><span>Persediaan</span>
     </a>
     <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
         <li><a href="{{ route('kartustok.bahan') }}" class="nav-link">Kartu Persediaan Bahan</a></li>

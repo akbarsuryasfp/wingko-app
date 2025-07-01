@@ -37,23 +37,38 @@
                     </td>
                     <td>{{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
                     <td>{{ $order->metode_bayar ?? '-' }}</td>
-                    <td>
-                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $order->no_order_beli }}">Detail</button>
-                        @if(($order->status_penerimaan === 'Disetujui' || $order->status_penerimaan === 'Diterima Sebagian') && $order->status !== 'Diterima Sepenuhnya')
-                            <a href="{{ route('terimabahan.create') }}?order={{ $order->no_order_beli }}" class="btn btn-success btn-sm">Terima Bahan</a>
-                        @endif
-                        @if($order->status !== 'Disetujui' && $order->status !== 'Diterima Sebagian' && $order->status !== 'Diterima Sepenuhnya')
-                            <a href="{{ route('orderbeli.edit', $order->no_order_beli) }}" class="btn btn-warning btn-sm">Edit</a>
-                        @endif
-                        @if($order->status_penerimaan !== 'Diterima Sebagian' && $order->status_penerimaan !== 'Diterima Sepenuhnya')
-                            <a href="{{ route('orderbeli.cetak', $order->no_order_beli) }}" target="_blank" class="btn btn-secondary btn-sm">Cetak</a>
-                            <form action="{{ route('orderbeli.destroy', $order->no_order_beli) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                            </form>
-                        @endif
-                    </td>
+
+<td>
+    <!-- Detail -->
+    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $order->no_order_beli }}" title="Detail">
+        <i class="bi bi-info-circle"></i>
+    </button>
+    <!-- Terima Bahan -->
+    @if(($order->status_penerimaan === 'Disetujui' || $order->status_penerimaan === 'Diterima Sebagian') && $order->status !== 'Diterima Sepenuhnya')
+        <a href="{{ route('terimabahan.create') }}?order={{ $order->no_order_beli }}" class="btn btn-success btn-sm" title="Terima Bahan">
+            <i class="bi bi-box-arrow-in-down"></i>
+        </a>
+    @endif
+    <!-- Edit -->
+    @if($order->status !== 'Disetujui' && $order->status !== 'Diterima Sebagian' && $order->status !== 'Diterima Sepenuhnya')
+        <a href="{{ route('orderbeli.edit', $order->no_order_beli) }}" class="btn btn-warning btn-sm" title="Edit">
+            <i class="bi bi-pencil-square"></i>
+        </a>
+    @endif
+    <!-- Cetak & Hapus -->
+    @if($order->status_penerimaan !== 'Diterima Sebagian' && $order->status_penerimaan !== 'Diterima Sepenuhnya')
+        <a href="{{ route('orderbeli.cetak', $order->no_order_beli) }}" target="_blank" class="btn btn-secondary btn-sm" title="Cetak">
+            <i class="bi bi-printer"></i>
+        </a>
+        <form action="{{ route('orderbeli.destroy', $order->no_order_beli) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    @endif
+</td>
                 </tr>
             @empty
                 <tr>

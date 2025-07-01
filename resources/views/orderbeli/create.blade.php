@@ -41,9 +41,11 @@
                     <label class="me-2" style="width: 120px;">Nama Bahan</label>
                     <select id="kode_bahan" class="form-control">
                         <option value="">---Pilih Bahan---</option>
-                        @foreach($bahans as $bahan)
-                            <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">{{ $bahan->nama_bahan }}</option>
-                        @endforeach
+@foreach($bahans as $bahan)
+    <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">
+        {{ $bahan->nama_bahan }} ({{ $bahan->satuan }})
+    </option>
+@endforeach
                     </select>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
