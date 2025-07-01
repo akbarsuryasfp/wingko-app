@@ -25,11 +25,16 @@ use App\Http\Controllers\KartuStokController;
 use App\Http\Controllers\KaskeluarController;
 use App\Http\Controllers\StokOpnameController;
 use App\Http\Controllers\PenyesuaianBarangController;
+use App\Http\Controllers\TransferProdukController;
 
 Route::get('/', function () {
-    $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
-    return view('welcome', compact('reminder'));
-});
+    return view('welcome');
+})->name('welcome');
+
+// Route login
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Route bahan
 Route::resource('bahan', BahanController::class);
@@ -120,7 +125,8 @@ Route::delete('/jadwal/{kode_jadwal}', [JadwalProduksiController::class, 'destro
 Route::get('/produksi/create', [ProduksiController::class, 'create'])->name('produksi.create');
 Route::post('/produksi', [ProduksiController::class, 'store'])->name('produksi.store');
 Route::get('/produksi', [ProduksiController::class, 'index'])->name('produksi.index');
-
+Route::get('/produksi/{no_produksi}', [ProduksiController::class, 'show'])->name('produksi.show');
+Route::delete('/produksi/{no_produksi}', [ProduksiController::class, 'destroy'])->name('produksi.destroy');
 // Route HPP
 Route::get('/hpp', [HppController::class, 'index'])->name('hpp.index');
 Route::get('/hpp/input/{no_detail}', [HppController::class, 'create'])->name('hpp.input');
@@ -161,3 +167,15 @@ Route::get('/pembelian/laporan/pdf', [PembelianController::class, 'laporanPdf'])
 // Route penyesuaian barang
 Route::get('/penyesuaian/exp', [PenyesuaianBarangController::class, 'index'])->name('penyesuaian.exp');
 Route::post('/penyesuaian/exp', [PenyesuaianBarangController::class, 'store'])->name('penyesuaian.store');
+
+// Route overhead
+Route::get('/overhead', [OverheadController::class, 'index'])->name('overhead.index');
+Route::get('/overhead/create', [OverheadController::class, 'create'])->name('overhead.create');
+Route::post('/overhead/store', [OverheadController::class, 'store'])->name('overhead.store');
+
+// Route Aset Tetap
+Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'create', 'store']);
+
+// Route transfer produk
+Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
+Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])->name('transferproduk.store');

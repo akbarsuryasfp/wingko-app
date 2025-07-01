@@ -59,7 +59,39 @@ class HppController extends Controller
         $karyawan = Karyawan::where('departemen', 'Produksi')->get();
         $bop = BOP::all();
 
-        return view('hpp.create', compact('detail', 'resep', 'jumlahProduksi', 'bahan', 'karyawan', 'bop'));
+        // Ambil data pemakaian bahan dari produksi (FIFO per batch)
+        $bahanProduksi = \DB::table('t_produksi_bahan')
+            ->where('no_detail_produksi', $no_detail)
+            ->join('t_bahan', 't_bahan.kode_bahan', '=', 't_produksi_bahan.kode_bahan')
+            ->select(
+                't_produksi_bahan.kode_bahan',
+                't_bahan.nama_bahan',
+                \DB::raw('SUM(t_produksi_bahan.jumlah * t_produksi_bahan.harga) as total_biaya')
+            )
+            ->groupBy('t_produksi_bahan.kode_bahan', 't_bahan.nama_bahan')
+            ->get();
+
+        // Ambil estimasi tarif BOP per unit dari HPP bulan sebelumnya
+        // Ambil semua no_detail_produksi HPP bulan lalu
+        $hppBulanLalu = \App\Models\HppPerProduk::whereMonth('tanggal_input', now()->subMonth()->month)->pluck('no_detail_produksi');
+
+        // Hitung total overhead dan total produksi bulan lalu
+        $total_overhead = \App\Models\HppPerProduk::whereIn('no_detail_produksi', $hppBulanLalu)->sum('total_overhead');
+        $total_produksi = \App\Models\ProduksiDetail::whereIn('no_detail_produksi', $hppBulanLalu)->sum('jumlah_unit');
+
+        // Hitung tarif bop per unit
+        $tarif_bop_per_unit = $total_produksi > 0 ? $total_overhead / $total_produksi : 0;
+        $tarif_bop_per_unit = round($tarif_bop_per_unit,2); // bulatkan ke integer
+        // Jika ingin 2 desimal: round($tarif_bop_per_unit, 2);
+
+        // Jika belum ada data, fallback ke 0
+        if (!$tarif_bop_per_unit || is_nan($tarif_bop_per_unit)) {
+            $tarif_bop_per_unit = 0;
+        }
+
+        return view('hpp.create', compact(
+            'detail', 'resep', 'jumlahProduksi', 'bahan', 'karyawan', 'bop', 'tarif_bop_per_unit', 'bahanProduksi'
+        ));
     }
 
     public function store(Request $request)
@@ -76,14 +108,12 @@ class HppController extends Controller
         // Simpan HPP Bahan Baku
         $total_bahan = 0;
         foreach ($request->bahan as $i => $b) {
-            $no_hpp_bahan = 'HB' . $tanggal . '-' . $no_detail . '-' . $b['kode_bahan'];
+            $no_hpp_bahan = 'HB' . $tanggal . '-' . $no_detail . '-' . $b['kode_bahan']. '-' . $i;
             $total_bahan += $b['total'];
             HppBahanBaku::create([
                 'no_hpp_bahan' => $no_hpp_bahan,
                 'no_detail_produksi' => $no_detail,
                 'kode_bahan' => $b['kode_bahan'],
-                'jumlah_bahan' => $b['jumlah'],
-                'harga_bahan' => $b['harga'],
                 'total_bahan' => $b['total'],
             ]);
         }
@@ -91,7 +121,7 @@ class HppController extends Controller
         // Simpan HPP Tenaga Kerja
         $total_tk = 0;
         foreach ($request->tk as $i => $tk) {
-            $no_hpp_btkl = 'HT' . $tanggal . '-' . $no_detail . '-' . $tk['kode_karyawan'];
+            $no_hpp_btkl = 'HT' . $tanggal . '-' . $no_detail . '-' . $tk['kode_karyawan']. '-' . $i;
             $total_tk += $tk['total'];
             HppTenagaKerja::create([
                 'no_hpp_btkl' => $no_hpp_btkl,
@@ -106,7 +136,7 @@ class HppController extends Controller
         // Simpan HPP Overhead
         $total_overhead = 0;
         foreach ($request->overhead as $i => $ov) {
-            $no_hpp_bop = 'HO' . $tanggal . '-' . $no_detail . '-' . $ov['kode_bop'];
+            $no_hpp_bop = 'HO' . $tanggal . '-' . $no_detail . '-' . $ov['kode_bop']. '-' . $i;
             $total_overhead += $ov['biaya'];
             HppOverhead::create([
                 'no_hpp_bop' => $no_hpp_bop,

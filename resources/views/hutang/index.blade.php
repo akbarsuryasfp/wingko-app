@@ -31,23 +31,27 @@
                     </td>
                     <td class="text-end">Rp{{ number_format($hutang->total_tagihan, 0, ',', '.') }}</td>
                     <td class="text-end">
-                        @if ($hutang->sisa_utang == 0)
-                            <span class="text-success">Rp0 (Lunas)</span>
-                        @else
-                            Rp{{ number_format($hutang->sisa_utang, 0, ',', '.') }}
-                        @endif
-                    </td>
+                            @if ($hutang->sisa_utang == 0)
+                                <span >Rp0</span>
+                            @else
+                                <span class="text-danger">Rp{{ number_format($hutang->sisa_utang, 0, ',', '.') }}</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if ($hutang->sisa_utang == 0)
+                                <span class="badge bg-success"><i class="fas fa-check-circle"></i> Lunas</span>
+                            @else
+                                <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle"></i> Belum Lunas</span>
+                            @endif
+                        </td>
                     <td>
-                        @if ($hutang->sisa_utang == 0)
-                            Lunas
-                        @else
-                            Belum Lunas
-                        @endif
-                    </td>
-                    <td>
-                        <a href="{{ route('hutang.detail', $hutang->no_utang) }}" class="btn btn-info btn-sm">Detail</a>
+                        <a href="{{ route('hutang.detail', $hutang->no_utang) }}" class="btn btn-info btn-sm" title="Detail">
+                            <i class="bi bi-info-circle"></i>
+                        </a>
                         @if ($hutang->sisa_utang > 0)
-                            <a href="{{ route('hutang.bayar', $hutang->no_utang) }}" class="btn btn-success btn-sm">Pembayaran</a>
+                            <a href="{{ route('hutang.bayar', $hutang->no_utang) }}" class="btn btn-success btn-sm" title="Pembayaran">
+                                <i class="bi bi-cash-coin"></i>
+                            </a>
                         @endif
                     </td>
                 </tr>

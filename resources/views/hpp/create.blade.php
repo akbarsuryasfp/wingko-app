@@ -52,32 +52,35 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Bahan</th>
-                                        <th>Jumlah</th>
-                                        <th>Harga per Unit</th>
-                                        <th>Total</th>
+                                        <th>Total Biaya (Rp)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($resep as $i => $r)
-                                        @php
-                                            $jumlah = $r->jumlah_kebutuhan * $jumlahProduksi;
-                                        @endphp
-                                        <tr>
+                                    @if(isset($bahanProduksi) && count($bahanProduksi))
+                                        @php $grandTotal = 0; @endphp
+                                        @foreach ($bahanProduksi as $i => $b)
+                                            @php $grandTotal += $b->total_biaya; @endphp
+                                            <tr>
+                                                <td>
+                                                    {{ $b->nama_bahan }}
+                                                    <input type="hidden" name="bahan[{{ $i }}][kode_bahan]" value="{{ $b->kode_bahan }}">
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control" name="bahan[{{ $i }}][total]" value="{{ round($b->total_biaya) }}" min="0" step="0.01">
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        <tr class="table-info fw-bold">
+                                            <td class="text-end">Total</td>
                                             <td>
-                                                {{ $r->bahan->nama_bahan }}
-                                                <input type="hidden" name="bahan[{{ $i }}][kode_bahan]" value="{{ $r->kode_bahan }}">
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control" name="bahan[{{ $i }}][jumlah]" value="{{ $jumlah }}" step="0.01" min="0">
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control" name="bahan[{{ $i }}][harga]" step="0.01" min="0" value="{{ $r->bahan->harga_satuan ?? '' }}">
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control" name="bahan[{{ $i }}][total]" readonly>
+                                                <input type="number" class="form-control-plaintext fw-bold text-end" id="grandTotalBahan" value="{{ round($grandTotal) }}" readonly tabindex="-1">
                                             </td>
                                         </tr>
-                                    @endforeach
+                                    @else
+                                        <tr>
+                                            <td colspan="2" class="text-center">Tidak ada data bahan dari produksi.</td>
+                                        </tr>
+                                    @endif
                                 </tbody>
                             </table>
                         </div>
@@ -96,6 +99,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @php $grandTotalTK = 0; @endphp
                                     @foreach ($karyawan as $i => $k)
                                         <tr>
                                             <td>
@@ -113,6 +117,12 @@
                                             </td>
                                         </tr>
                                     @endforeach
+                                    <tr class="table-info fw-bold">
+                                        <td colspan="3" class="text-end">Total</td>
+                                        <td>
+                                            <input type="number" class="form-control-plaintext fw-bold text-end" id="grandTotalTK" value="0" readonly tabindex="-1">
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -120,6 +130,9 @@
 
                     {{-- TAB OVERHEAD --}}
                     <div class="tab-pane fade" id="overhead" role="tabpanel">
+                        <div class="alert alert-info mb-2">
+                            Overhead diisi otomatis dari estimasi bulan sebelumnya (Rp{{ number_format($tarif_bop_per_unit,0) }} x {{ $detail->jumlah_unit }} unit).
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle">
                                 <thead class="table-light">
@@ -129,17 +142,20 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($bop as $i => $o)
-                                        <tr>
-                                            <td>
-                                                {{ $o->nama_bop }}
-                                                <input type="hidden" name="overhead[{{ $i }}][kode_bop]" value="{{ $o->kode_bop }}">
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control" name="overhead[{{ $i }}][biaya]" step="0.01" min="0">
-                                            </td>
-                                        </tr>
-                                    @endforeach
+                                    <tr>
+                                        <td>Overhead Pabrik (Estimasi)</td>
+                                        <td>
+                                            <input type="number" class="form-control" name="overhead[0][biaya]"
+                                                value="{{ old('overhead.0.biaya', $tarif_bop_per_unit * $detail->jumlah_unit) }}" min="0" step="0.01" id="overheadBiaya">
+                                            <input type="hidden" name="overhead[0][kode_bop]" value="ESTIMASI">
+                                        </td>
+                                    </tr>
+                                    <tr class="table-info fw-bold">
+                                        <td class="text-end">Total</td>
+                                        <td>
+                                            <input type="number" class="form-control-plaintext fw-bold text-end" id="grandTotalOverhead" value="{{ old('overhead.0.biaya', $tarif_bop_per_unit * $detail->jumlah_unit) }}" readonly tabindex="-1">
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -159,6 +175,30 @@
 
 @push('scripts')
 <script>
+function hitungGrandTotalBahan() {
+    let total = 0;
+    document.querySelectorAll('#bahan tbody input[name^="bahan"][name$="[total]"]').forEach(function(input) {
+        total += parseFloat(input.value || 0);
+    });
+    let grand = document.getElementById('grandTotalBahan');
+    if (grand) grand.value = Math.round(total);
+}
+function hitungGrandTotalTK() {
+    let total = 0;
+    document.querySelectorAll('#tenaga tbody input[name^="tk"][name$="[total]"]').forEach(function(input) {
+        total += parseFloat(input.value || 0);
+    });
+    let grand = document.getElementById('grandTotalTK');
+    if (grand) grand.value = Math.round(total);
+}
+function hitungGrandTotalOverhead() {
+    let total = 0;
+    document.querySelectorAll('#overhead tbody input[name^="overhead"][name$="[biaya]"]').forEach(function(input) {
+        total += parseFloat(input.value || 0);
+    });
+    let grand = document.getElementById('grandTotalOverhead');
+    if (grand) grand.value = Math.round(total);
+}
 document.addEventListener('DOMContentLoaded', function() {
     function hitungTotalBahan() {
         document.querySelectorAll('#bahan tbody tr').forEach(function(row) {
@@ -188,17 +228,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.matches('input[name*="[jumlah]"], input[name*="[harga]"]')) {
             hitungTotalBahan();
         }
+        hitungGrandTotalBahan();
     });
     // Event delegation untuk tab tenaga kerja
     document.querySelector('#tenaga').addEventListener('input', function(e) {
         if (e.target.matches('input[name*="[jam]"], input[name*="[tarif]"]')) {
             hitungTotalTK();
         }
+        hitungGrandTotalTK();
+    });
+    document.querySelector('#overhead').addEventListener('input', function(e) {
+        if (e.target.matches('input[name*="[biaya]"]')) {
+            hitungGrandTotalOverhead();
+        }
     });
 
     // Hitung awal saat halaman load
     hitungTotalBahan();
     hitungTotalTK();
+    hitungGrandTotalBahan();
+    hitungGrandTotalTK();
+    hitungGrandTotalOverhead();
 });
 </script>
 @endpush

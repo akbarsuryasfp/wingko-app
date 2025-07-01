@@ -83,7 +83,7 @@
                 </td>
                 <td>
                     <a href="{{ route('pembelian.show', $p->no_pembelian) }}" class="btn btn-secondary btn-sm" title="Detail">
-                        <i class="bi bi-eye"></i>
+                        <i class="bi bi-info-circle"></i>
                     </a>
                     <a href="{{ route('pembelian.edit', $p->no_pembelian) }}" class="btn btn-warning btn-sm" title="Edit">
                         <i class="bi bi-pencil"></i>

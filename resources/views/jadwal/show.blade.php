@@ -94,5 +94,7 @@
             }
         </script>
     @endif
+
+    <a href="{{ route('produksi.create', ['jadwal' => $jadwal->kode_jadwal]) }}" class="btn btn-primary mt-3">Proses Produksi</a>
 </div>
 @endsection

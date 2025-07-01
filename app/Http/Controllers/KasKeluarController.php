@@ -9,40 +9,62 @@ class KasKeluarController extends Controller
     public function index()
     {
         // Ambil data kas keluar dari jurnal umum dan detail
-        $kaskeluar = DB::table('t_jurnal_umum as ju')
-            ->join('t_jurnal_detail as jd', function($join) {
-                $join->on('ju.id_jurnal', '=', 'jd.id_jurnal')
-                     ->where('jd.kredit', '>', 0)
-                     ->where('jd.kode_akun', '=', '101');
-            })
-            ->join('t_jurnal_detail as jd2', function($join) {
-                $join->on('ju.id_jurnal', '=', 'jd2.id_jurnal')
-                     ->where('jd2.debit', '>', 0);
-            })
-            ->select(
-                'ju.id_jurnal',
-                'ju.nomor_bukti',
-                'ju.tanggal',
-                'ju.keterangan',
-                'jd2.kode_akun',
-                'jd2.debit as jumlah'
-            )
-            ->orderBy('ju.tanggal', 'desc')
-            ->get();
+$kaskeluar = DB::table('t_jurnal_umum as ju')
+    ->join('t_jurnal_detail as jd', function($join) {
+        $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
+             ->where('jd.kredit', '>', 0)
+             ->where('jd.kode_akun', '=', '101');
+    })
+    ->select(
+        'ju.*',
+        'jd.kredit as jumlah'
+    )
+    ->orderBy('ju.tanggal', 'desc')
+    ->get();
 
-        // Ekstrak info tambahan dari keterangan
-        $data = [];
-        foreach ($kaskeluar as $row) {
-            // Format: [no_referensi] | [keterangan] | [penerima]
-            $parts = explode(' | ', $row->keterangan);
-            $row->no_referensi = $parts[0] ?? '';
-            $row->keterangan_teks = $parts[1] ?? '';
-            $row->penerima = $parts[2] ?? '';
-            $row->jenis_kas = 'Kas'; // default, karena kode akun 101
-            $data[] = $row;
+$data = [];
+foreach ($kaskeluar as $row) {
+    $parts = explode(' | ', $row->keterangan);
+
+    // Format hutang: [no_referensi] | [keterangan] | [penerima]
+    if (preg_match('/^PBL|^OB|^RB/', $parts[0] ?? '')) {
+        $row->no_referensi    = $parts[0] ?? '';
+        $row->keterangan_teks = $parts[1] ?? '';
+        $row->penerima        = $parts[2] ?? '';
+        // Nama supplier dari kode penerima jika ada
+        $row->nama_penerima = $row->penerima
+            ? DB::table('t_supplier')->where('kode_supplier', $row->penerima)->value('nama_supplier')
+            : null;
+    } else {
+        // Format order/pembelian/retur: [keterangan] | [no_referensi]
+        $row->keterangan_teks = $parts[0] ?? '';
+        $row->no_referensi    = $parts[1] ?? '';
+        $row->penerima        = null;
+        $row->nama_penerima   = null;
+
+        // Cek sumber transaksi dari no_referensi
+        if (preg_match('/^OB/', $row->no_referensi)) {
+            $kode_supplier = DB::table('t_order_beli')->where('no_order_beli', $row->no_referensi)->value('kode_supplier');
+            $row->nama_penerima = $kode_supplier
+                ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
+                : null;
+        } elseif (preg_match('/^PBL/', $row->no_referensi)) {
+            $kode_supplier = DB::table('t_pembelian')->where('no_pembelian', $row->no_referensi)->value('kode_supplier');
+            $row->nama_penerima = $kode_supplier
+                ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
+                : null;
+        } elseif (preg_match('/^RB/', $row->no_referensi)) {
+            $kode_supplier = DB::table('t_returbeli')->where('no_retur_beli', $row->no_referensi)->value('kode_supplier');
+            $row->nama_penerima = $kode_supplier
+                ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
+                : null;
         }
+    }
 
-        return view('kaskeluar.index', ['kaskeluar' => $data]);
+    $data[] = $row;
+}
+
+return view('kaskeluar.index', ['kaskeluar' => $data]);
     }
 
     public function create()
@@ -72,37 +94,34 @@ class KasKeluarController extends Controller
             'keterangan'  => 'nullable|string',
         ]);
 
-        // Generate id_jurnal otomatis
-        $lastJurnal = DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
-        $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
+        // Generate no_jurnal dan no_jurnal_detail otomatis (string format)
+        $no_jurnal = 'JU-' . date('YmdHis') . '-' . rand(100,999);
 
         // Gabungkan keterangan: [no_referensi] | [keterangan] | [penerima]
         $keterangan = ($request->no_referensi ?? '') . ' | ' . ($request->keterangan ?? '') . ' | ' . $request->penerima;
 
         // Simpan ke t_jurnal_umum
         DB::table('t_jurnal_umum')->insert([
-            'id_jurnal'   => $id_jurnal,
+            'no_jurnal'   => $no_jurnal,
             'tanggal'     => $request->tanggal,
             'keterangan'  => $keterangan,
             'nomor_bukti' => $request->no_BKK,
         ]);
 
-        // Generate id_jurnal_detail otomatis
-        $lastDetail = DB::table('t_jurnal_detail')->orderBy('id_jurnal_detail', 'desc')->first();
-        $id_jurnal_detail = $lastDetail ? $lastDetail->id_jurnal_detail + 1 : 1;
-
         // Debit akun lawan
+        $no_jurnal_detail1 = 'JD-' . date('YmdHis') . '-' . rand(100,999);
         DB::table('t_jurnal_detail')->insert([
-            'id_jurnal_detail' => $id_jurnal_detail,
-            'id_jurnal'        => $id_jurnal,
+            'no_jurnal_detail' => $no_jurnal_detail1,
+            'no_jurnal'        => $no_jurnal,
             'kode_akun'        => $request->kode_akun,
             'debit'            => $request->jumlah,
             'kredit'           => 0,
         ]);
         // Kredit kas (101)
+        $no_jurnal_detail2 = 'JD-' . date('YmdHis') . '-' . rand(100,999);
         DB::table('t_jurnal_detail')->insert([
-            'id_jurnal_detail' => $id_jurnal_detail + 1,
-            'id_jurnal'        => $id_jurnal,
+            'no_jurnal_detail' => $no_jurnal_detail2,
+            'no_jurnal'        => $no_jurnal,
             'kode_akun'        => '101',
             'debit'            => 0,
             'kredit'           => $request->jumlah,
@@ -114,11 +133,11 @@ class KasKeluarController extends Controller
     public function edit($id)
     {
         // Ambil data utama
-        $kas = DB::table('t_jurnal_umum')->where('id_jurnal', $id)->first();
+        $kas = DB::table('t_jurnal_umum')->where('no_jurnal', $id)->first();
 
         // Ambil detail akun lawan (debit) dan jumlah
         $detail = DB::table('t_jurnal_detail')
-            ->where('id_jurnal', $id)
+            ->where('no_jurnal', $id)
             ->where('kredit', 0)
             ->first();
 
@@ -150,14 +169,14 @@ class KasKeluarController extends Controller
         $keterangan = ($request->no_referensi ?? '') . ' | ' . ($request->keterangan ?? '') . ' | ' . $request->penerima;
 
         // Update t_jurnal_umum
-        DB::table('t_jurnal_umum')->where('id_jurnal', $id)->update([
+        DB::table('t_jurnal_umum')->where('no_jurnal', $id)->update([
             'tanggal'    => $request->tanggal,
             'keterangan' => $keterangan,
         ]);
 
         // Update t_jurnal_detail (debit akun lawan)
         DB::table('t_jurnal_detail')
-            ->where('id_jurnal', $id)
+            ->where('no_jurnal', $id)
             ->where('kredit', 0)
             ->update([
                 'kode_akun' => $request->kode_akun,
@@ -166,7 +185,7 @@ class KasKeluarController extends Controller
 
         // Update t_jurnal_detail (kredit kas)
         DB::table('t_jurnal_detail')
-            ->where('id_jurnal', $id)
+            ->where('no_jurnal', $id)
             ->where('kode_akun', '101')
             ->update([
                 'kredit' => $request->jumlah,
@@ -179,9 +198,9 @@ class KasKeluarController extends Controller
     public function destroy($id)
     {
         // Hapus detail dulu
-        DB::table('t_jurnal_detail')->where('id_jurnal', $id)->delete();
+        DB::table('t_jurnal_detail')->where('no_jurnal', $id)->delete();
         // Hapus header
-        DB::table('t_jurnal_umum')->where('id_jurnal', $id)->delete();
+        DB::table('t_jurnal_umum')->where('no_jurnal', $id)->delete();
 
         return redirect()->route('kaskeluar.index')->with('success', 'Kas keluar berhasil dihapus.');
     }

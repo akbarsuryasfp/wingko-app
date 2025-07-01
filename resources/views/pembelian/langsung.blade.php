@@ -110,7 +110,7 @@ var $jq = jQuery.noConflict();
 $jq('#tambah_bahan').click(function () {
     let selectHtml = '<select name="bahan[]" class="form-control">';
     bahanOptions.forEach(b => {
-        selectHtml += `<option value="${b.kode_bahan}">${b.nama_bahan}</option>`;
+        selectHtml += `<option value="${b.kode_bahan}">${b.nama_bahan} (${b.satuan})</option>`;
     });
     selectHtml += '</select>';
 

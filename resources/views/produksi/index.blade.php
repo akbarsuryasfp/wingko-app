@@ -15,16 +15,33 @@
                 <th>Tanggal</th>
                 <th>Keterangan</th>
                 <th>Detail Produk</th>
+                <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($produksi as $p)
-                <tr data-bs-toggle="collapse" data-bs-target="#detail-{{ $p->no_produksi }}" class="accordion-toggle">
+                <tr>
                     <td>{{ $p->no_produksi }}</td>
                     <td>{{ $p->tanggal_produksi }}</td>
                     <td>{{ $p->keterangan }}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary">Lihat</button>
+                        <button class="btn btn-sm btn-primary"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#detail-{{ $p->no_produksi }}">
+                            Lihat
+                        </button>
+                        <a href="{{ route('produksi.show', $p->no_produksi) }}"
+                           class="btn btn-sm btn-info mt-1">
+                            Detail Lengkap
+                        </a>
+                    </td>
+                    <td>
+                        <form action="{{ route('produksi.destroy', $p->no_produksi) }}" method="POST" class="d-inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apakah Anda yakin ingin membatalkan produksi ini?')">Batalkan</button>
+                        </form>
                     </td>
                 </tr>
                 <tr class="collapse" id="detail-{{ $p->no_produksi }}">

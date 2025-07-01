@@ -90,48 +90,44 @@ class HutangController extends Controller
         $utang = \DB::table('t_utang')->where('no_utang', $no_utang)->first();
         $kode_supplier = $utang->kode_supplier ?? '';
 
-        // 1. Buat id_jurnal baru
-        $lastJurnal = \DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
-        $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
+        // 1. Buat no_jurnal baru
+        $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
 
-        // 2. Gabungkan keterangan: [no_referensi] | [keterangan] | [penerima]
+        // 2. Buat no_jurnal_detail untuk masing-masing detail
+        $no_jurnal_detail1 = \App\Helpers\JurnalHelper::generateNoJurnalDetail();
+        $no_jurnal_detail2 = \App\Helpers\JurnalHelper::generateNoJurnalDetail();
+
+        // 3. Gabungkan keterangan: [no_referensi] | [keterangan] | [penerima]
         $keterangan = $no_utang . ' | ' . ($request->keterangan ?? '') . ' | ' . $kode_supplier;
 
-        // 3. Insert ke t_jurnal_umum
+        // 4. Insert ke t_jurnal_umum
         \DB::table('t_jurnal_umum')->insert([
-            'id_jurnal'   => $id_jurnal,
-            'tanggal'     => $request->tanggal,
+            'no_jurnal'   => $no_jurnal,
+            'tanggal'     => now()->toDateString(),
             'keterangan'  => $keterangan,
             'nomor_bukti' => $request->no_BKK,
         ]);
-
-        // 4. Insert ke t_jurnal_detail
-        $lastDetail = \DB::table('t_jurnal_detail')->orderBy('id_jurnal_detail', 'desc')->first();
-        $id_jurnal_detail = $lastDetail ? $lastDetail->id_jurnal_detail + 1 : 1;
-
-        // Kredit kas (kode_akun kas, misal 101)
         \DB::table('t_jurnal_detail')->insert([
-            'id_jurnal_detail' => $id_jurnal_detail,
-            'id_jurnal'        => $id_jurnal,
-            'kode_akun'        => $request->kode_akun, // kas
+            'no_jurnal_detail' => $no_jurnal_detail1,
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => '101',
             'debit'            => 0,
             'kredit'           => $request->jumlah,
         ]);
-        // Debit utang (kode_akun utang, misal 201)
         \DB::table('t_jurnal_detail')->insert([
-            'id_jurnal_detail' => $id_jurnal_detail + 1,
-            'id_jurnal'        => $id_jurnal,
-            'kode_akun'        => '201', // kode akun utang
+            'no_jurnal_detail' => $no_jurnal_detail2,
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => '201',
             'debit'            => $request->jumlah,
             'kredit'           => 0,
         ]);
 
         // 5. Update t_utang
-        $totalBayar = \DB::table('t_jurnal_detail as jd')
-            ->join('t_jurnal_umum as ju', 'jd.id_jurnal', '=', 'ju.id_jurnal')
-            ->where('ju.keterangan', 'like', $no_utang . ' |%')
-            ->where('jd.kode_akun', '201') // utang
-            ->sum('jd.debit');
+        $totalBayar = \DB::table('t_jurnal_umum as ju')
+    ->join('t_jurnal_detail as jd', 'ju.no_jurnal', '=', 'jd.no_jurnal')
+    ->where('ju.keterangan', 'like', $no_utang . ' |%')
+    ->where('jd.kode_akun', '201') // utang
+    ->sum('jd.debit');
         $sisa = $utang->total_tagihan - $totalBayar;
 
         \DB::table('t_utang')->where('no_utang', $no_utang)->update([

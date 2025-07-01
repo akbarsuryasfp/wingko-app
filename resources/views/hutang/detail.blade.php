@@ -59,7 +59,7 @@
             @php
                 $pembayaran = \DB::table('t_jurnal_umum as ju')
                     ->join('t_jurnal_detail as jd', function($join) {
-                        $join->on('ju.id_jurnal', '=', 'jd.id_jurnal')
+                        $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
                              ->where('jd.kode_akun', '201') // kode akun utang
                              ->where('jd.debit', '>', 0);
                     })
@@ -79,6 +79,7 @@
                             $parts = explode(' | ', $bayar->keterangan);
                             echo trim(($parts[1] ?? '') . ' ' . ($parts[2] ?? ''));
                         @endphp
+                        
                     </td>
                 </tr>
             @empty

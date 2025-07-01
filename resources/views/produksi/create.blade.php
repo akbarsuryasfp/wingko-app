@@ -22,7 +22,8 @@
             <select class="form-select" id="jadwal-select" onchange="tampilkanProduk()">
                 <option value="">-- Pilih Jadwal --</option>
                 @foreach ($jadwal as $j)
-                    <option value="{{ $j->kode_jadwal }}" data-json='@json($j)'>
+                    <option value="{{ $j->kode_jadwal }}" data-json='@json($j)'
+                        @if(isset($jadwalTerpilih) && $jadwalTerpilih->kode_jadwal == $j->kode_jadwal) selected @endif>
                         {{ $j->kode_jadwal }} - {{ $j->tanggal_jadwal }}
                     </option>
                 @endforeach
@@ -87,6 +88,12 @@
         result.setDate(result.getDate() + hari);
         return result;
     }
+
+    @if(isset($jadwalTerpilih))
+        document.addEventListener('DOMContentLoaded', function() {
+            tampilkanProduk();
+        });
+    @endif
 </script>
 
 @endsection

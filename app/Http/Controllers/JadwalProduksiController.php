@@ -52,7 +52,42 @@ class JadwalProduksiController extends Controller
     
     public function index()
     {
-        $jadwal = JadwalProduksi::with('details.produk')->orderBy('tanggal_jadwal', 'desc')->get();
+        $jadwal = JadwalProduksi::with('details.produk.resep.details.bahan')->orderBy('tanggal_jadwal', 'desc')->get();
+
+        foreach ($jadwal as $j) {
+            $kebutuhan = [];
+            foreach ($j->details as $detail) {
+                $produk = $detail->produk;
+                $jumlah = $detail->jumlah;
+                if ($produk && $produk->resep) {
+                    foreach ($produk->resep->details as $rdetail) {
+                        $kode_bahan = $rdetail->kode_bahan;
+                        $total = $jumlah * $rdetail->jumlah_kebutuhan;
+                        if (!isset($kebutuhan[$kode_bahan])) {
+                            $kebutuhan[$kode_bahan] = [
+                                'jumlah' => 0,
+                                'satuan' => $rdetail->satuan,
+                            ];
+                        }
+                        $kebutuhan[$kode_bahan]['jumlah'] += $total;
+                    }
+                }
+            }
+            // Cek stok bahan
+            $adaKurang = false;
+            foreach ($kebutuhan as $kode_bahan => $b) {
+                $stok = \DB::table('t_kartupersbahan')
+                    ->where('kode_bahan', $kode_bahan)
+                    ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as saldo')
+                    ->value('saldo') ?? 0;
+                if ($stok < $b['jumlah']) {
+                    $adaKurang = true;
+                    break;
+                }
+            }
+            $j->ada_bahan_kurang = $adaKurang;
+        }
+
         return view('jadwal.index', compact('jadwal'));
     }
 
@@ -84,9 +119,12 @@ class JadwalProduksiController extends Controller
         }
     }
 
-    // Tambahkan pengecekan stok bahan dari tabel t_bahan
+    // Tambahkan pengecekan stok bahan dari kartu stok (t_kartupersbahan)
     foreach ($kebutuhan as $kode_bahan => &$b) {
-        $stok = \App\Models\Bahan::where('kode_bahan', $kode_bahan)->value('stok') ?? 0;
+        $stok = \DB::table('t_kartupersbahan')
+            ->where('kode_bahan', $kode_bahan)
+            ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as saldo')
+            ->value('saldo') ?? 0;
         $b['stok'] = $stok;
         $b['status'] = $stok >= $b['jumlah'] ? 'Cukup' : 'Kurang';
     }

@@ -26,14 +26,18 @@
                 <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}</td>
                 <td>{{ $item->nomor_bukti }}</td>
                 <td>Rp {{ number_format($item->jumlah, 0, ',', '.') }}</td>
-                <td>{{ $item->penerima }}</td>
+                <td>{{ $item->nama_penerima }}</td>
                 <td>{{ $item->keterangan_teks }}</td>
                 <td>
-                    <a href="{{ route('kaskeluar.edit', $item->id_jurnal) }}" class="btn btn-sm btn-warning">✏️</a>
-                    <form action="{{ route('kaskeluar.destroy', $item->id_jurnal) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                    <a href="{{ route('kaskeluar.edit', $item->no_jurnal) }}" class="btn btn-sm btn-warning">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    <form action="{{ route('kaskeluar.destroy', $item->no_jurnal) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </form>
                 </td>
             </tr>

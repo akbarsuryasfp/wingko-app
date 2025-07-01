@@ -61,14 +61,18 @@ class KartuStokController extends Controller
         return view('kartustok.produk', compact('produkList', 'satuan'));
     }
 
-    public function getKartuPersProduk($kode_produk)
+    public function getKartuPersProduk(Request $request, $kode_produk)
     {
-        $dataPersediaan = \DB::table('t_kartupersproduk')
-            ->where('kode_produk', $kode_produk)
-            ->orderBy('tanggal')
-            ->get();
+        $lokasi = $request->get('lokasi');
+        $query = DB::table('t_kartupersproduk')
+            ->select('no_transaksi', 'tanggal', 'masuk', 'keluar', 'hpp') // <-- tambahkan select kolom hpp
+            ->where('kode_produk', $kode_produk);
+        if ($lokasi) {
+            $query->where('lokasi', $lokasi);
+        }
+        $data = $query->orderBy('tanggal')->get();
 
-        return response()->json($dataPersediaan);
+        return response()->json($data);
     }
 
     public function updateStokBahan($kode_bahan)
