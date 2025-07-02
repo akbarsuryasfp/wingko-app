@@ -37,12 +37,6 @@
                 </div>
             </div>
             <div class="mb-3 row">
-                <label class="col-sm-4 col-form-label">Kode Supplier</label>
-                <div class="col-sm-8">
-                    <input type="text" class="form-control" value="{{ $pembelian->kode_supplier }}" readonly>
-                </div>
-            </div>
-            <div class="mb-3 row">
                 <label class="col-sm-4 col-form-label">Metode Bayar</label>
                 <div class="col-sm-8">
                     <input type="text" class="form-control" value="{{ $pembelian->metode_bayar }}" readonly>

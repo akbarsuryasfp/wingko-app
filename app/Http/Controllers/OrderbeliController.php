@@ -1,10 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\OrderBeli;
 use App\Models\Supplier;
 use App\Models\Bahan;
+use App\Helpers\JurnalHelper;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -173,18 +173,19 @@ foreach ($jadwalList as $jadwal) {
             }
         }
         // Ambil bahan yang stok < stokmin
-        $stokMinList = [];
-        foreach ($bahans as $bahan) {
-            if ($bahan->stok < $bahan->stokmin) {
-                $stokMinList[] = [
-                    'kode_bahan' => $bahan->kode_bahan,
-                    'nama_bahan' => $bahan->nama_bahan,
-                    'satuan'     => $bahan->satuan,
-                    'stok'       => $bahan->stok,
-                    'stokmin'    => $bahan->stokmin,
-                ];
-            }
-        }
+$stokMinList = DB::table('t_bahan')
+    ->leftJoin('t_kartupersbahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
+    ->select(
+        't_bahan.kode_bahan',
+        't_bahan.nama_bahan',
+        't_bahan.satuan',
+        't_bahan.stokmin',
+        DB::raw('COALESCE(SUM(t_kartupersbahan.masuk),0) - COALESCE(SUM(t_kartupersbahan.keluar),0) as stok')
+    )
+    ->groupBy('t_bahan.kode_bahan', 't_bahan.nama_bahan', 't_bahan.satuan', 't_bahan.stokmin')
+    ->havingRaw('stok < t_bahan.stokmin')
+    ->get()
+    ->toArray();
         return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans', 'bahanKurang', 'stokMinList'));
     }
 
@@ -284,6 +285,35 @@ public function simpanUangMuka(Request $request, $no_order_beli)
     $order->metode_bayar = $request->metode_bayar;
     $order->save();
 
+    // === JURNAL UMUM & DETAIL ===
+    if ($order->uang_muka > 0) {
+        $no_jurnal = JurnalHelper::generateNoJurnal();
+
+        DB::table('t_jurnal_umum')->insert([
+            'no_jurnal'   => $no_jurnal,
+            'tanggal'     => now(),
+            'keterangan'  => 'Uang Muka Order Pembelian ' . $order->no_order_beli,
+            'nomor_bukti' => $order->no_order_beli,
+        ]);
+
+        // Debit Uang Muka Pembelian (113)
+        DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => '113',
+            'debit'            => $order->uang_muka,
+            'kredit'           => 0,
+        ]);
+        // Kredit Kas (101)
+        DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => '101',
+            'debit'            => 0,
+            'kredit'           => $order->uang_muka,
+        ]);
+    }
+
     return redirect()->route('orderbeli.index', $no_order_beli)
         ->with('success', 'Pembayaran uang muka berhasil disimpan.');
 }
@@ -307,18 +337,19 @@ public function edit($no_order_beli)
         )
         ->get();
 
-$stokMinList = [];
-foreach ($bahans as $bahan) {
-    if ($bahan->stok < $bahan->stokmin) {
-        $stokMinList[] = [
-            'kode_bahan' => $bahan->kode_bahan,
-            'nama_bahan' => $bahan->nama_bahan,
-            'satuan'     => $bahan->satuan,
-            'stok'       => $bahan->stok,
-            'stokmin'    => $bahan->stokmin,
-        ];
-    }
-}
+$stokMinList = DB::table('t_bahan')
+    ->leftJoin('t_kartupersbahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
+    ->select(
+        't_bahan.kode_bahan',
+        't_bahan.nama_bahan',
+        't_bahan.satuan',
+        't_bahan.stokmin',
+        DB::raw('COALESCE(SUM(t_kartupersbahan.masuk),0) - COALESCE(SUM(t_kartupersbahan.keluar),0) as stok')
+    )
+    ->groupBy('t_bahan.kode_bahan', 't_bahan.nama_bahan', 't_bahan.satuan', 't_bahan.stokmin')
+    ->havingRaw('stok < t_bahan.stokmin')
+    ->get()
+    ->toArray();
 return view('orderbeli.edit', compact('order', 'suppliers', 'bahans', 'details', 'stokMinList'));
 }
 

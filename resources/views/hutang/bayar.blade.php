@@ -3,7 +3,7 @@
 @section('content')
 <div class="container mt-4">
     <h4 class="mb-4">Pembayaran Utang</h4>
-    <form action="{{ route('utang.bayar.store', $hutang->no_utang) }}" method="POST" class="card p-4 shadow-sm">
+    <form action="{{ route('hutang.bayar.store', $hutang->no_utang) }}" method="POST" class="card p-4 shadow-sm">
         @csrf
 
         <div class="row mb-3">

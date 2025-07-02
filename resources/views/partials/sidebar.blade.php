@@ -4,6 +4,7 @@
    
     <ul class="nav flex-column">
         <li class="nav-item"><strong>Master</strong></li>
+        
         <li><a href="{{ route('bahan.index') }}" class="nav-link"><i class="bi bi-box"></i><span>Data Bahan</span></a></li>
         <li><a href="{{ route('produk.index') }}" class="nav-link"><i class="bi bi-cup-straw"></i><span>Data Produk</span></a></li>
         <li><a href="{{ route('supplier.index') }}" class="nav-link"><i class="bi bi-truck"></i><span>Data Supplier</span></a></li>
@@ -59,20 +60,24 @@
         </li>
 
         <li><a href="{{ route('resep.index') }}" class="nav-link"><i class="bi bi-journal"></i><span>Resep Produk</span></a></li>
-        <li><a href="{{ route('orderbeli.index') }}" class="nav-link"><i class="bi bi-bag-plus"></i><span>Order Pembelian</span></a></li>
         <li><a href="{{ route('permintaan_produksi.index') }}" class="nav-link"><i class="bi bi-clipboard-plus"></i><span>Permintaan Produksi</span></a></li>
         <li><a href="{{ route('jadwal.index') }}" class="nav-link"><i class="bi bi-calendar-event"></i><span>Jadwal Produksi</span></a></li>
+        <li><a href="{{ route('kaskeluar.index') }}" class="nav-link"><i class="bi bi-cash-stack"></i><span>Pengeluaran Kas</span></a></li>
+        <li class="mt-2 nav-item"><strong>Penyesuaian</strong></li>
         <li class="mt-2 nav-item"><strong>Laporan</strong></li>
+        
         <li>
-            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-kartustok')">
-                <i class="bi bi-cart"></i><span>Kartu Persediaan Produk</span>
-            </a>
-            <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
+    <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-kartustok')">
+        <i class="bi bi-cart"></i><span>Persediaan</span>
+    </a>
+    <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
         <li><a href="{{ route('kartustok.bahan') }}" class="nav-link">Kartu Persediaan Bahan</a></li>
         <li><a href="{{ route('kartustok.produk') }}" class="nav-link">Kartu Persediaan Produk</a></li>
-
+        <li><a href="{{ route('stokopname.create') }}" class="nav-link">Stok Opname Bahan</a></li>
+        <li><a href="{{ route('stokopname.produk') }}" class="nav-link">Stok Opname Produk</a></li>
     </ul>
 </li>
+
         <!-- Menu laporan lain ... -->
     </ul>
 </div>

@@ -6,5 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BOP extends Model
 {
-    protected $table = 't_bop'; // Ganti sesuai nama tabel di database Anda
+    protected $table = 't_bop';
+    protected $guarded = [];
+    public $timestamps = false;
 }

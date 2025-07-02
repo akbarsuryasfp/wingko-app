@@ -40,7 +40,11 @@ class HutangController extends Controller
 
     public function index()
     {
-        $hutangs = \App\Models\Hutang::all();
+        try {
+            $hutangs = \App\Models\Hutang::all();
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+        }
         return view('hutang.index', compact('hutangs'));
     }
 
@@ -58,17 +62,16 @@ class HutangController extends Controller
         $hutang = \DB::table('t_utang')->where('no_utang', $no_utang)->first();
         if (!$hutang) abort(404);
 
-        // Generate No BKK otomatis
-        $last = \DB::table('t_kaskeluar')->orderBy('no_BKK', 'desc')->first();
-        if ($last && preg_match('/BKK(\d+)/', $last->no_BKK, $m)) {
-            $next = (int)$m[1] + 1;
-        } else {
-            $next = 1;
-        }
-        $no_BKK = 'BKK' . str_pad($next, 6, '0', STR_PAD_LEFT);
-
         // Nama supplier otomatis dari kode supplier
         $nama_supplier = \DB::table('t_supplier')->where('kode_supplier', $hutang->kode_supplier)->value('nama_supplier');
+
+        // Generate nomor BKK otomatis
+        $last = \DB::table('t_jurnal_umum')
+            ->where('nomor_bukti', 'like', 'BKK%')
+            ->selectRaw('MAX(CAST(SUBSTRING(nomor_bukti, 4) AS UNSIGNED)) as max_bkk')
+            ->first();
+        $next = ($last && $last->max_bkk) ? $last->max_bkk + 1 : 1;
+        $no_BKK = 'BKK' . str_pad($next, 6, '0', STR_PAD_LEFT);
 
         return view('hutang.bayar', compact('hutang', 'no_BKK', 'nama_supplier'));
     }
@@ -80,63 +83,51 @@ class HutangController extends Controller
             'jumlah'    => 'required|numeric|min:1',
             'keterangan'=> 'nullable|string',
             'no_BKK'    => 'required|string',
-            'jenis_kas' => 'required|string',
-            'kode_akun' => 'required|string',
+            'kode_akun' => 'required|string', // akun kas yang digunakan (misal 101)
         ]);
 
         // Ambil data utang
         $utang = \DB::table('t_utang')->where('no_utang', $no_utang)->first();
         $kode_supplier = $utang->kode_supplier ?? '';
 
-        // 1. Buat id_jurnal baru
-        $lastJurnal = \DB::table('t_jurnal_umum')->orderBy('id_jurnal', 'desc')->first();
-        $id_jurnal = $lastJurnal ? $lastJurnal->id_jurnal + 1 : 1;
+        // 1. Buat no_jurnal baru
+        $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
 
-        // 2. Insert ke t_jurnal_umum
+        // 2. Buat no_jurnal_detail untuk masing-masing detail
+        $no_jurnal_detail1 = \App\Helpers\JurnalHelper::generateNoJurnalDetail();
+        $no_jurnal_detail2 = \App\Helpers\JurnalHelper::generateNoJurnalDetail();
+
+        // 3. Gabungkan keterangan: [no_referensi] | [keterangan] | [penerima]
+        $keterangan = $no_utang . ' | ' . ($request->keterangan ?? '') . ' | ' . $kode_supplier;
+
+        // 4. Insert ke t_jurnal_umum
         \DB::table('t_jurnal_umum')->insert([
-            'id_jurnal'   => $id_jurnal,
-            'tanggal'     => $request->tanggal,
-            'keterangan'  => $request->keterangan ?? 'Pembayaran utang',
-            'nomor_bukti'    => $request->no_BKK,
-        ]);
-
-        // 3. Insert ke t_kaskeluar
-        \DB::table('t_kaskeluar')->insert([
-            'id_jurnal'    => $id_jurnal,
-            'no_BKK'       => $request->no_BKK,
-            'tanggal'      => $request->tanggal,
-            'jumlah'       => $request->jumlah,
-            'no_referensi' => $no_utang,
-            'keterangan'   => $request->keterangan,
-            'penerima'     => $kode_supplier,
-            'jenis_kas'    => $request->jenis_kas,
-            'kode_akun'    => $request->kode_akun,
-        ]);
-
-        // 4. Insert ke t_jurnal_detail
-        $lastDetail = \DB::table('t_jurnal_detail')->orderBy('id_jurnal_detail', 'desc')->first();
-        $id_jurnal_detail = $lastDetail ? $lastDetail->id_jurnal_detail + 1 : 1;
-
-        // Debit kas (101), Kredit utang (201)
-        \DB::table('t_jurnal_detail')->insert([
-            'id_jurnal_detail' => $id_jurnal_detail,
-            'id_jurnal'        => $id_jurnal,
-            'id_akun'        => 1, // kas
-            'debit'            => $request->jumlah,
-            'kredit'           => 0,
+            'no_jurnal'   => $no_jurnal,
+            'tanggal'     => now()->toDateString(),
+            'keterangan'  => $keterangan,
+            'nomor_bukti' => $request->no_BKK,
         ]);
         \DB::table('t_jurnal_detail')->insert([
-            'id_jurnal_detail' => $id_jurnal_detail + 1,
-            'id_jurnal'        => $id_jurnal,
-            'id_akun'        => 1, // utang
+            'no_jurnal_detail' => $no_jurnal_detail1,
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => '101',
             'debit'            => 0,
             'kredit'           => $request->jumlah,
         ]);
+        \DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => $no_jurnal_detail2,
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => '201',
+            'debit'            => $request->jumlah,
+            'kredit'           => 0,
+        ]);
 
         // 5. Update t_utang
-        $totalBayar = \DB::table('t_kaskeluar')
-            ->where('no_referensi', $no_utang)
-            ->sum('jumlah');
+        $totalBayar = \DB::table('t_jurnal_umum as ju')
+    ->join('t_jurnal_detail as jd', 'ju.no_jurnal', '=', 'jd.no_jurnal')
+    ->where('ju.keterangan', 'like', $no_utang . ' |%')
+    ->where('jd.kode_akun', '201') // utang
+    ->sum('jd.debit');
         $sisa = $utang->total_tagihan - $totalBayar;
 
         \DB::table('t_utang')->where('no_utang', $no_utang)->update([

@@ -14,8 +14,9 @@
                 <th>Kode Jadwal</th>
                 <th>Tanggal</th>
                 <th>Keterangan</th>
-                <th>Detail Produk</th>
-                <th>Aksi</th> <!-- Tambahkan kolom aksi -->
+                <th>Status Bahan</th> <!-- Kolom baru -->
+                <th>Status</th>
+                <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -25,9 +26,17 @@
                     <td>{{ $j->tanggal_jadwal }}</td>
                     <td>{{ $j->keterangan }}</td>
                     <td>
-                        <a href="{{ route('jadwal.show', $j->kode_jadwal) }}" class="btn btn-sm btn-info">Detail</a>
+                        @if(!empty($j->ada_bahan_kurang))
+                            <span class="badge bg-danger">Bahan Kurang</span>
+                        @else
+                            <span class="badge bg-success">Cukup</span>
+                        @endif
                     </td>
                     <td>
+                        <a href="{{ route('produksi.create', ['jadwal' => $j->kode_jadwal]) }}" class="btn btn-sm btn-primary mt-1">Proses Produksi</a>
+                    </td>
+                    <td>
+                        <a href="{{ route('jadwal.show', $j->kode_jadwal) }}" class="btn btn-sm btn-info">Detail</a>
                         <form action="{{ route('jadwal.destroy', $j->kode_jadwal) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus jadwal ini?')">
                             @csrf
                             @method('DELETE')

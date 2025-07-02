@@ -55,24 +55,32 @@
                             <span class="badge bg-warning text-dark">Lanjutkan Pembayaran</span>
                         @endif
                     </td>
-                    <td>
-                        <a href="{{ route('terimabahan.show', $item->no_terima_bahan) }}" class="btn btn-info btn-sm">Detail</a>
-                        @php
-                            // Cek apakah sudah tercatat di pembelian
-                            $sudahPembelian = \DB::table('t_pembelian')
-                                ->where('no_terima_bahan', $item->no_terima_bahan)
-                                ->exists();
-                        @endphp
-                        @if(!$sudahPembelian)
-                            <a href="{{ route('terimabahan.edit', $item->no_terima_bahan) }}" class="btn btn-warning btn-sm">Edit</a>
-                            <form action="{{ route('terimabahan.destroy', $item->no_terima_bahan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
-                            </form>
-                            <a href="{{ route('pembelian.create', ['terima' => $item->no_terima_bahan]) }}" class="btn btn-success btn-sm">Pembayaran</a>
-                        @endif
-                    </td>
+<td>
+    <a href="{{ route('terimabahan.show', $item->no_terima_bahan) }}" class="btn btn-info btn-sm" title="Detail">
+        <i class="bi bi-info-circle"></i>
+    </a>
+    @php
+        // Cek apakah sudah tercatat di pembelian
+        $sudahPembelian = \DB::table('t_pembelian')
+            ->where('no_terima_bahan', $item->no_terima_bahan)
+            ->exists();
+    @endphp
+    @if(!$sudahPembelian)
+        <a href="{{ route('terimabahan.edit', $item->no_terima_bahan) }}" class="btn btn-warning btn-sm" title="Edit">
+            <i class="bi bi-pencil-square"></i>
+        </a>
+        <form action="{{ route('terimabahan.destroy', $item->no_terima_bahan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+        <a href="{{ route('pembelian.create', ['terima' => $item->no_terima_bahan]) }}" class="btn btn-success btn-sm" title="Pembayaran">
+            <i class="bi bi-cash-coin"></i>
+        </a>
+    @endif
+</td>
                 </tr>
             @empty
                 <tr>

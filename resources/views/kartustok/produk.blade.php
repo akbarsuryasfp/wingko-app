@@ -4,6 +4,12 @@
 <div class="container mt-5">
     <h4 class="mb-4">KARTU PERSEDIAAN PRODUK</h4>
 
+        <div class="mb-3">
+        <a href="{{ route('transferproduk.create') }}" class="btn btn-primary">
+            <i class="bi bi-truck"></i> Transfer/Pengiriman Produk
+        </a>
+    </div>
+    
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-4">
             <label for="kode_produk" class="form-label">Nama Produk</label>
@@ -18,13 +24,25 @@
             <label for="satuan_produk" class="form-label">Satuan</label>
             <input type="text" id="satuan_produk" name="satuan_produk" class="form-control" value="{{ $satuan ?? '' }}" readonly>
         </div>
+        <div class="col-md-4">
+            <label for="lokasi" class="form-label">Lokasi</label>
+            <select id="lokasi" name="lokasi" class="form-control" onchange="setSatuanProdukOtomatis()">
+                <option value="">-- Semua Lokasi --</option>
+                <option value="Gudang">Gudang</option>
+                <option value="Toko 1">Toko 1</option>
+                <option value="Toko 2">Toko 2</option>
+            </select>
+        </div>
     </form>
 
-    <h5 class="mb-3 mt-4">PERSEDIAAN PRODUK</h5>
+    <div id="riwayat-title-produk" class="mb-2" style="display:none;">
+        <span style="font-size:1.2em;">🔍</span>
+        <b>Riwayat Masuk dan Keluar <span id="nama-produk-title"></span></b>
+    </div>
 
     <div class="table-responsive">
-        <table id="tabel-persediaan-produk" class="table table-bordered text-center">
-            <thead class="table-light">
+        <table id="tabel-persediaan-produk" class="table table-bordered text-center align-middle">
+            <thead class="table-dark">
                 <tr>
                     <th>No</th>
                     <th>No Transaksi</th>
@@ -32,21 +50,22 @@
                     <th>Harga</th>
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
-                    <th>Saldo</th>
+                    <th>Sisa (Qty)</th>
+                    <th>HPP</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data persediaan.</td>
+                    <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
                 </tr>
             </tbody>
-            <tfoot>
-                <tr class="table-secondary">
-                    <td colspan="6" class="text-end"><strong>Saldo Qty & Harga</strong></td>
-                    <td id="tfoot-saldo-produk"></td>
-                </tr>
-            </tfoot>
         </table>
+    </div>
+
+    <div id="stok-akhir-box-produk" class="mt-4" style="display:none;">
+        <span style="font-size:1.2em;">📊</span>
+        <b>Stok Akhir <span id="nama-produk-stok"></span></b>
+        <ul id="stok-akhir-list-produk" class="mt-2"></ul>
     </div>
 </div>
 @endsection
@@ -57,72 +76,87 @@ function setSatuanProdukOtomatis() {
     var satuan = select.options[select.selectedIndex].getAttribute('data-satuan') || '';
     document.getElementById('satuan_produk').value = satuan;
 
-    var kode_produk = select.value;
-    if (kode_produk) {
-        fetch('/kartustok/api-produk/' + kode_produk)
+    // Ambil nama produk untuk judul
+    var namaProduk = select.options[select.selectedIndex].text || '';
+    document.getElementById('nama-produk-title').innerText = namaProduk;
+    document.getElementById('nama-produk-stok').innerText = namaProduk;
+
+    if (select.value) {
+        document.getElementById('riwayat-title-produk').style.display = '';
+        var lokasi = document.getElementById('lokasi').value;
+        fetch('/kartustok/api-produk/' + select.value + '?lokasi=' + encodeURIComponent(lokasi))
             .then(res => res.json())
             .then(data => {
                 let tbody = '';
-                let fifoStack = []; // Array of {qty, harga}
                 let saldoQty = 0;
-
+                let saldoPerRow = [];
+                // Akumulasi stok akhir per harga
+                let stokAkhirMap = {};
                 if (data.length === 0) {
-                    tbody = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+                    tbody = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
                 } else {
                     data.forEach(function(row, idx) {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
-                        let harga = parseFloat(row.harga);
+                        let harga = parseFloat(row.hpp) || 0; // harga = hpp
+                        let hpp = parseFloat(row.hpp) || 0;
 
-                        // Barang masuk: push ke FIFO stack
-                        if (masuk > 0) {
-                            fifoStack.push({qty: masuk, harga: harga});
-                        }
+                        // Akumulasi stok akhir per harga
+                        if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
+                        stokAkhirMap[harga].masuk += masuk;
+                        stokAkhirMap[harga].keluar += keluar;
 
-                        // Barang keluar: keluarkan dari FIFO stack
-                        let sisaKeluar = keluar;
-                        while (sisaKeluar > 0 && fifoStack.length > 0) {
-                            if (fifoStack[0].qty > sisaKeluar) {
-                                fifoStack[0].qty -= sisaKeluar;
-                                sisaKeluar = 0;
-                            } else {
-                                sisaKeluar -= fifoStack[0].qty;
-                                fifoStack.shift();
-                            }
-                        }
-
-                        // Hitung saldo qty total (akumulasi semua harga)
-                        saldoQty = fifoStack.reduce((sum, item) => sum + item.qty, 0);
+                        saldoQty += masuk - keluar;
+                        saldoPerRow.push(saldoQty);
 
                         tbody += `
                             <tr>
                                 <td>${idx + 1}</td>
                                 <td>${row.no_transaksi}</td>
-                                <td>${row.tanggal}</td>
-                                <td>${harga.toLocaleString('id-ID')}</td>
+                                <td>${formatTanggal(row.tanggal)}</td>
+                                <td>Rp${harga.toLocaleString('id-ID')}</td>
                                 <td>${masuk}</td>
                                 <td>${keluar}</td>
                                 <td>${saldoQty}</td>
+                                <td>Rp${hpp.toLocaleString('id-ID')}</td>
                             </tr>
                         `;
                     });
                 }
 
-                // Saldo akhir FIFO per harga (untuk footer)
-                let saldoAkhirMap = {};
-                fifoStack.forEach(item => {
-                    if (!saldoAkhirMap[item.harga]) saldoAkhirMap[item.harga] = 0;
-                    saldoAkhirMap[item.harga] += item.qty;
-                });
-                let saldoFooter = Object.keys(saldoAkhirMap).length === 0
-                    ? '0'
-                    : Object.entries(saldoAkhirMap).map(([h, q]) => `${q} @ Rp${parseFloat(h).toLocaleString('id-ID')}`).join('<br>');
-
                 document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
-                document.getElementById('tfoot-saldo-produk').innerHTML = saldoFooter;
+
+                // Tampilkan stok akhir per harga
+                let stokAkhirList = '';
+                let adaStok = false;
+                Object.entries(stokAkhirMap).forEach(([h, v]) => {
+                    let sisa = v.masuk - v.keluar;
+                    if (sisa > 0) {
+                        adaStok = true;
+                        stokAkhirList += `<li><b>${sisa}</b> ${satuan} dengan harga <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b>/${satuan}</li>`;
+                    }
+                });
+                if (!adaStok) stokAkhirList = `<li>0</li>`;
+
+                document.getElementById('stok-akhir-list-produk').innerHTML = stokAkhirList;
+                document.getElementById('stok-akhir-box-produk').style.display = '';
             });
     } else {
-        document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+        document.getElementById('riwayat-title-produk').style.display = 'none';
+        document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
+        document.getElementById('stok-akhir-box-produk').style.display = 'none';
     }
+}
+
+// Format tanggal ke format lokal (misal: 15 Juni 2025)
+function formatTanggal(tgl) {
+    if (!tgl) return '';
+    const bulan = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const d = new Date(tgl);
+    if (isNaN(d)) return tgl;
+    return `${d.getDate()} ${bulan[d.getMonth()]} ${d.getFullYear()}`;
 }
 </script>
