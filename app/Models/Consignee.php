@@ -16,7 +16,6 @@ class Consignee extends Model
         'kode_consignee',
         'nama_consignee',
         'alamat',
-        'no_telp',
-        'keterangan'
+        'no_telp'
     ];
 }

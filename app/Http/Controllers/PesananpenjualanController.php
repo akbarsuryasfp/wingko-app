@@ -7,13 +7,22 @@ use Illuminate\Support\Facades\DB;
 
 class PesananPenjualanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pesanan = DB::table('t_pesanan')
+        $sort = $request->get('sort', 'asc');
+        $query = DB::table('t_pesanan')
             ->leftJoin('t_pelanggan', 't_pesanan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
-            ->select('t_pesanan.*', 't_pelanggan.nama_pelanggan')
-            ->orderBy('t_pesanan.tanggal_pesanan', 'desc')
-            ->get();
+            ->select('t_pesanan.*', 't_pelanggan.nama_pelanggan');
+
+        // Tambahkan filter periode tanggal_pesanan
+        if ($request->filled('tanggal_awal')) {
+            $query->whereDate('t_pesanan.tanggal_pesanan', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->whereDate('t_pesanan.tanggal_pesanan', '<=', $request->tanggal_akhir);
+        }
+
+        $pesanan = $query->orderBy('t_pesanan.no_pesanan', $sort)->get();
 
         foreach ($pesanan as $psn) {
             $details = DB::table('t_pesanan_detail')
@@ -53,8 +62,7 @@ class PesananPenjualanController extends Controller
             'no_pesanan' => 'required|unique:t_pesanan,no_pesanan',
             'tanggal_pesanan' => 'required|date',
             'kode_pelanggan' => 'required',
-            'total' => 'required|numeric',
-            'status_pembayaran' => 'required|in:belum lunas,lunas',
+            'total_pesanan' => 'required|numeric',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
@@ -64,8 +72,7 @@ class PesananPenjualanController extends Controller
                 'no_pesanan' => $request->no_pesanan,
                 'tanggal_pesanan' => $request->tanggal_pesanan,
                 'kode_pelanggan' => $request->kode_pelanggan,
-                'total' => $request->total,
-                'status_pembayaran' => $request->status_pembayaran,
+                'total_pesanan' => $request->total_pesanan,
                 'keterangan' => $request->keterangan,
             ]);
 
@@ -127,8 +134,7 @@ class PesananPenjualanController extends Controller
         $request->validate([
             'tanggal_pesanan' => 'required|date',
             'kode_pelanggan' => 'required',
-            'total' => 'required|numeric',
-            'status_pembayaran' => 'required|in:belum lunas,lunas',
+            'total_pesanan' => 'required|numeric',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
@@ -137,8 +143,7 @@ class PesananPenjualanController extends Controller
             DB::table('t_pesanan')->where('no_pesanan', $no_pesanan)->update([
                 'tanggal_pesanan' => $request->tanggal_pesanan,
                 'kode_pelanggan' => $request->kode_pelanggan,
-                'total' => $request->total,
-                'status_pembayaran' => $request->status_pembayaran,
+                'total_pesanan' => $request->total_pesanan,
                 'keterangan' => $request->keterangan,
             ]);
 

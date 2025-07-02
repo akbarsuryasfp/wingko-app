@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -31,15 +30,9 @@
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mb-3 d-flex align-items-center">
-            <label for="keterangan" class="form-label mb-0" style="width:150px;">Keterangan</label>
-            <input type="text" class="form-control" id="keterangan" name="keterangan" value="{{ old('keterangan') }}" style="width:300px;">
-            @error('keterangan')
-                <div class="text-danger ms-2">{{ $message }}</div>
-            @enderror
-        </div>
-        <button type="submit" class="btn btn-success">Simpan</button>
-        <a href="{{ route('consignee.index') }}" class="btn btn-secondary">Kembali</a>
+        <a href="{{ route('consignee.index') }}" class="btn btn-secondary">Back</a>
+        <button type="reset" class="btn btn-warning">Reset</button>
+        <button type="submit" class="btn btn-success">Submit</button>
     </form>
 </div>
 @endsection

@@ -9,8 +9,8 @@
         <li><a href="{{ route('supplier.index') }}" class="nav-link"><i class="bi bi-truck"></i><span>Data Supplier</span></a></li>
         <li><a href="{{ route('karyawan.index') }}" class="nav-link"><i class="bi bi-people"></i><span>Data Karyawan</span></a></li>
         <li><a href="{{ route('pelanggan.index') }}" class="nav-link"><i class="bi bi-person"></i><span>Data Pelanggan</span></a></li>
-        <li><a href="{{ route('consignor.index') }}" class="nav-link"><i class="bi bi-person-badge"></i><span>Data Consignor</span></a></li>
-        <li><a href="{{ route('consignee.index') }}" class="nav-link"><i class="bi bi-person-bounding-box"></i><span>Data Consignee</span></a></li>
+        <li><a href="{{ route('consignor.index') }}" class="nav-link"><i class="bi bi-person-badge"></i><span>Data Consignor (Pemilik Barang)</span></a></li>
+        <li><a href="{{ route('consignee.index') }}" class="nav-link"><i class="bi bi-person-bounding-box"></i><span>Data Consignee (Mitra)</span></a></li>
 
         <li class="mt-2 nav-item"><strong>Transaksi</strong></li>
         <li>
@@ -41,6 +41,20 @@
             <ul id="submenu-penjualan" class="nav flex-column ms-3" style="display:none;">
                 <li><a href="{{ route('penjualan.index') }}" class="nav-link"><i class="bi bi-bag"></i><span>Penjualan</span></a></li>
                 <li><a href="{{ route('pesananpenjualan.index') }}" class="nav-link"><i class="bi bi-bag-dash"></i><span>Pesanan</span></a></li>
+                <li><a href="{{ route('piutang.index') }}" class="nav-link"><i class="bi bi-cash-stack"></i><span>Piutang</span></a></li>
+                <li><a href="{{ route('returjual.index') }}" class="nav-link"><i class="bi bi-arrow-counterclockwise"></i><span>Retur Penjualan</span></a></li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-konsinyasi')">
+                <i class="bi bi-box-arrow-in-down"></i><span>Konsinyasi Masuk</span>
+            </a>
+            <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
+                <li><a href="{{ route('konsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Konsinyasi Masuk</span></a></li>
+                <li><a href="{{ route('bayarconsignor.index') }}" class="nav-link"><i class="bi bi-credit-card-2-back"></i><span>Pembayaran ke Consignor</span></a></li>
+                <li><a href="{{ route('komisijual.index') }}" class="nav-link"><i class="bi bi-percent"></i><span>Komisi Penjualan Konsinyasi</span></a></li>
+                <li><a href="{{ route('returconsignor.index') }}" class="nav-link"><i class="bi bi-arrow-return-left"></i><span>Retur ke Consignor</span></a></li>
             </ul>
         </li>
 
