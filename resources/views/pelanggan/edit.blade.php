@@ -31,8 +31,8 @@
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <button type="submit" class="btn btn-primary">Update</button>
-        <a href="{{ route('pelanggan.index') }}" class="btn btn-secondary">Kembali</a>
+        <button type="submit" class="btn btn-success">Update</button>
+        <a href="{{ route('pelanggan.index') }}" class="btn btn-secondary">Back</a>
     </form>
 </div>
 @endsection

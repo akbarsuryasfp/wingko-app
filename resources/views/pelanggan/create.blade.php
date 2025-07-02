@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -31,8 +30,9 @@
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <button type="submit" class="btn btn-success">Simpan</button>
-        <a href="{{ route('pelanggan.index') }}" class="btn btn-secondary">Kembali</a>
+        <a href="{{ route('pelanggan.index') }}" class="btn btn-secondary">Back</a>
+        <button type="reset" class="btn btn-warning">Reset</button>
+        <button type="submit" class="btn btn-success">Submit</button>
     </form>
 </div>
 @endsection

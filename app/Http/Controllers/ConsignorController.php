@@ -9,16 +9,16 @@ class ConsignorController extends Controller
 {
     public function index()
     {
-        $consignor = Consignor::all();
+        $consignor = \App\Models\Consignor::with('produkKonsinyasi')->get();
         return view('consignor.index', compact('consignor'));
     }
 
     public function create()
     {
-        // Generate kode_consignor otomatis
+        // Generate kode_consignor otomatis dengan prefix "CR"
         $last = Consignor::orderBy('kode_consignor', 'desc')->first();
         if ($last) {
-            $lastNumber = intval(substr($last->kode_consignor, 2)); // ambil angka setelah 'CR'
+            $lastNumber = intval(substr($last->kode_consignor, 2));
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
@@ -34,17 +34,21 @@ class ConsignorController extends Controller
             'nama_consignor' => 'required',
             'alamat' => 'required',
             'no_telp' => 'required',
-            'keterangan' => 'nullable',
+            'bank' => 'required',
+            'rekening' => 'required',
+            'nama_produk' => 'required',
+            'jumlah' => 'required|numeric|min:1',
         ]);
+
+        // Gabungkan bank dan rekening
+        $rekening = $request->bank . ' ' . $request->rekening;
+
+        // Gabungkan nama produk dan jumlah
+        $keterangan = 'Produk: ' . $request->nama_produk . ', Jumlah: ' . $request->jumlah . ' unit';
 
         // Generate kode_consignor otomatis
         $last = Consignor::orderBy('kode_consignor', 'desc')->first();
-        if ($last) {
-            $lastNumber = intval(substr($last->kode_consignor, 2)); // ubah dari 1 ke 2
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        $newNumber = $last ? intval(substr($last->kode_consignor, 2)) + 1 : 1;
         $kode_consignor = 'CR' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
 
         Consignor::create([
@@ -52,16 +56,38 @@ class ConsignorController extends Controller
             'nama_consignor' => $request->nama_consignor,
             'alamat' => $request->alamat,
             'no_telp' => $request->no_telp,
-            'keterangan' => $request->keterangan,
+            'rekening' => $rekening,
+            'keterangan' => $keterangan,
         ]);
 
-        return redirect()->route('consignor.index')->with('success', 'Data consignor berhasil ditambahkan.');
+        return redirect()->route('consignor.index')->with('success', 'Data consignor berhasil disimpan!');
     }
 
     public function edit($kode_consignor)
     {
         $consignor = Consignor::findOrFail($kode_consignor);
-        return view('consignor.edit', compact('consignor'));
+
+        // Parsing rekening menjadi bank dan no rekening
+        $bank = '';
+        $no_rekening = '';
+        if ($consignor->rekening) {
+            $parts = explode(' ', $consignor->rekening, 2);
+            $bank = $parts[0] ?? '';
+            $no_rekening = $parts[1] ?? '';
+        }
+
+        // Parsing keterangan menjadi nama_produk dan jumlah
+        $nama_produk = '';
+        $jumlah = '';
+        if ($consignor->keterangan) {
+            preg_match('/Produk:\s*(.*),\s*Jumlah:\s*(\d+)\s*unit/i', $consignor->keterangan, $matches);
+            if ($matches) {
+                $nama_produk = $matches[1] ?? '';
+                $jumlah = $matches[2] ?? '';
+            }
+        }
+
+        return view('consignor.edit', compact('consignor', 'bank', 'no_rekening', 'nama_produk', 'jumlah'));
     }
 
     public function update(Request $request, $kode_consignor)
@@ -70,11 +96,26 @@ class ConsignorController extends Controller
             'nama_consignor' => 'required',
             'alamat' => 'required',
             'no_telp' => 'required',
-            'keterangan' => 'nullable',
+            'bank' => 'required',
+            'rekening' => 'required',
+            'nama_produk' => 'required',
+            'jumlah' => 'required|numeric|min:1',
         ]);
 
+        // Gabungkan bank dan rekening
+        $rekening = $request->bank . ' ' . $request->rekening;
+
+        // Gabungkan nama produk dan jumlah
+        $keterangan = 'Produk: ' . $request->nama_produk . ', Jumlah: ' . $request->jumlah . ' unit';
+
         $consignor = Consignor::findOrFail($kode_consignor);
-        $consignor->update($request->all());
+        $consignor->update([
+            'nama_consignor' => $request->nama_consignor,
+            'alamat' => $request->alamat,
+            'no_telp' => $request->no_telp,
+            'rekening' => $rekening,
+            'keterangan' => $keterangan,
+        ]);
 
         return redirect()->route('consignor.index')->with('success', 'Data consignor berhasil diupdate.');
     }
