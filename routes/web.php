@@ -67,11 +67,13 @@ Route::resource('consignor', ConsignorController::class);
 Route::resource('consignee', ConsigneeController::class);
 
 // Route terima bahan
+Route::get('/terimabahan/laporan', [TerimabahanController::class, 'laporan'])->name('terimabahan.laporan');
 Route::resource('terimabahan', TerimabahanController::class);
 Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimabahanController::class, 'getSisaOrder']);
 Route::get('/terimabahan/{id}/edit', [TerimabahanController::class, 'edit'])->name('terimabahan.edit');
 Route::get('/terimabahan/{no_terima_bahan}/detail', [PembelianController::class, 'detailTerimaBahan']);
 Route::get('/terimabahan/{no_terima_bahan}/data', [PembelianController::class, 'getTerimaBahan']);
+
 
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
@@ -96,14 +98,14 @@ Route::get('/pembelian/{no_pembelian}/detail-json', [\App\Http\Controllers\Pembe
 Route::resource('pembelian', PembelianController::class);
 
 // Route retur pembelian
+Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
 Route::resource('returbeli', ReturBeliController::class);
 Route::get('/returbeli/create', [ReturBeliController::class, 'create'])->name('returbeli.create');
 Route::post('/returbeli/store', [ReturBeliController::class, 'store'])->name('returbeli.store');
 Route::get('/returbeli/detail-pembelian/{no_pembelian}', [ReturBeliController::class, 'getDetailPembelian']);
 Route::get('/returbeli/cetak/{no_retur_beli}', [ReturBeliController::class, 'cetak'])->name('returbeli.cetak');
 Route::get('/returbeli/laporan', [ReturBeliController::class, 'laporan'])->name('returbeli.laporan');
-Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
-   
+
 // Route permintaan produksi
 Route::get('/permintaan-produksi', [PermintaanProduksiController::class, 'index'])->name('permintaan_produksi.index');
 Route::get('/permintaan-produksi/create', [PermintaanProduksiController::class, 'create'])->name('permintaan_produksi.create');
@@ -150,6 +152,8 @@ Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kar
 Route::get('/kartustok/api/{kode_bahan}', [KartuStokController::class, 'getKartuPersBahan']);
 Route::get('/kartustok/produk', [KartuStokController::class, 'produk'])->name('kartustok.produk');
 Route::get('/kartustok/api-produk/{kode_produk}', [KartuStokController::class, 'getKartuPersProduk']);
+Route::get('/kartustok/laporan-bahan', [KartuStokController::class, 'laporanBahan'])->name('kartustok.laporan_bahan');
+Route::get('/kartustok/laporan-produk', [KartuStokController::class, 'laporanProduk'])->name('kartustok.laporan_produk');
 
 // Route kas keluar
 Route::resource('kaskeluar', KaskeluarController::class);

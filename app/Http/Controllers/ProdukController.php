@@ -19,7 +19,11 @@ class ProdukController extends Controller
             $query->where('kode_kategori', $request->kode_kategori);
         }
         $produk = $query->get();
-
+        if ($request->filled('search')) {
+            $produk = $produk->filter(function ($item) use ($request) {
+                return str_contains(strtolower($item->nama_produk), strtolower($request->search));
+            });
+        }
         return view('produk.index', compact('produk', 'kategoriList'));
     }
 

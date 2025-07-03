@@ -41,7 +41,7 @@ class PembelianController extends Controller
     {
         // Ambil kode pembelian terakhir
         $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
-        if ($last && preg_match('/P(\d+)/', $last->no_pembelian, $match)) {
+        if ($last && preg_match('/PBL(\d+)/', $last->no_pembelian, $match)) {
             $nextNumber = (int)$match[1] + 1;
         } else {
             $nextNumber = 1;

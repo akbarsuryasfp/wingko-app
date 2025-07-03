@@ -19,7 +19,10 @@
             <span class="mb-0">s.d.</span>
             <input type="date" name="tanggal_selesai" value="{{ $tanggal_selesai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
 
-            <a href="{{ route('returbeli.laporan.pdf', request()->all()) }}"
+            <a href="{{ route('returbeli.laporan.pdf', [
+                    'tanggal_mulai' => $tanggal_mulai,
+                    'tanggal_selesai' => $tanggal_selesai
+                ]) }}"
                class="btn btn-success btn-sm d-flex align-items-center ms-2"
                target="_blank">
                 <i class="bi bi-file-earmark-pdf me-1"></i> Cetak PDF

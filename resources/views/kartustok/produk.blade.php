@@ -8,6 +8,9 @@
         <a href="{{ route('transferproduk.create') }}" class="btn btn-primary">
             <i class="bi bi-truck"></i> Transfer/Pengiriman Produk
         </a>
+        <a href="{{ route('kartustok.laporan_produk') }}" class="btn btn-primary mb-3">
+            Laporan Stok Akhir Produk
+        </a>
     </div>
     
     <form method="GET" class="row g-3 mb-4">

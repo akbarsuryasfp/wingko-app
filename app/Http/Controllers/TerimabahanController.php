@@ -5,32 +5,41 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\TerimaBahan;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TerimaBahanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $terimabahan = \DB::table('t_terimabahan')
+        $query = \DB::table('t_terimabahan')
             ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
-            ->leftJoin('t_pembelian', 't_terimabahan.no_pembelian', '=', 't_pembelian.no_pembelian')
-            ->leftJoin('t_order_beli', 't_terimabahan.no_order_beli', '=', 't_order_beli.no_order_beli')
             ->select(
                 't_terimabahan.*',
-                't_supplier.nama_supplier',
-                't_pembelian.no_pembelian',
-                't_order_beli.no_order_beli',
-                't_order_beli.status as status_order',
-                't_terimabahan.status as status_penerimaan'
-            )
-            ->orderBy('t_terimabahan.no_terima_bahan', 'asc')
-            ->get();
+                't_supplier.nama_supplier'
+            );
 
-        // Ambil detail untuk setiap penerimaan (jika perlu)
+        // Filter search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('t_terimabahan.no_terima_bahan', 'like', "%$search%")
+                  ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+            });
+        }
+
+        // Filter tanggal
+        $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+        $query->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
+
+        $terimabahan = $query->orderByDesc('t_terimabahan.tanggal_terima')->get();
+
+        // Ambil detail bahan untuk setiap terima bahan (jika perlu)
         foreach ($terimabahan as $item) {
             $item->details = \DB::table('t_terimab_detail')
-                ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-                ->where('t_terimab_detail.no_terima_bahan', $item->no_terima_bahan)
+                ->leftJoin('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
                 ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
+                ->where('no_terima_bahan', $item->no_terima_bahan)
                 ->get();
         }
 
@@ -439,5 +448,49 @@ $terimaBahan->details = $details;
         }
 
         return redirect()->route('terimabahan.index')->with('success', 'Data penerimaan bahan berhasil dihapus.');
+    }
+
+    // Untuk tombol laporan (misal PDF/Excel)
+    public function laporan(Request $request)
+    {
+        $query = \DB::table('t_terimabahan')
+            ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
+            ->select(
+                't_terimabahan.*',
+                't_supplier.nama_supplier'
+            );
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('t_terimabahan.no_terima_bahan', 'like', "%$search%")
+                  ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+            });
+        }
+
+        $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+        $query->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
+
+        $terimabahan = $query->orderByDesc('t_terimabahan.tanggal_terima')->get();
+
+        // Ambil semua detail sekaligus, lalu kelompokkan per no_terima_bahan
+        $allDetails = \DB::table('t_terimab_detail')
+            ->leftJoin('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+            ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
+            ->whereIn('no_terima_bahan', $terimabahan->pluck('no_terima_bahan')->map(fn($v) => trim((string)$v)))
+            ->get()
+            ->groupBy(function($item) {
+                return trim((string)$item->no_terima_bahan);
+            });
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('terimabahan.laporan', [
+            'terimabahan' => $terimabahan,
+            'details' => $allDetails,
+            'tanggal_mulai' => $tanggal_mulai,
+            'tanggal_selesai' => $tanggal_selesai,
+        ])->setPaper('A4', 'landscape');
+
+        return $pdf->stream('laporan_penerimaan_bahan.pdf');
     }
 }

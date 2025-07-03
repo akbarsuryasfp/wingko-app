@@ -2,7 +2,12 @@
 
 @section('content')
 <div class="container mt-5">
-    <h4 class="mb-4">KARTU PERSEDIAAN BAHAN</h4>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">KARTU PERSEDIAAN BAHAN</h4>
+        <a href="{{ route('kartustok.laporan_bahan') }}" class="btn btn-success btn-sm">
+            <i class="bi bi-file-earmark-text"></i> Laporan Persediaan Bahan
+        </a>
+    </div>
 
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-4">

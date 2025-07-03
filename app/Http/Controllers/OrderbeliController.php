@@ -58,7 +58,7 @@ class OrderBeliController extends Controller
         }
 
         if (!$order->status) {
-            $order->status_penerimaan = 'Baru';
+            $order->status_penerimaan = 'Menunggu Persetujuan';
         } elseif ($order->status == 'Disetujui') {
             if (!$adaYangMasuk) {
                 $order->status_penerimaan = 'Disetujui';

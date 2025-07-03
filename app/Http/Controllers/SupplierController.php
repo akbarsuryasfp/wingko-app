@@ -7,9 +7,16 @@ use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $supplier = Supplier::all();
+        $search = $request->search;
+        if ($search) {
+            $supplier = Supplier::where('nama_supplier', 'like', "%{$search}%")
+                ->orWhere('kode_supplier', 'like', "%{$search}%")
+                ->get();
+        } else {
+            $supplier = Supplier::all();
+        }
         return view('supplier.index', compact('supplier'));
     }
 
