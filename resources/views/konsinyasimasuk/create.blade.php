@@ -97,100 +97,25 @@
     </form>
 </div>
 
+
 <script>
-    let daftarProdukTitip = [];
+const allProdukKonsinyasi = @json($produkKonsinyasi);
 
-    function tambahProdukTitip() {
-        const produkSelect = document.getElementById('kode_produk');
-        const kode_produk = produkSelect.value;
-        const nama_produk = produkSelect.options[produkSelect.selectedIndex]?.dataset.nama || '';
-        const jumlah_stok = Number(document.getElementById('jumlah_stok').value);
-        const harga_titip = Number(document.getElementById('harga_titip').value);
+document.querySelector('select[name="kode_consignor"]').addEventListener('change', function() {
+    const consignor = this.value;
+    const produkSelect = document.getElementById('kode_produk');
+    produkSelect.innerHTML = '<option value="">---Pilih Produk---</option>'; // reset
 
-        if (!kode_produk || isNaN(jumlah_stok) || isNaN(harga_titip) || jumlah_stok <= 0 || harga_titip <= 0) {
-            alert("Silakan lengkapi data produk titip dengan benar.");
-            return;
-        }
-
-        const subtotal = jumlah_stok * harga_titip;
-
-        daftarProdukTitip.push({ kode_produk, nama_produk, jumlah_stok, harga_titip, subtotal });
-        updateTabelTitip();
-
-        produkSelect.selectedIndex = 0;
-        document.getElementById('jumlah_stok').value = '';
-        document.getElementById('harga_titip').value = '';
-    }
-
-    function hapusBarisTitip(index) {
-        daftarProdukTitip.splice(index, 1);
-        updateTabelTitip();
-    }
-
-    function formatRupiah(angka) {
-        return angka.toLocaleString('id-ID');
-    }
-
-    function updateTabelTitip() {
-        const tbody = document.querySelector('#daftar-produk-titip tbody');
-        tbody.innerHTML = '';
-
-        let totalTitip = 0;
-
-        daftarProdukTitip.forEach((item, index) => {
-            const subtotal = Number(item.subtotal) || 0;
-            totalTitip += subtotal;
-
-            const row = `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.nama_produk}</td>
-                    <td>${item.jumlah_stok}</td>
-                    <td>${formatRupiah(item.harga_titip)}</td>
-                    <td>${formatRupiah(subtotal)}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisTitip(${index})">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            tbody.insertAdjacentHTML('beforeend', row);
+    if (consignor) {
+        // Filter produk sesuai consignor
+        const produkFiltered = allProdukKonsinyasi.filter(p => p.kode_consignor === consignor);
+        produkFiltered.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.kode_produk;
+            opt.textContent = p.nama_produk;
+            produkSelect.appendChild(opt);
         });
-
-        document.getElementById('total_titip_view').value = formatRupiah(totalTitip);
-        document.getElementById('total_titip').value = totalTitip;
-        document.getElementById('detail_json').value = JSON.stringify(daftarProdukTitip);
     }
-
-    updateTabelTitip();
-
-    document.querySelector('form').addEventListener('submit', function(e) {
-        if (daftarProdukTitip.length === 0) {
-            alert('Minimal 1 produk titip harus ditambahkan!');
-            e.preventDefault();
-            return false;
-        }
-        document.getElementById('total_titip').value = daftarProdukTitip.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
-    });
-
-    document.querySelector('select[name="kode_consignor"]').addEventListener('change', function() {
-        const kodeConsignor = this.value;
-        const produkSelect = document.getElementById('kode_produk');
-        produkSelect.innerHTML = '<option value="">---Pilih Produk---</option>';
-        if (!kodeConsignor) return;
-
-        fetch(`/produk-konsinyasi/by-consignor/${kodeConsignor}`)
-            .then(res => res.json())
-            .then(data => {
-                data.forEach(pr => {
-                    const option = document.createElement('option');
-                    option.value = pr.kode_produk;
-                    option.textContent = pr.nama_produk;
-                    option.dataset.nama = pr.nama_produk;
-                    produkSelect.appendChild(option);
-                });
-            });
-    });
+});
 </script>
 @endsection

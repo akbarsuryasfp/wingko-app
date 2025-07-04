@@ -28,10 +28,13 @@ use App\Http\Controllers\PiutangController;
 use App\Http\Controllers\StokOpnameController;
 use App\Http\Controllers\PenyesuaianBarangController;
 use App\Http\Controllers\TransferProdukController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\JurnalController;
 
 Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+    $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
+    return view('welcome', compact('reminder'));
+})->middleware('auth');
 
 // Route login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -189,6 +192,7 @@ Route::get('/returconsignor', [App\Http\Controllers\ReturConsignorController::cl
 Route::get('/produk-konsinyasi/create', [\App\Http\Controllers\ProdukKonsinyasiController::class, 'create'])->name('produk-konsinyasi.create');
 Route::resource('produk-konsinyasi', \App\Http\Controllers\ProdukKonsinyasiController::class);
 Route::get('/produk-konsinyasi/by-consignor/{kode_consignor}', [ProdukKonsinyasiController::class, 'getByConsignor']);
+Route::get('/produk-konsinyasi/{kode_consignor}', [KonsinyasiMasukController::class, 'getProdukByConsignor']);
 
 // Route stok opname
 Route::get('/stokopname/bahan', [StokOpnameController::class, 'create'])->name('stokopname.create');
@@ -215,3 +219,7 @@ Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'creat
 // Route transfer produk
 Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
 Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])->name('transferproduk.store');
+
+// Route jurnal
+Route::get('/jurnal', [JurnalController::class, 'index'])->name('jurnal.index');
+Route::get('/buku-besar', [JurnalController::class, 'bukuBesar'])->name('jurnal.buku_besar');

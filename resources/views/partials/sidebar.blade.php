@@ -31,7 +31,7 @@
                 <i class="bi bi-gear"></i><span>Produksi</span>
             </a>
             <ul id="submenu-produksi" class="nav flex-column ms-3" style="display:none;">
-                <li><a href="#" class="nav-link"><i class="bi bi-hammer"></i><span>Produksi</span></a></li>
+                <li><a href="{{ route('produksi.index') }}" class="nav-link"><i class="bi bi-goods"></i><span>Produksi</span></a></li>
                 <li><a href="{{ route('hpp.index') }}" class="nav-link"><i class="bi bi-calculator"></i><span>HPP</span></a></li>
             </ul>
         </li>
@@ -65,8 +65,20 @@
         <li><a href="{{ route('kaskeluar.index') }}" class="nav-link"><i class="bi bi-cash-stack"></i><span>Pengeluaran Kas</span></a></li>
         <li class="mt-2 nav-item"><strong>Penyesuaian</strong></li>
         <li class="mt-2 nav-item"><strong>Laporan</strong></li>
-        
+
         <li>
+    <a href="{{ route('jurnal.index') }}" class="nav-link">
+        <i class="bi bi-journal-bookmark"></i>
+        <span>Jurnal Umum</span>
+    </a>
+</li>
+<li>
+    <a href="{{ route('jurnal.buku_besar') }}" class="nav-link">
+        <i class="bi bi-book"></i>
+        <span>Buku Besar</span>
+    </a>
+</li>
+<li>
     <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-kartustok')">
         <i class="bi bi-cart"></i><span>Persediaan</span>
     </a>

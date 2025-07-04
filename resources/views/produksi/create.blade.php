@@ -37,6 +37,7 @@
                     <th>Produk</th>
                     <th>Jumlah Direncanakan</th>
                     <th>Jumlah Aktual</th>
+                    <th>Harga Per Unit</th> <!-- Tambah kolom -->
                     <th>Expired</th>
                 </tr>
             </thead>
@@ -64,6 +65,15 @@
         const expiredStr = expiredDate.toISOString().split('T')[0];
 
         data.details.forEach(detail => {
+            // Tentukan harga default
+            let hargaDefault = 0;
+            const nama = detail.produk.nama_produk.toLowerCase();
+            if (nama.includes('moaci')) {
+                hargaDefault = 25000;
+            } else if (nama.includes('wingko')) {
+                hargaDefault = 20000;
+            }
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
@@ -75,8 +85,12 @@
                     <input type="number" name="produk[${index}][jumlah_unit]" value="${detail.jumlah}" class="form-control" required min="1">
                 </td>
                 <td>
+                    <input type="number" name="produk[${index}][harga_per_unit]" class="form-control" value="${hargaDefault}" min="0" required>
+                </td>
+                <td>
                     <input type="date" name="produk[${index}][tanggal_expired]" class="form-control" value="${expiredStr}" required>
                 </td>
+                
             `;
             tbody.appendChild(tr);
             index++;

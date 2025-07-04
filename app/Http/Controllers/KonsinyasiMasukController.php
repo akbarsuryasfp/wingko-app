@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\KonsinyasiMasuk;
+use App\Models\ProdukKonsinyasi; // Pastikan model ini ada
+use App\Models\Consignor; // Tambahkan use statement untuk model Consignor
 
 class KonsinyasiMasukController extends Controller
 {
@@ -16,11 +18,11 @@ class KonsinyasiMasukController extends Controller
 
     public function create()
     {
+        $consignor = Consignor::all();
+        $produkKonsinyasi = ProdukKonsinyasi::all(); // ambil semua produk
         $last = DB::table('t_konsinyasimasuk')->orderBy('no_surattitipjual', 'desc')->first();
         $no_surattitipjual = $last ? 'KTJ' . str_pad(intval(substr($last->no_surattitipjual, 3)) + 1, 6, '0', STR_PAD_LEFT) : 'KTJ000001';
-        $consignor = DB::table('t_consignor')->get();
-        $produk = DB::table('t_produk')->get();
-        return view('konsinyasimasuk.create', compact('no_surattitipjual', 'consignor', 'produk'));
+        return view('konsinyasimasuk.create', compact('consignor', 'produkKonsinyasi', 'no_surattitipjual'));
     }
 
     public function store(Request $request)
@@ -71,6 +73,12 @@ class KonsinyasiMasukController extends Controller
             )
             ->get();
         return view('konsinyasimasuk.detail', compact('konsinyasi', 'details'));
+    }
+
+    public function getProdukByConsignor($kode_consignor)
+    {
+        $produk = ProdukKonsinyasi::where('kode_consignor', $kode_consignor)->get();
+        return response()->json($produk);
     }
 
     // Tambahkan edit, update, destroy sesuai kebutuhan

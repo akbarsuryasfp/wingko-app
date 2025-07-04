@@ -45,6 +45,7 @@ class ProduksiController extends Controller
                 $kode_produk = $produk['kode_produk'];
                 $jumlah_unit = $produk['jumlah_unit'];
                 $tanggal_expired = $produk['tanggal_expired'];
+                $harga_per_unit = $produk['harga_per_unit']; // Ambil harga dari input
 
                 DB::table('t_produksi_detail')->insert([
                     'no_detail_produksi' => $no_detail_produksi,
@@ -52,6 +53,21 @@ class ProduksiController extends Controller
                     'kode_produk' => $kode_produk,
                     'jumlah_unit' => $jumlah_unit,
                     'tanggal_expired' => $tanggal_expired,
+                    //'harga_per_unit' => $harga_per_unit, // Pastikan kolom ini ada
+                ]);
+
+                // Tambahkan ke kartu stok produk (produk jadi masuk)
+                DB::table('t_kartupersproduk')->insert([
+                    'no_transaksi' => $no_detail_produksi, // Ubah dari $kode ke $no_detail_produksi
+                    'tanggal' => $request->tanggal_produksi,
+                    'kode_produk' => $kode_produk,
+                    'masuk' => $jumlah_unit,
+                    'keluar' => 0,
+                    'harga' => $harga_per_unit,
+                    'satuan' => null,
+                    'keterangan' => 'Hasil produksi ' . $kode,
+                    'tanggal_expired' => $tanggal_exp,
+
                 ]);
             }
 
@@ -209,12 +225,17 @@ class ProduksiController extends Controller
                 ->where('no_produksi', $no_produksi)
                 ->pluck('no_detail_produksi');
 
-            // 1. Ambil detail bahan yang sudah dipakai (FIFO)
+            // Hapus data HPP terkait
+            DB::table('t_hpp_per_produk')->whereIn('no_detail_produksi', $no_detail_list)->delete();
+            DB::table('t_hpp_bahan_baku_detail')->whereIn('no_detail_produksi', $no_detail_list)->delete();
+            DB::table('t_hpp_overhead_detail')->whereIn('no_detail_produksi', $no_detail_list)->delete();
+            DB::table('t_hpp_tenaga_kerja_detail')->whereIn('no_detail_produksi', $no_detail_list)->delete();
+
+            // Hapus detail bahan yang sudah dipakai (FIFO)
             $bahanPakai = DB::table('t_produksi_bahan')
                 ->whereIn('no_detail_produksi', $no_detail_list)
                 ->get();
             foreach ($bahanPakai as $b) {
-                // Hapus mutasi keluar di kartu stok bahan
                 DB::table('t_kartupersbahan')
                     ->where('no_transaksi', $no_produksi)
                     ->where('kode_bahan', $b->kode_bahan)
@@ -222,26 +243,23 @@ class ProduksiController extends Controller
                     ->where('harga', $b->harga)
                     ->delete();
             }
-            // Hapus detail pemakaian bahan
             DB::table('t_produksi_bahan')->whereIn('no_detail_produksi', $no_detail_list)->delete();
 
-            // 2. Ambil detail produk yang sudah masuk stok
+            // Hapus detail produk yang sudah masuk stok
             $produkDetail = DB::table('t_produksi_detail')->where('no_produksi', $no_produksi)->get();
             foreach ($produkDetail as $d) {
-                // Hapus mutasi masuk di kartu stok produk
                 DB::table('t_kartupersproduk')
                     ->where('no_transaksi', $no_produksi)
                     ->where('kode_produk', $d->kode_produk)
                     ->where('masuk', $d->jumlah_unit)
                     ->delete();
             }
-            // Hapus detail produk
             DB::table('t_produksi_detail')->where('no_produksi', $no_produksi)->delete();
 
-            // 3. Hapus data produksi utama
+            // Hapus data produksi utama
             DB::table('t_produksi')->where('no_produksi', $no_produksi)->delete();
         });
 
-        return redirect()->route('produksi.index')->with('success', 'Produksi berhasil dibatalkan dan stok dikembalikan.');
+        return redirect()->route('produksi.index')->with('success', 'Produksi dan seluruh data terkait berhasil dihapus.');
     }
 }

@@ -25,12 +25,14 @@
                     <td>{{ $p->tanggal_produksi }}</td>
                     <td>{{ $p->keterangan }}</td>
                     <td>
+                        {{-- 
                         <button class="btn btn-sm btn-primary"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#detail-{{ $p->no_produksi }}">
                             Lihat
                         </button>
+                        --}}
                         <a href="{{ route('produksi.show', $p->no_produksi) }}"
                            class="btn btn-sm btn-info mt-1">
                             Detail Lengkap
@@ -55,6 +57,7 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                {{-- 
                                 @foreach ($p->details as $d)
                                     <tr>
                                         <td>{{ $d->produk->nama_produk ?? $d->kode_produk }}</td>
@@ -62,6 +65,7 @@
                                         <td>{{ $d->tanggal_expired }}</td>
                                     </tr>
                                 @endforeach
+                                --}}
                             </tbody>
                         </table>
                     </td>
