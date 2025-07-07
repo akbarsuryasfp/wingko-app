@@ -30,8 +30,8 @@ public function store(Request $request)
         'kode_resep' => 'required|unique:t_resep,kode_resep',
         'kode_produk' => 'required|exists:t_produk,kode_produk',
         'bahan.*.kode_bahan' => 'required|exists:t_bahan,kode_bahan',
-        'bahan.*.jumlah_kebutuhan' => 'required|numeric|min:0.01',
-        'bahan.*.satuan' => 'required|string'
+        'bahan.*.satuan' => 'required|string',
+        'bahan.*.jumlah_kebutuhan' => 'required|numeric|min:0',
     ]);
 
     DB::transaction(function () use ($request) {

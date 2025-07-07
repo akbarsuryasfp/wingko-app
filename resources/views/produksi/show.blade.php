@@ -48,7 +48,7 @@
                 @foreach ($produk['detail'] as $b)
                     <tr>
                         <td>{{ $b->nama_bahan }}</td>
-                        <td>{{ number_format($b->jumlah, 2) }}</td>
+                        <td>{{ number_format($b->jumlah, 3, ',', '.') }}</td>
                         <td>{{ $b->satuan }}</td>
                         <td>{{ number_format($b->harga, 2) }}</td>
                         <td>{{ number_format($b->total_harga, 2) }}</td>

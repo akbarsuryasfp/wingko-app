@@ -18,10 +18,10 @@
         </div>
 
         <hr>
-        <h5>Pilih Permintaan Produksi</h5>
+        <h5>Pilih Pesanan / Permintaan Produksi</h5>
        <!-- Tombol -->
 <button type="button" class="btn btn-secondary mb-3" data-bs-toggle="modal" data-bs-target="#permintaanModal">
-    + Tambah Permintaan Produksi
+    + Tambah Produksi
 </button>
 
 <!-- Modal -->
@@ -29,35 +29,74 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
         <div class="modal-header">
-            <h5 class="modal-title" id="permintaanModalLabel">Pilih Permintaan Produksi</h5>
+            <h5 class="modal-title" id="permintaanModalLabel">Pilih Permintaan / Pesanan Penjualan</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Kode</th>
-                        <th>Tanggal</th>
-                        <th>Keterangan</th>
-                        <th>Pilih</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($permintaan as $p)
-                    <tr>
-                        <td>{{ $p->kode_permintaan_produksi }}</td>
-                        <td>{{ $p->tanggal }}</td>
-                        <td>{{ $p->keterangan }}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-primary"
-                                onclick='tambahPermintaan({!! json_encode($p) !!})' data-bs-dismiss="modal">
-                                Pilih
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            <ul class="nav nav-tabs" id="tabJadwal" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="permintaan-tab" data-bs-toggle="tab" data-bs-target="#permintaan" type="button" role="tab">Permintaan Produksi</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pesanan-tab" data-bs-toggle="tab" data-bs-target="#pesanan" type="button" role="tab">Pesanan Penjualan</button>
+                </li>
+            </ul>
+            <div class="tab-content mt-3">
+                <div class="tab-pane fade show active" id="permintaan" role="tabpanel">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Kode</th>
+                                <th>Tanggal</th>
+                                <th>Keterangan</th>
+                                <th>Pilih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($permintaan as $p)
+                            <tr>
+                                <td>{{ $p->kode_permintaan_produksi }}</td>
+                                <td>{{ $p->tanggal }}</td>
+                                <td>{{ $p->keterangan }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        onclick='tambahPermintaan(@json($p->load("details.produk")), "permintaan")' data-bs-dismiss="modal">
+                                        Pilih
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tab-pane fade" id="pesanan" role="tabpanel">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Kode</th>
+                                <th>Tanggal</th>
+                                <th>Pelanggan</th>
+                                <th>Pilih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($pesanan as $ps)
+                            <tr>
+                                <td>{{ $ps->no_pesanan ?? $ps->kode_pesanan }}</td>
+                                <td>{{ $ps->tanggal_pesanan ?? $ps->tanggal }}</td>
+                                <td>{{ $ps->pelanggan->nama_pelanggan ?? '-' }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        onclick='tambahPermintaan(@json($ps->load("details.produk")), "pesanan")' data-bs-dismiss="modal">
+                                        Pilih
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
   </div>
@@ -78,40 +117,49 @@
 let produkIndex = 0;
 let added = {};
 
-function tambahPermintaan(data) {
-    if (added[data.kode_permintaan_produksi]) return;
+function tambahPermintaan(data, type) {
+    let kodeSumber = type === "permintaan" ? data.kode_permintaan_produksi : data.no_pesanan || data.kode_pesanan;
 
-    data.details.forEach(detail => {
+    let details = data.details || [];
+    details.forEach(detail => {
+        let uniqueKey = kodeSumber + '-' + detail.kode_produk;
+        if (added[uniqueKey]) return;
+
+        // Pastikan nama produk dan jumlah terbaca
+        const namaProduk = detail.produk && detail.produk.nama_produk ? detail.produk.nama_produk : 'undefined';
+        const jumlah = detail.jumlah ?? detail.unit ?? 0;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>
-                ${detail.produk.nama_produk}
+                ${namaProduk}
                 <input type="hidden" name="produk[${produkIndex}][kode_produk]" value="${detail.kode_produk}">
             </td>
             <td>
-                ${detail.unit}
-                <input type="hidden" name="produk[${produkIndex}][jumlah]" value="${detail.unit}">
+                ${jumlah}
+                <input type="hidden" name="produk[${produkIndex}][jumlah]" value="${jumlah}">
             </td>
             <td>
-                ${data.kode_permintaan_produksi}
-                <input type="hidden" name="produk[${produkIndex}][kode_sumber]" value="${data.kode_permintaan_produksi}">
+                ${kodeSumber}
+                <input type="hidden" name="produk[${produkIndex}][kode_sumber]" value="${kodeSumber}">
+                <input type="hidden" name="produk[${produkIndex}][tipe_sumber]" value="${type}">
             </td>
             <td>
-                <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">Hapus</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '${uniqueKey}')">Hapus</button>
             </td>
         `;
         document.querySelector('#produk-table tbody').appendChild(tr);
+        added[uniqueKey] = true;
         produkIndex++;
     });
-
-    added[data.kode_permintaan_produksi] = true;
 }
 
-function hapusBaris(el) {
+function hapusBaris(el, uniqueKey) {
     const row = el.closest('tr');
-    const kodeSumber = row.querySelector('input[name$="[kode_sumber]"]').value;
     row.remove();
-    delete added[kodeSumber];
+    if (uniqueKey) {
+        delete added[uniqueKey];
+    }
 }
 </script>
 
@@ -168,4 +216,12 @@ function hapusBaris(el) {
         delete added[kodeSumber];
     }
 </script>
+
+@if(isset($selectedPermintaan) && $selectedPermintaan)
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    tambahPermintaan(@json($selectedPermintaan));
+});
+</script>
+@endif
 @endsection

@@ -7,7 +7,9 @@
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
-
+<a href="{{ route('jadwal_.create') }}" class="btn btn-primary mb-3 ms-2">
+        + Buat Jadwal Produksi
+    </a>
     <table class="table table-bordered table-hover">
         <thead class="table-dark">
             <tr>

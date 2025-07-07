@@ -177,20 +177,23 @@ $tanggal_exp = DB::table('t_terimab_detail')
 
             $sisa_utang = DB::table('t_utang')->where('no_pembelian', $request->kode_pembelian)->value('sisa_utang');
             $status = ($sisa_utang > 0) ? 'Hutang' : 'Lunas';
-            $akun_debit = ($status === 'Hutang') ? '201' : '101';
+            $kode_akun_debit = $status === 'Hutang'
+                ? JurnalHelper::getKodeAkun('utang_usaha')
+                : JurnalHelper::getKodeAkun('kas_bank');
+            $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
             DB::table('t_jurnal_detail')->insert([
                 [
                     'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                     'no_jurnal'        => $no_jurnal,
-                    'kode_akun'        => $akun_debit,
+                    'kode_akun'        => $kode_akun_debit,
                     'debit'            => $total_retur,
                     'kredit'           => 0,
                 ],
                 [
                     'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                     'no_jurnal'        => $no_jurnal,
-                    'kode_akun'        => '103',
+                    'kode_akun'        => $kode_akun_persediaan,
                     'debit'            => 0,
                     'kredit'           => $total_retur,
                 ],
@@ -366,23 +369,26 @@ $tanggal_exp = DB::table('t_terimab_detail')
 
         $sisa_utang = DB::table('t_utang')->where('no_pembelian', $request->kode_pembelian)->value('sisa_utang');
         $status = ($sisa_utang > 0) ? 'Hutang' : 'Lunas';
-        $akun_debit = ($status === 'Hutang') ? '201' : '101';
+        $kode_akun_debit = $status === 'Hutang'
+            ? JurnalHelper::getKodeAkun('utang_usaha')
+            : JurnalHelper::getKodeAkun('kas_bank');
+        $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
         DB::table('t_jurnal_detail')->insert([
             [
                 'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                 'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => $akun_debit,
+                'kode_akun'        => $kode_akun_debit,
                 'debit'            => $total_retur,
-                'kredit'          => 0,
-        ],
+                'kredit'           => 0,
+            ],
             [
                 'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                 'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => '103', // Persediaan Bahan (pastikan '103' ada di t_akun)
+                'kode_akun'        => $kode_akun_persediaan,
                 'debit'            => 0,
                 'kredit'           => $total_retur,
-            ], 
+            ],
         ]);
     }
 
