@@ -170,6 +170,7 @@ class HppController extends Controller
             'tanggal_input' => now(),
         ]);
 
+        // Catat jurnal menggunakan mapping dari JurnalHelper
         JurnalHelper::catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead);
 
         return redirect()->route('hpp.index')->with('success', 'Data HPP berhasil disimpan!');
@@ -260,7 +261,7 @@ class HppController extends Controller
             $jurnal->delete();
         }
 
-        // Buat jurnal baru
+        // Catat jurnal baru menggunakan mapping dari JurnalHelper
         JurnalHelper::catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead);
 
         return redirect()->route('hpp.index')->with('success', 'Data HPP berhasil diupdate!');

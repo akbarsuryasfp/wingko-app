@@ -34,7 +34,6 @@ class ConsigneeController extends Controller
             'nama_consignee' => 'required',
             'alamat' => 'required',
             'no_telp' => 'required',
-            'keterangan' => 'nullable',
         ]);
 
         // Generate kode_consignee otomatis
@@ -52,7 +51,6 @@ class ConsigneeController extends Controller
             'nama_consignee' => $request->nama_consignee,
             'alamat' => $request->alamat,
             'no_telp' => $request->no_telp,
-            'keterangan' => $request->keterangan,
         ]);
 
         return redirect()->route('consignee.index')->with('success', 'Data consignee berhasil ditambahkan.');
@@ -70,11 +68,10 @@ class ConsigneeController extends Controller
             'nama_consignee' => 'required',
             'alamat' => 'required',
             'no_telp' => 'required',
-            'keterangan' => 'nullable',
         ]);
 
         $consignee = Consignee::findOrFail($kode_consignee);
-        $consignee->update($request->all());
+        $consignee->update($request->only(['nama_consignee', 'alamat', 'no_telp']));
 
         return redirect()->route('consignee.index')->with('success', 'Data consignee berhasil diupdate.');
     }

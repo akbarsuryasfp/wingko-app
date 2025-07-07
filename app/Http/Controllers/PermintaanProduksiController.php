@@ -47,7 +47,7 @@ class PermintaanProduksiController extends Controller
                 'kode_permintaan_produksi' => $kode,
                 'tanggal' => $request->tanggal,
                 'keterangan' => $request->keterangan,
-                'status' => 'Diproses',
+                'status' => 'Menunggu', // Ubah dari 'Diproses' ke 'Menunggu'
             ]);
 
             // Simpan detail

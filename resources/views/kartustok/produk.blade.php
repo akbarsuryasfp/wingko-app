@@ -101,8 +101,8 @@ function setSatuanProdukOtomatis() {
                     data.forEach(function(row, idx) {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
-                        let harga = parseFloat(row.hpp) || 0; // harga = hpp
-                        let hpp = parseFloat(row.hpp) || 0;
+                        let harga = parseFloat(row.harga) || 0; // perbaiki di sini
+                        let hpp = parseFloat(row.harga) || 0;   // perbaiki di sini
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };

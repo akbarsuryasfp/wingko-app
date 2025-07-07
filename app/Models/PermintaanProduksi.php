@@ -25,7 +25,7 @@ class PermintaanProduksi extends Model
     ];
 
     // Relasi ke detail (satu permintaan memiliki banyak detail produk)
-    public function details(): HasMany
+    public function details()
     {
         return $this->hasMany(PermintaanProduksiDetail::class, 'kode_permintaan_produksi', 'kode_permintaan_produksi');
     }

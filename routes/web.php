@@ -23,13 +23,18 @@ use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\HutangController;
 use App\Http\Controllers\KartuStokController;
 use App\Http\Controllers\KaskeluarController;
+use App\Http\Controllers\ReturJualController;
+use App\Http\Controllers\PiutangController;
 use App\Http\Controllers\StokOpnameController;
 use App\Http\Controllers\PenyesuaianBarangController;
 use App\Http\Controllers\TransferProdukController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\JurnalController;
 
 Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+    $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
+    return view('welcome', compact('reminder'));
+})->middleware('auth');
 
 // Route login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -78,6 +83,14 @@ Route::get('/terimabahan/{no_terima_bahan}/data', [PembelianController::class, '
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
 Route::get('/penjualan/{no_jual}/cetak', [PenjualanController::class, 'cetak'])->name('penjualan.cetak');
+Route::get('/penjualan/cetak-tagihan/{no_jual}', [PenjualanController::class, 'cetakTagihan'])->name('penjualan.cetak_tagihan');
+Route::get('create-pesanan', [PenjualanController::class, 'createPesanan'])->name('penjualan.createPesanan');
+
+// Route retur penjualan
+Route::resource('returjual', ReturJualController::class);
+Route::get('/returjual/{no_returjual}/cetak', [ReturJualController::class, 'cetak'])->name('returjual.cetak');
+Route::get('/returjual/filter-penjualan', [\App\Http\Controllers\ReturJualController::class, 'filterPenjualan'])->name('returjual.filter-penjualan');
+Route::get('/returjual/detail-penjualan/{no_jual}', [ReturJualController::class, 'getDetailPenjualan']);
 
 // Route pesanan penjualan
 Route::resource('pesananpenjualan', PesananPenjualanController::class);
@@ -158,6 +171,33 @@ Route::get('/kartustok/laporan-produk', [KartuStokController::class, 'laporanPro
 // Route kas keluar
 Route::resource('kaskeluar', KaskeluarController::class);
 
+// Route piutang custom (letakkan sebelum resource)
+Route::get('/piutang/{no_piutang}/bayar', [PiutangController::class, 'bayar'])->name('piutang.bayar');
+Route::post('/piutang/{no_piutang}/bayar', [PiutangController::class, 'bayarStore'])->name('piutang.bayar.store');
+Route::get('/piutang/{no_piutang}/detail', [PiutangController::class, 'show'])->name('piutang.detail');
+
+// Route resource piutang
+Route::resource('piutang', PiutangController::class);
+
+// Route konsinyasi masuk
+Route::get('/konsinyasimasuk', [App\Http\Controllers\KonsinyasiMasukController::class, 'index'])->name('konsinyasimasuk.index');
+Route::resource('konsinyasimasuk', \App\Http\Controllers\KonsinyasiMasukController::class);
+
+// Route pembayaran ke consignor (untuk sidebar konsinyasi)
+Route::get('/bayarconsignor', [App\Http\Controllers\BayarConsignorController::class, 'index'])->name('bayarconsignor.index');
+
+// Route komisi penjualan konsinyasi
+Route::get('/komisijual', [App\Http\Controllers\KomisiJualController::class, 'index'])->name('komisijual.index');
+
+// Route retur konsinyasi ke consignor
+Route::get('/returconsignor', [App\Http\Controllers\ReturConsignorController::class, 'index'])->name('returconsignor.index');
+
+// Route produk konsinyasi
+Route::get('/produk-konsinyasi/create', [\App\Http\Controllers\ProdukKonsinyasiController::class, 'create'])->name('produk-konsinyasi.create');
+Route::resource('produk-konsinyasi', \App\Http\Controllers\ProdukKonsinyasiController::class);
+Route::get('/produk-konsinyasi/by-consignor/{kode_consignor}', [ProdukKonsinyasiController::class, 'getByConsignor']);
+Route::get('/produk-konsinyasi/{kode_consignor}', [KonsinyasiMasukController::class, 'getProdukByConsignor']);
+
 // Route stok opname
 Route::get('/stokopname/bahan', [StokOpnameController::class, 'create'])->name('stokopname.create');
 Route::post('/stokopname/bahan', [StokOpnameController::class, 'store'])->name('stokopname.store');
@@ -183,3 +223,7 @@ Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'creat
 // Route transfer produk
 Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
 Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])->name('transferproduk.store');
+
+// Route jurnal
+Route::get('/jurnal', [JurnalController::class, 'index'])->name('jurnal.index');
+Route::get('/buku-besar', [JurnalController::class, 'bukuBesar'])->name('jurnal.buku_besar');

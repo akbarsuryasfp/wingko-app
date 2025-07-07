@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">INPUT PESANAN PENJUALAN</h3>
+    <h3 class="mb-4">INPUT PESANAN</h3>
     @if ($errors->any())
         <div class="alert alert-danger">
             <ul>
@@ -35,13 +35,6 @@
                     </select>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 160px;">Status Pembayaran</label>
-                    <select name="status_pembayaran" class="form-control" required>
-                        <option value="belum lunas">Belum Lunas</option>
-                        <option value="lunas">Lunas</option>
-                    </select>
-                </div>
-                <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 160px;">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control" maxlength="255">
                 </div>
@@ -54,7 +47,12 @@
                     <select id="kode_produk" class="form-control">
                         <option value="">---Pilih Produk---</option>
                         @foreach($produk as $pr)
-                            <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}">{{ $pr->nama_produk }}</option>
+                            <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}" 
+                                @if($pr->nama_produk == 'Moaci') data-harga="25000" 
+                                @elseif($pr->nama_produk == 'Wingko Babat') data-harga="20000" 
+                                @else data-harga="0" @endif>
+                                {{ $pr->nama_produk }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -74,7 +72,7 @@
 
         <hr>
 
-        <h4 class="text-center">DAFTAR PRODUK PESANAN</h4>
+        <h4 class="text-center">DAFTAR PESANAN</h4>
         <table class="table table-bordered text-center align-middle" id="daftar-produk">
             <thead>
                 <tr>
@@ -91,12 +89,16 @@
 
         <div class="d-flex justify-content-between mt-4">
             <div>
-                <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning">Reset</button>
+                <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary" title="Kembali">
+                    Back
+                </a>
+                <button type="reset" class="btn btn-warning" title="Reset">
+                    Reset
+                </button>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total</label>
-                <input type="text" id="total_pesanan" name="total" readonly class="form-control" style="width: 160px;">
+                <label class="mb-0">Total Pesanan</label>
+                <input type="text" id="total_pesanan" name="total_pesanan" readonly class="form-control" style="width: 160px;">
                 <button type="submit" class="btn btn-success">Submit</button>
             </div>
         </div>
@@ -115,13 +117,18 @@
         const jumlah = parseFloat(document.getElementById('jumlah').value);
         const harga_satuan = parseFloat(document.getElementById('harga_satuan').value);
 
-        if (!kode_produk || !jumlah || !harga_satuan) {
+        if (!kode_produk || !jumlah || !harga_satuan || jumlah <= 0 || harga_satuan <= 0) {
             alert("Silakan lengkapi data produk.");
             return;
         }
 
-        const subtotal = jumlah * harga_satuan;
+        // Cek apakah produk sudah ada di daftar
+        if (daftarProduk.some(item => item.kode_produk === kode_produk)) {
+            alert("Produk sudah ada di daftar!");
+            return;
+        }
 
+        const subtotal = jumlah * harga_satuan;
         daftarProduk.push({ kode_produk, nama_produk, jumlah, harga_satuan, subtotal });
         updateTabel();
 
@@ -152,7 +159,11 @@
                     <td>${item.jumlah}</td>
                     <td>${item.harga_satuan}</td>
                     <td>${item.subtotal}</td>
-                    <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})">X</button></td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
@@ -169,6 +180,12 @@
             e.preventDefault();
             return false;
         }
+    });
+
+    document.getElementById('kode_produk').addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        const harga = selected.getAttribute('data-harga');
+        document.getElementById('harga_satuan').value = harga ? harga : '';
     });
 </script>
 @endsection

@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container mt-5">
-    <h1 class="text-center">Daftar Pelanggan</h1>
+    <h1 class="text-center">DAFTAR PELANGGAN</h1>
 
     @if(session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -28,11 +28,15 @@
                     <td>{{ $item->alamat }}</td>
                     <td>{{ $item->no_telp }}</td>
                     <td>
-                        <a href="{{ route('pelanggan.edit', $item->kode_pelanggan) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <a href="{{ route('pelanggan.edit', $item->kode_pelanggan) }}" class="btn btn-warning btn-sm" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
                         <form action="{{ route('pelanggan.destroy', $item->kode_pelanggan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </form>
                     </td>
                 </tr>

@@ -7,7 +7,7 @@
         @csrf
         <div class="mb-3 d-flex align-items-center">
             <label for="kode_consignor" class="form-label mb-0" style="width:150px;">Kode Consignor</label>
-            <input type="text" class="form-control" id="kode_consignor" name="kode_consignor" value="{{ $kode_consignor }}" readonly style="width:300px;">
+            <input type="text" class="form-control" id="kode_consignor" name="kode_consignor" value="{{ $kode_consignor ?? old('kode_consignor') }}" readonly style="width:300px;">
         </div>
         <div class="mb-3 d-flex align-items-center">
             <label for="nama_consignor" class="form-label mb-0" style="width:150px;">Nama Consignor</label>
@@ -31,14 +31,22 @@
             @enderror
         </div>
         <div class="mb-3 d-flex align-items-center">
-            <label for="keterangan" class="form-label mb-0" style="width:150px;">Keterangan</label>
-            <input type="text" class="form-control" id="keterangan" name="keterangan" value="{{ old('keterangan') }}" style="width:300px;">
-            @error('keterangan')
+            <label class="form-label mb-0" style="width:150px;">Rekening</label>
+            <span>Jenis Bank&nbsp;</span>
+            <input type="text" class="form-control mx-2" style="width:120px;" id="bank" name="bank" value="{{ old('bank') }}" required>
+            <span>&nbsp;No Rekening&nbsp;</span>
+            <input type="text" class="form-control mx-2" style="width:150px;" id="rekening" name="rekening" value="{{ old('rekening') }}" required>
+            @error('bank')
+                <div class="text-danger ms-2">{{ $message }}</div>
+            @enderror
+            @error('rekening')
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <button type="submit" class="btn btn-success">Simpan</button>
-        <a href="{{ route('consignor.index') }}" class="btn btn-secondary">Kembali</a>
+        
+        <a href="{{ route('consignor.index') }}" class="btn btn-secondary">Back</a>
+        <button type="reset" class="btn btn-warning">Reset</button>
+        <button type="submit" class="btn btn-success">Submit</button>
     </form>
 </div>
 @endsection

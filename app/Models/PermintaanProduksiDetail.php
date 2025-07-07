@@ -31,7 +31,7 @@ class PermintaanProduksiDetail extends Model
     }
 
     // Relasi ke produk
-    public function produk(): BelongsTo
+    public function produk()
     {
         return $this->belongsTo(Produk::class, 'kode_produk', 'kode_produk');
     }
