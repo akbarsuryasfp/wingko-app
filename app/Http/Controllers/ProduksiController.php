@@ -58,7 +58,7 @@ class ProduksiController extends Controller
 
                 // Tambahkan ke kartu stok produk (produk jadi masuk)
                 DB::table('t_kartupersproduk')->insert([
-                    'no_transaksi' => $no_detail_produksi, // Ubah dari $kode ke $no_detail_produksi
+                    'no_transaksi' => $no_detail_produksi,
                     'tanggal' => $request->tanggal_produksi,
                     'kode_produk' => $kode_produk,
                     'masuk' => $jumlah_unit,
@@ -66,8 +66,8 @@ class ProduksiController extends Controller
                     'harga' => $harga_per_unit,
                     'satuan' => null,
                     'keterangan' => 'Hasil produksi ' . $kode,
-                    'tanggal_expired' => $tanggal_exp,
-
+                    'tanggal_exp' => $tanggal_expired,
+                    'lokasi' => 'gudang',
                 ]);
             }
 
@@ -108,7 +108,7 @@ class ProduksiController extends Controller
 
                 foreach ($resepDetails as $rd) {
                     $kode_bahan = $rd->kode_bahan;
-                    $total = $jumlah_unit * $rd->jumlah_kebutuhan;
+                    $total = $jumlah_unit * $rd->jumlah_kebutuhan; // Biarkan hasil float/desimal
                     $sisa = $total;
 
                     // Ambil dari array stokFIFO, bukan query ulang!
@@ -122,7 +122,7 @@ class ProduksiController extends Controller
                             'tanggal' => $request->tanggal_produksi,
                             'kode_bahan' => $kode_bahan,
                             'masuk' => 0,
-                            'keluar' => $pakai,
+                            'keluar' => $pakai, // $pakai bisa float/desimal
                             'harga' => $batch->harga,
                             'satuan' => $rd->satuan,
                             'keterangan' => 'Pemakaian produksi ' . $kode,
@@ -132,7 +132,7 @@ class ProduksiController extends Controller
                         DB::table('t_produksi_bahan')->insert([
                             'no_detail_produksi' => $no_detail_produksi,
                             'kode_bahan' => $kode_bahan,
-                            'jumlah' => $pakai,
+                            'jumlah' => $pakai, // $pakai bisa float/desimal
                             'harga' => $batch->harga,
                             'no_terima_bahan' => $batch->no_transaksi,
                             'satuan' => $rd->satuan,

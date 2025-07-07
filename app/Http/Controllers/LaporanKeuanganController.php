@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\JurnalDetail;
 use Carbon\Carbon;
+use App\Helpers\JurnalHelper;
 
 class LaporanKeuanganController extends Controller
 {
@@ -14,16 +15,16 @@ class LaporanKeuanganController extends Controller
         $start = Carbon::parse($periode . '-01')->startOfMonth();
         $end = Carbon::parse($periode . '-01')->endOfMonth();
 
-        // Contoh: Ambil saldo akun utama
+        // Gunakan mapping kode akun dari JurnalHelper
         $akun = [
-            'kas' => 101,
-            'piutang' => 102,
-            'persediaan' => 105,
-            'utang' => 201,
-            'modal' => 301,
-            'penjualan' => 401,
-            'hpp' => 501,
-            'beban' => 502,
+            'kas'        => JurnalHelper::getKodeAkun('kas_bank'),
+            'piutang'    => JurnalHelper::getKodeAkun('piutang_usaha'),
+            'persediaan' => JurnalHelper::getKodeAkun('persediaan_jadi'),
+            'utang'      => JurnalHelper::getKodeAkun('utang_usaha'),
+            'modal'      => JurnalHelper::getKodeAkun('modal_pemilik'),
+            'penjualan'  => JurnalHelper::getKodeAkun('penjualan'),
+            'hpp'        => JurnalHelper::getKodeAkun('hpp'),
+            'beban'      => JurnalHelper::getKodeAkun('beban_operasional'),
         ];
 
         $saldo = [];
@@ -44,10 +45,35 @@ class LaporanKeuanganController extends Controller
 
     public function cetak(Request $request)
     {
-        // Mirip dengan index, bisa gunakan view berbeda untuk PDF/print
         $periode = $request->input('periode', date('Y-m'));
-        // ...ambil data seperti di index...
-        // return view('laporan.keuangan_cetak', compact('saldo', 'periode'));
+        $start = Carbon::parse($periode . '-01')->startOfMonth();
+        $end = Carbon::parse($periode . '-01')->endOfMonth();
+
+        $akun = [
+            'kas'        => JurnalHelper::getKodeAkun('kas_bank'),
+            'piutang'    => JurnalHelper::getKodeAkun('piutang_usaha'),
+            'persediaan' => JurnalHelper::getKodeAkun('persediaan_jadi'),
+            'utang'      => JurnalHelper::getKodeAkun('utang_usaha'),
+            'modal'      => JurnalHelper::getKodeAkun('modal_pemilik'),
+            'penjualan'  => JurnalHelper::getKodeAkun('penjualan'),
+            'hpp'        => JurnalHelper::getKodeAkun('hpp'),
+            'beban'      => JurnalHelper::getKodeAkun('beban_operasional'),
+        ];
+
+        $saldo = [];
+        foreach ($akun as $key => $kode) {
+            $saldo[$key] = JurnalDetail::where('kode_akun', $kode)
+                ->whereHas('jurnalUmum', function($q) use ($start, $end) {
+                    $q->whereBetween('tanggal', [$start, $end]);
+                })
+                ->sum('debit') - JurnalDetail::where('kode_akun', $kode)
+                ->whereHas('jurnalUmum', function($q) use ($start, $end) {
+                    $q->whereBetween('tanggal', [$start, $end]);
+                })
+                ->sum('kredit');
+        }
+
+        return view('laporan.keuangan_cetak', compact('saldo', 'periode'));
     }
 
     public function neraca(Request $request)
@@ -57,11 +83,11 @@ class LaporanKeuanganController extends Controller
         $end = Carbon::parse($periode . '-01')->endOfMonth();
 
         $akun = [
-            'kas' => 101,
-            'piutang' => 102,
-            'persediaan' => 105,
-            'utang' => 201,
-            'modal' => 301,
+            'kas'        => JurnalHelper::getKodeAkun('kas_bank'),
+            'piutang'    => JurnalHelper::getKodeAkun('piutang_usaha'),
+            'persediaan' => JurnalHelper::getKodeAkun('persediaan_jadi'),
+            'utang'      => JurnalHelper::getKodeAkun('utang_usaha'),
+            'modal'      => JurnalHelper::getKodeAkun('modal_pemilik'),
         ];
 
         $saldo = [];
@@ -87,9 +113,9 @@ class LaporanKeuanganController extends Controller
         $end = Carbon::parse($periode . '-01')->endOfMonth();
 
         $akun = [
-            'penjualan' => 401,
-            'hpp' => 501,
-            'beban' => 502,
+            'penjualan' => JurnalHelper::getKodeAkun('penjualan'),
+            'hpp'       => JurnalHelper::getKodeAkun('hpp'),
+            'beban'     => JurnalHelper::getKodeAkun('beban_operasional'),
         ];
 
         $saldo = [];
@@ -117,30 +143,30 @@ class LaporanKeuanganController extends Controller
         $end = Carbon::parse($periode . '-01')->endOfMonth();
 
         // Modal awal (s/d akhir bulan sebelumnya)
-        $modal_awal = JurnalDetail::where('kode_akun', 301)
+        $modal_awal = JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('modal_pemilik'))
             ->whereHas('jurnalUmum', fn($q) => $q->where('tanggal', '<', $start))
-            ->sum('kredit') - JurnalDetail::where('kode_akun', 301)
+            ->sum('kredit') - JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('modal_pemilik'))
             ->whereHas('jurnalUmum', fn($q) => $q->where('tanggal', '<', $start))
             ->sum('debit');
 
         // Tambahan modal selama periode
-        $tambahan_modal = JurnalDetail::where('kode_akun', 301)
+        $tambahan_modal = JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('modal_pemilik'))
             ->whereHas('jurnalUmum', fn($q) => $q->whereBetween('tanggal', [$start, $end]))
             ->sum('kredit');
 
-        // Prive (misal kode akun 302, jika ada)
-        $prive = JurnalDetail::where('kode_akun', 302)
+        // Prive
+        $prive = JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('prive'))
             ->whereHas('jurnalUmum', fn($q) => $q->whereBetween('tanggal', [$start, $end]))
             ->sum('debit');
 
         // Laba bersih (ambil dari laba rugi)
-        $penjualan = JurnalDetail::where('kode_akun', 401)
+        $penjualan = JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('penjualan'))
             ->whereHas('jurnalUmum', fn($q) => $q->whereBetween('tanggal', [$start, $end]))
             ->sum('kredit');
-        $hpp = JurnalDetail::where('kode_akun', 501)
+        $hpp = JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('hpp'))
             ->whereHas('jurnalUmum', fn($q) => $q->whereBetween('tanggal', [$start, $end]))
             ->sum('debit');
-        $beban = JurnalDetail::where('kode_akun', 502)
+        $beban = JurnalDetail::where('kode_akun', JurnalHelper::getKodeAkun('beban_operasional'))
             ->whereHas('jurnalUmum', fn($q) => $q->whereBetween('tanggal', [$start, $end]))
             ->sum('debit');
         $laba_bersih = $penjualan - $hpp - $beban;

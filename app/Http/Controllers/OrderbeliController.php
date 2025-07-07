@@ -296,19 +296,19 @@ public function simpanUangMuka(Request $request, $no_order_beli)
             'nomor_bukti' => $order->no_order_beli,
         ]);
 
-        // Debit Uang Muka Pembelian (113)
+        // Debit Uang Muka Pembelian (mapping ke 'uang_muka')
         DB::table('t_jurnal_detail')->insert([
             'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
             'no_jurnal'        => $no_jurnal,
-            'kode_akun'        => '113',
+            'kode_akun'        => JurnalHelper::getKodeAkun('uang_muka'),
             'debit'            => $order->uang_muka,
             'kredit'           => 0,
         ]);
-        // Kredit Kas (101)
+        // Kredit Kas Bank (mapping ke 'kas_bank')
         DB::table('t_jurnal_detail')->insert([
             'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
             'no_jurnal'        => $no_jurnal,
-            'kode_akun'        => '101',
+            'kode_akun'        => JurnalHelper::getKodeAkun('kas_bank'),
             'debit'            => 0,
             'kredit'           => $order->uang_muka,
         ]);

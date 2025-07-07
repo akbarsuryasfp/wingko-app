@@ -3,68 +3,69 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\JurnalHelper;
 
 class KasKeluarController extends Controller
 {
     public function index()
     {
         // Ambil data kas keluar dari jurnal umum dan detail
-$kaskeluar = DB::table('t_jurnal_umum as ju')
-    ->join('t_jurnal_detail as jd', function($join) {
-        $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
-             ->where('jd.kredit', '>', 0)
-             ->where('jd.kode_akun', '=', '101');
-    })
-    ->select(
-        'ju.*',
-        'jd.kredit as jumlah'
-    )
-    ->orderBy('ju.tanggal', 'desc')
-    ->get();
+        $kaskeluar = DB::table('t_jurnal_umum as ju')
+            ->join('t_jurnal_detail as jd', function($join) {
+                $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
+                     ->where('jd.kredit', '>', 0)
+                     ->where('jd.kode_akun', '=', JurnalHelper::getKodeAkun('kas_bank'));
+            })
+            ->select(
+                'ju.*',
+                'jd.kredit as jumlah'
+            )
+            ->orderBy('ju.tanggal', 'desc')
+            ->get();
 
-$data = [];
-foreach ($kaskeluar as $row) {
-    $parts = explode(' | ', $row->keterangan);
+        $data = [];
+        foreach ($kaskeluar as $row) {
+            $parts = explode(' | ', $row->keterangan);
 
-    // Format hutang: [no_referensi] | [keterangan] | [penerima]
-    if (preg_match('/^PBL|^OB|^RB/', $parts[0] ?? '')) {
-        $row->no_referensi    = $parts[0] ?? '';
-        $row->keterangan_teks = $parts[1] ?? '';
-        $row->penerima        = $parts[2] ?? '';
-        // Nama supplier dari kode penerima jika ada
-        $row->nama_penerima = $row->penerima
-            ? DB::table('t_supplier')->where('kode_supplier', $row->penerima)->value('nama_supplier')
-            : null;
-    } else {
-        // Format order/pembelian/retur: [keterangan] | [no_referensi]
-        $row->keterangan_teks = $parts[0] ?? '';
-        $row->no_referensi    = $parts[1] ?? '';
-        $row->penerima        = null;
-        $row->nama_penerima   = null;
+            // Format hutang: [no_referensi] | [keterangan] | [penerima]
+            if (preg_match('/^PBL|^OB|^RB/', $parts[0] ?? '')) {
+                $row->no_referensi    = $parts[0] ?? '';
+                $row->keterangan_teks = $parts[1] ?? '';
+                $row->penerima        = $parts[2] ?? '';
+                // Nama supplier dari kode penerima jika ada
+                $row->nama_penerima = $row->penerima
+                    ? DB::table('t_supplier')->where('kode_supplier', $row->penerima)->value('nama_supplier')
+                    : null;
+            } else {
+                // Format order/pembelian/retur: [keterangan] | [no_referensi]
+                $row->keterangan_teks = $parts[0] ?? '';
+                $row->no_referensi    = $parts[1] ?? '';
+                $row->penerima        = null;
+                $row->nama_penerima   = null;
 
-        // Cek sumber transaksi dari no_referensi
-        if (preg_match('/^OB/', $row->no_referensi)) {
-            $kode_supplier = DB::table('t_order_beli')->where('no_order_beli', $row->no_referensi)->value('kode_supplier');
-            $row->nama_penerima = $kode_supplier
-                ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
-                : null;
-        } elseif (preg_match('/^PBL/', $row->no_referensi)) {
-            $kode_supplier = DB::table('t_pembelian')->where('no_pembelian', $row->no_referensi)->value('kode_supplier');
-            $row->nama_penerima = $kode_supplier
-                ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
-                : null;
-        } elseif (preg_match('/^RB/', $row->no_referensi)) {
-            $kode_supplier = DB::table('t_returbeli')->where('no_retur_beli', $row->no_referensi)->value('kode_supplier');
-            $row->nama_penerima = $kode_supplier
-                ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
-                : null;
+                // Cek sumber transaksi dari no_referensi
+                if (preg_match('/^OB/', $row->no_referensi)) {
+                    $kode_supplier = DB::table('t_order_beli')->where('no_order_beli', $row->no_referensi)->value('kode_supplier');
+                    $row->nama_penerima = $kode_supplier
+                        ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
+                        : null;
+                } elseif (preg_match('/^PBL/', $row->no_referensi)) {
+                    $kode_supplier = DB::table('t_pembelian')->where('no_pembelian', $row->no_referensi)->value('kode_supplier');
+                    $row->nama_penerima = $kode_supplier
+                        ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
+                        : null;
+                } elseif (preg_match('/^RB/', $row->no_referensi)) {
+                    $kode_supplier = DB::table('t_returbeli')->where('no_retur_beli', $row->no_referensi)->value('kode_supplier');
+                    $row->nama_penerima = $kode_supplier
+                        ? DB::table('t_supplier')->where('kode_supplier', $kode_supplier)->value('nama_supplier')
+                        : null;
+                }
+            }
+
+            $data[] = $row;
         }
-    }
 
-    $data[] = $row;
-}
-
-return view('kaskeluar.index', ['kaskeluar' => $data]);
+        return view('kaskeluar.index', ['kaskeluar' => $data]);
     }
 
     public function create()
@@ -78,7 +79,7 @@ return view('kaskeluar.index', ['kaskeluar' => $data]);
         $next = ($last && $last->max_bkk) ? $last->max_bkk + 1 : 1;
         $no_BKK = 'BKK' . str_pad($next, 6, '0', STR_PAD_LEFT);
 
-        $akun = DB::table('t_akun')->where('kode_akun', '!=', '101')->get();
+        $akun = DB::table('t_akun')->where('kode_akun', '!=', JurnalHelper::getKodeAkun('kas_bank'))->get();
         return view('kaskeluar.create', compact('no_BKK', 'akun'));
     }
 
@@ -117,12 +118,12 @@ return view('kaskeluar.index', ['kaskeluar' => $data]);
             'debit'            => $request->jumlah,
             'kredit'           => 0,
         ]);
-        // Kredit kas (101)
+        // Kredit kas (mapping)
         $no_jurnal_detail2 = 'JD-' . date('YmdHis') . '-' . rand(100,999);
         DB::table('t_jurnal_detail')->insert([
             'no_jurnal_detail' => $no_jurnal_detail2,
             'no_jurnal'        => $no_jurnal,
-            'kode_akun'        => '101',
+            'kode_akun'        => JurnalHelper::getKodeAkun('kas_bank'),
             'debit'            => 0,
             'kredit'           => $request->jumlah,
         ]);
@@ -149,7 +150,7 @@ return view('kaskeluar.index', ['kaskeluar' => $data]);
         $kas->kode_akun = $detail->kode_akun ?? '';
         $kas->jumlah = $detail->debit ?? 0;
 
-        $akun = DB::table('t_akun')->where('kode_akun', '!=', '101')->get();
+        $akun = DB::table('t_akun')->where('kode_akun', '!=', JurnalHelper::getKodeAkun('kas_bank'))->get();
 
         return view('kaskeluar.edit', compact('kas', 'akun'));
     }
@@ -186,7 +187,7 @@ return view('kaskeluar.index', ['kaskeluar' => $data]);
         // Update t_jurnal_detail (kredit kas)
         DB::table('t_jurnal_detail')
             ->where('no_jurnal', $id)
-            ->where('kode_akun', '101')
+            ->where('kode_akun', JurnalHelper::getKodeAkun('kas_bank'))
             ->update([
                 'kredit' => $request->jumlah,
                 'debit'  => 0,

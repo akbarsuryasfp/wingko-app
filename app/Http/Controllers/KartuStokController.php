@@ -65,7 +65,17 @@ class KartuStokController extends Controller
     {
         $lokasi = $request->get('lokasi');
         $query = DB::table('t_kartupersproduk')
-            ->select('no_transaksi', 'tanggal', 'masuk', 'keluar', 'hpp') // <-- tambahkan select kolom hpp
+            ->select(
+                'no_transaksi',
+                'tanggal',
+                'masuk',
+                'keluar',
+                'harga',
+                'satuan',
+                'keterangan',
+                'tanggal_exp',
+                'lokasi'
+            )
             ->where('kode_produk', $kode_produk);
         if ($lokasi) {
             $query->where('lokasi', $lokasi);

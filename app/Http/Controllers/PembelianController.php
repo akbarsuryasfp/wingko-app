@@ -175,17 +175,17 @@ class PembelianController extends Controller
         $uang_muka        = $uang_muka_dipakai ?? 0; // dari logika sebelumnya
         $sisa_hutang      = $kurang_bayar;
 
-        // Kode akun (bisa juga diambil dari master akun atau request)
-        $kode_akun_persediaan = '103'; // contoh: Persediaan Barang
-        $kode_akun_ongkir     = '515'; // contoh: Ongkos Kirim
-        $kode_akun_diskon     = '513'; // contoh: Diskon Pembelian
-        $kode_akun_kas        = '101'; // contoh: Kas/Bank
-        $kode_akun_uangmuka   = '113'; // contoh: Uang Muka Pembelian
-        $kode_akun_hutang     = '201'; // contoh: Hutang Usaha
+        // Kode akun dari mapping JurnalHelper
+        $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+        $kode_akun_ongkir     = JurnalHelper::getKodeAkun('ongkos_kirim');
+        $kode_akun_diskon     = JurnalHelper::getKodeAkun('diskon_pembelian');
+        $kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
+        $kode_akun_uangmuka   = JurnalHelper::getKodeAkun('uang_muka');
+        $kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
 
         // 1. Persediaan Barang (Debit)
         DB::table('t_jurnal_detail')->insert([
-            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
             'no_jurnal'        => $no_jurnal,
             'kode_akun'        => $kode_akun_persediaan,
             'debit'            => $nilai_persediaan,
@@ -195,7 +195,7 @@ class PembelianController extends Controller
         // 2. Ongkos Kirim (Debit)
         if ($ongkir > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_ongkir,
                 'debit'            => $ongkir,
@@ -206,7 +206,7 @@ class PembelianController extends Controller
         // 3. Diskon Pembelian (Kredit)
         if ($diskon > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_diskon,
                 'debit'            => 0,
@@ -217,7 +217,7 @@ class PembelianController extends Controller
         // 4. Kas/Bank (Kredit)
         if ($dibayar_sekarang > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_kas,
                 'debit'            => 0,
@@ -228,7 +228,7 @@ class PembelianController extends Controller
         // 5. Uang Muka (Kredit)
         if ($uang_muka > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_uangmuka,
                 'debit'            => 0,
@@ -239,7 +239,7 @@ class PembelianController extends Controller
         // 6. Hutang Usaha (Kredit)
         if ($sisa_hutang > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_hutang,
                 'debit'            => 0,
@@ -668,17 +668,17 @@ $dibayar_sekarang = $request->total_bayar;
 $uang_muka        = $uang_muka_dipakai ?? 0;
 $sisa_hutang      = $kurang_bayar;
 
-// Kode akun
-$kode_akun_persediaan = '103';
-$kode_akun_ongkir     = '515';
-$kode_akun_diskon     = '513';
-$kode_akun_kas        = '101';
-$kode_akun_uangmuka   = '113';
-$kode_akun_hutang     = '201';
+// Kode akun dari mapping JurnalHelper
+$kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+$kode_akun_ongkir     = JurnalHelper::getKodeAkun('ongkos_kirim');
+$kode_akun_diskon     = JurnalHelper::getKodeAkun('diskon_pembelian');
+$kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
+$kode_akun_uangmuka   = JurnalHelper::getKodeAkun('uang_muka');
+$kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
 
 // Untuk setiap detail:
 DB::table('t_jurnal_detail')->insert([
-    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
     'no_jurnal'        => $no_jurnal_baru,
     'kode_akun'        => $kode_akun_persediaan,
     'debit'            => $nilai_persediaan,
@@ -688,7 +688,7 @@ DB::table('t_jurnal_detail')->insert([
 // 2. Ongkos Kirim (Debit)
 if ($ongkir > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_ongkir,
         'debit'            => $ongkir,
@@ -699,7 +699,7 @@ if ($ongkir > 0) {
 // 3. Diskon Pembelian (Kredit)
 if ($diskon > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_diskon,
         'debit'            => 0,
@@ -710,7 +710,7 @@ if ($diskon > 0) {
 // 4. Kas/Bank (Kredit)
 if ($dibayar_sekarang > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_kas,
         'debit'            => 0,
@@ -721,7 +721,7 @@ if ($dibayar_sekarang > 0) {
 // 5. Uang Muka (Kredit)
 if ($uang_muka > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_uangmuka,
         'debit'            => 0,
@@ -732,7 +732,7 @@ if ($uang_muka > 0) {
 // 6. Hutang Usaha (Kredit)
 if ($sisa_hutang > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_hutang,
         'debit'            => 0,

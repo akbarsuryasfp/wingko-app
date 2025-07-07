@@ -42,7 +42,7 @@ class JurnalController extends Controller
     public function bukuBesar(Request $request)
     {
         $kode_akun = $request->input('kode_akun');
-        $akuns = Akun::all();
+        $akuns = Akun::orderBy('kode_akun')->get();
 
         $mutasi = [];
         if ($kode_akun) {

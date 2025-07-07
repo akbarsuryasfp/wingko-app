@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Hutang;
+use App\Helpers\JurnalHelper;
 
 class HutangController extends Controller
 {
@@ -83,7 +84,7 @@ class HutangController extends Controller
             'jumlah'    => 'required|numeric|min:1',
             'keterangan'=> 'nullable|string',
             'no_BKK'    => 'required|string',
-            'kode_akun' => 'required|string', // akun kas yang digunakan (misal 101)
+            'kode_akun' => 'required|string', // akun kas yang digunakan (misal 1010/1000/1011)
         ]);
 
         // Ambil data utang
@@ -91,11 +92,11 @@ class HutangController extends Controller
         $kode_supplier = $utang->kode_supplier ?? '';
 
         // 1. Buat no_jurnal baru
-        $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
+        $no_jurnal = JurnalHelper::generateNoJurnal();
 
         // 2. Buat no_jurnal_detail untuk masing-masing detail
-        $no_jurnal_detail1 = \App\Helpers\JurnalHelper::generateNoJurnalDetail();
-        $no_jurnal_detail2 = \App\Helpers\JurnalHelper::generateNoJurnalDetail();
+        $no_jurnal_detail1 = JurnalHelper::generateNoJurnalDetail();
+        $no_jurnal_detail2 = JurnalHelper::generateNoJurnalDetail();
 
         // 3. Gabungkan keterangan: [no_referensi] | [keterangan] | [penerima]
         $keterangan = $no_utang . ' | ' . ($request->keterangan ?? '') . ' | ' . $kode_supplier;
@@ -107,27 +108,28 @@ class HutangController extends Controller
             'keterangan'  => $keterangan,
             'nomor_bukti' => $request->no_BKK,
         ]);
+        // Gunakan mapping kode akun dari JurnalHelper
         \DB::table('t_jurnal_detail')->insert([
             'no_jurnal_detail' => $no_jurnal_detail1,
             'no_jurnal'        => $no_jurnal,
-            'kode_akun'        => '101',
+            'kode_akun'        => JurnalHelper::getKodeAkun('kas_bank'), // kas keluar
             'debit'            => 0,
             'kredit'           => $request->jumlah,
         ]);
         \DB::table('t_jurnal_detail')->insert([
             'no_jurnal_detail' => $no_jurnal_detail2,
             'no_jurnal'        => $no_jurnal,
-            'kode_akun'        => '201',
+            'kode_akun'        => JurnalHelper::getKodeAkun('utang_usaha'), // utang usaha
             'debit'            => $request->jumlah,
             'kredit'           => 0,
         ]);
 
         // 5. Update t_utang
         $totalBayar = \DB::table('t_jurnal_umum as ju')
-    ->join('t_jurnal_detail as jd', 'ju.no_jurnal', '=', 'jd.no_jurnal')
-    ->where('ju.keterangan', 'like', $no_utang . ' |%')
-    ->where('jd.kode_akun', '201') // utang
-    ->sum('jd.debit');
+            ->join('t_jurnal_detail as jd', 'ju.no_jurnal', '=', 'jd.no_jurnal')
+            ->where('ju.keterangan', 'like', $no_utang . ' |%')
+            ->where('jd.kode_akun', JurnalHelper::getKodeAkun('utang_usaha'))
+            ->sum('jd.debit');
         $sisa = $utang->total_tagihan - $totalBayar;
 
         \DB::table('t_utang')->where('no_utang', $no_utang)->update([

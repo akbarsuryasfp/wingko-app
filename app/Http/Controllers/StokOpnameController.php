@@ -194,11 +194,11 @@ class StokOpnameController extends Controller
 
             // Insert ke jurnal jika ada selisih
             if ($total_debet > 0 || $total_kredit > 0) {
-                $lastJurnal = DB::table('t_jurnal_umum')->orderBy('no_jurnal', 'desc')->first();
                 $no_jurnal = JurnalHelper::generateNoJurnal();
 
-                // Ambil kode akun persediaan bahan dari helper
-                $kode_akun_persediaan = AkunHelper::getIdAkun('103'); // 103 = Persediaan Bahan Baku
+                // Ambil kode akun dari helper
+                $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+                $kode_akun_penyesuaian = JurnalHelper::getKodeAkun('beban_lain'); // atau sesuaikan dengan akun penyesuaian Anda
 
                 DB::table('t_jurnal_umum')->insert([
                     'no_jurnal'   => $no_jurnal,
@@ -219,7 +219,7 @@ class StokOpnameController extends Controller
                     [
                         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                         'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => '710',
+                        'kode_akun'        => $kode_akun_penyesuaian,
                         'debit'            => $total_debet,
                         'kredit'           => $total_kredit,
                     ],
@@ -371,8 +371,10 @@ $harga = getHargaFIFOProduk($kode_produk, abs($selisih));
 
             // Insert ke jurnal jika ada selisih
             if ($total_debet > 0 || $total_kredit > 0) {
-                $lastJurnal = DB::table('t_jurnal_umum')->orderBy('no_jurnal', 'desc')->first();
                 $no_jurnal = JurnalHelper::generateNoJurnal();
+
+                $kode_akun_persediaan_produk = JurnalHelper::getKodeAkun('persediaan_jadi');
+                $kode_akun_penyesuaian = JurnalHelper::getKodeAkun('beban_lain'); // atau sesuaikan
 
                 DB::table('t_jurnal_umum')->insert([
                     'no_jurnal'   => $no_jurnal,
@@ -386,14 +388,14 @@ $harga = getHargaFIFOProduk($kode_produk, abs($selisih));
                     [
                         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                         'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => '105',
+                        'kode_akun'        => $kode_akun_persediaan_produk,
                         'debit'            => $total_kredit,
                         'kredit'           => 0,
                     ],
                     [
                         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
                         'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => '710',
+                        'kode_akun'        => $kode_akun_penyesuaian,
                         'debit'            => 0,
                         'kredit'           => $total_kredit,
                     ],
