@@ -12,7 +12,7 @@ class PesananPenjualanController extends Controller
         $sort = $request->get('sort', 'asc');
         $query = DB::table('t_pesanan')
             ->leftJoin('t_pelanggan', 't_pesanan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
-            ->select('t_pesanan.*', 't_pelanggan.nama_pelanggan');
+            ->select('t_pesanan.*', 't_pelanggan.nama_pelanggan'); // status dihapus
 
         // Tambahkan filter periode tanggal_pesanan
         if ($request->filled('tanggal_awal')) {
@@ -61,19 +61,23 @@ class PesananPenjualanController extends Controller
         $request->validate([
             'no_pesanan' => 'required|unique:t_pesanan,no_pesanan',
             'tanggal_pesanan' => 'required|date',
+            'tanggal_pengiriman' => 'nullable|date',
             'kode_pelanggan' => 'required',
             'total_pesanan' => 'required|numeric',
             'keterangan' => 'nullable|string|max:255',
-            'detail_json' => 'required|json'
+            'detail_json' => 'required|json',
+            // 'status' => 'required', // validasi status dihapus
         ]);
 
         DB::transaction(function () use ($request) {
             DB::table('t_pesanan')->insert([
                 'no_pesanan' => $request->no_pesanan,
                 'tanggal_pesanan' => $request->tanggal_pesanan,
+                'tanggal_pengiriman' => $request->tanggal_pengiriman,
                 'kode_pelanggan' => $request->kode_pelanggan,
                 'total_pesanan' => $request->total_pesanan,
                 'keterangan' => $request->keterangan,
+                // 'status' => $request->status, // simpan status dihapus
             ]);
 
             $details = json_decode($request->detail_json, true);
@@ -133,15 +137,18 @@ class PesananPenjualanController extends Controller
     {
         $request->validate([
             'tanggal_pesanan' => 'required|date',
+            'tanggal_pengiriman' => 'nullable|date',
             'kode_pelanggan' => 'required',
             'total_pesanan' => 'required|numeric',
             'keterangan' => 'nullable|string|max:255',
-            'detail_json' => 'required|json'
+            'detail_json' => 'required|json',
+            // 'status' => 'required', // validasi status dihapus
         ]);
 
         DB::transaction(function () use ($request, $no_pesanan) {
             DB::table('t_pesanan')->where('no_pesanan', $no_pesanan)->update([
                 'tanggal_pesanan' => $request->tanggal_pesanan,
+                'tanggal_pengiriman' => $request->tanggal_pengiriman,
                 'kode_pelanggan' => $request->kode_pelanggan,
                 'total_pesanan' => $request->total_pesanan,
                 'keterangan' => $request->keterangan,
@@ -159,6 +166,53 @@ class PesananPenjualanController extends Controller
                     'harga_satuan' => $detail['harga_satuan'],
                     'subtotal' => $detail['subtotal'],
                 ]);
+            }
+
+            // Sinkronisasi ke t_penjualan jika ada
+            $penjualan = DB::table('t_penjualan')->where('no_pesanan', $no_pesanan)->first();
+            if ($penjualan) {
+                // Hitung ulang total_harga, total_jual, piutang, kembalian
+                $total_harga = array_sum(array_column($details, 'subtotal'));
+                $diskon = $penjualan->diskon ?? 0;
+                $total_jual = $total_harga - $diskon;
+                $total_bayar = $penjualan->total_bayar ?? 0;
+                $kembalian = $total_bayar > $total_jual ? $total_bayar - $total_jual : 0;
+                $piutang = $total_jual > $total_bayar ? $total_jual - $total_bayar : 0;
+                DB::table('t_penjualan')->where('no_pesanan', $no_pesanan)->update([
+                    'tanggal_jual' => $request->tanggal_pesanan,
+                    'kode_pelanggan' => $request->kode_pelanggan,
+                    'total_harga' => $total_harga,
+                    'total_jual' => $total_jual,
+                    'piutang' => $piutang,
+                    'kembalian' => $kembalian,
+                    'keterangan' => $request->keterangan,
+                ]);
+                // Update detail penjualan
+                DB::table('t_penjualan_detail')->where('no_jual', $penjualan->no_jual)->delete();
+                foreach ($details as $i => $detail) {
+                    DB::table('t_penjualan_detail')->insert([
+                        'no_detailjual' => $penjualan->no_jual . '-' . ($i+1),
+                        'no_jual' => $penjualan->no_jual,
+                        'kode_produk' => $detail['kode_produk'],
+                        'jumlah' => $detail['jumlah'],
+                        'harga_satuan' => $detail['harga_satuan'],
+                        'subtotal' => $detail['subtotal'],
+                    ]);
+                }
+                // Sinkronisasi ke t_piutang jika ada
+                $piutangRow = DB::table('t_piutang')->where('no_jual', $penjualan->no_jual)->first();
+                if ($piutangRow) {
+                    $total_bayar = $penjualan->total_bayar ?? 0;
+                    $sisa_piutang = $total_jual - $total_bayar;
+                    $status_piutang = ($sisa_piutang <= 0) ? 'lunas' : 'belum lunas';
+                    DB::table('t_piutang')->where('no_jual', $penjualan->no_jual)->update([
+                        'total_tagihan' => $total_jual,
+                        'sisa_piutang' => $sisa_piutang,
+                        'total_bayar' => $total_bayar,
+                        'status_piutang' => $status_piutang,
+                        'kode_pelanggan' => $request->kode_pelanggan,
+                    ]);
+                }
             }
         });
 

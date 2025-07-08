@@ -54,10 +54,22 @@
                 <i class="bi bi-box-arrow-in-down"></i><span>Konsinyasi Masuk</span>
             </a>
             <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
-                <li><a href="{{ route('konsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Konsinyasi Masuk</span></a></li>
+                <li><a href="{{ route('konsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk Konsinyasi Masuk</span></a></li>
+                <li><a href="{{ route('jualkonsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-arrow-left-right"></i><span>Penjualan Produk Konsinyasi Masuk</span></a></li>
                 <li><a href="{{ route('bayarconsignor.index') }}" class="nav-link"><i class="bi bi-credit-card-2-back"></i><span>Pembayaran ke Consignor</span></a></li>
                 <li><a href="{{ route('komisijual.index') }}" class="nav-link"><i class="bi bi-percent"></i><span>Komisi Penjualan Konsinyasi</span></a></li>
                 <li><a href="{{ route('returconsignor.index') }}" class="nav-link"><i class="bi bi-arrow-return-left"></i><span>Retur ke Consignor</span></a></li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-konsinyasikeluar')">
+                <i class="bi bi-box-arrow-up"></i><span>Konsinyasi Keluar</span>
+            </a>
+            <ul id="submenu-konsinyasikeluar" class="nav flex-column ms-3" style="display:none;">
+                <li><a href="{{ route('konsinyasikeluar.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk Konsinyasi Keluar</span></a></li>
+                <li><a href="{{ route('penerimaankonsinyasi.index') }}" class="nav-link"><i class="bi bi-cash-coin"></i><span>Penerimaan Hasil Penjualan Produk Konsinyasi</span></a></li>
+                <li><a href="{{ route('returconsignee.index') }}" class="nav-link"><i class="bi bi-arrow-return-right"></i><span>Retur dari Consignee</span></a></li>
             </ul>
         </li>
 
@@ -83,10 +95,11 @@
         <i class="bi bi-cart"></i><span>Persediaan</span>
     </a>
     <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
-        <li><a href="{{ route('kartustok.bahan') }}" class="nav-link">Kartu Persediaan Bahan</a></li>
-        <li><a href="{{ route('kartustok.produk') }}" class="nav-link">Kartu Persediaan Produk</a></li>
-        <li><a href="{{ route('stokopname.create') }}" class="nav-link">Stok Opname Bahan</a></li>
-        <li><a href="{{ route('stokopname.produk') }}" class="nav-link">Stok Opname Produk</a></li>
+        <li><a href="{{ route('kartustok.bahan') }}" class="nav-link"><i class="bi bi-box"></i> Kartu Persediaan Bahan</a></li>
+        <li><a href="{{ route('kartustok.produk') }}" class="nav-link"><i class="bi bi-cup-straw"></i> Kartu Persediaan Produk</a></li>
+        <li><a href="{{ route('kartuperskonsinyasi.index') }}" class="nav-link"><i class="bi bi-boxes"></i> Kartu Persediaan Produk Konsinyasi Masuk</a></li>
+        <li><a href="{{ route('stokopname.create') }}" class="nav-link"><i class="bi bi-clipboard-check"></i> Stok Opname Bahan</a></li>
+        <li><a href="{{ route('stokopname.produk') }}" class="nav-link"><i class="bi bi-clipboard-data"></i> Stok Opname Produk</a></li>
     </ul>
 </li>
 

@@ -19,8 +19,12 @@
             <!-- Kolom Kiri: Data Konsinyasi -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Kode Titip Jual</label>
-                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $konsinyasi->no_surattitipjual }}" readonly>
+                    <label class="me-2" style="width: 180px;">No Konsinyasi Masuk</label>
+                    <input type="text" name="no_konsinyasimasuk" class="form-control" value="{{ $konsinyasi->no_konsinyasimasuk }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events: none;">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">No Surat Titip Jual</label>
+                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $konsinyasi->no_surattitipjual }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events: none;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Nama Consignor</label>
@@ -33,7 +37,8 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Tanggal Masuk</label>
-                    <input type="date" name="tanggal_titip" class="form-control" value="{{ $konsinyasi->tanggal_titip }}" required>
+                    <input type="date" name="tanggal_masuk" id="tanggal_masuk" class="form-control" value="{{ $konsinyasi->tanggal_masuk ?? $konsinyasi->tanggal_titip }}" required>
+                    <input type="hidden" name="tanggal_titip" id="tanggal_titip" value="{{ $konsinyasi->tanggal_masuk ?? $konsinyasi->tanggal_titip }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
@@ -47,9 +52,7 @@
                     <label class="me-2" style="width: 120px;">Produk</label>
                     <select id="kode_produk" class="form-control">
                         <option value="">---Pilih Produk---</option>
-                        @foreach($produk as $pr)
-                            <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}">{{ $pr->nama_produk }}</option>
-                        @endforeach
+                        <!-- Opsi produk akan diisi via JS -->
                     </select>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
@@ -86,10 +89,9 @@
         <div class="d-flex justify-content-between mt-4">
             <div>
                 <a href="{{ route('konsinyasimasuk.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning">Reset</button>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total</label>
+                <label class="mb-0">Total Titip Jual</label>
                 <input type="text" id="total_titip_view" readonly class="form-control" style="width: 160px;">
                 <input type="hidden" id="total_titip" name="total_titip">
                 <button type="submit" class="btn btn-success">Update</button>
@@ -103,6 +105,35 @@
 <script>
     // Inisialisasi dari backend
     let daftarProdukTitip = @json($details);
+    const allProdukKonsinyasi = @json($produkKonsinyasi);
+    // Pastikan setiap detail punya nama_produk
+    const produkKonsinyasiMap = {};
+    allProdukKonsinyasi.forEach(function(pr) {
+        produkKonsinyasiMap[pr.kode_produk] = pr.nama_produk;
+    });
+    daftarProdukTitip = daftarProdukTitip.map(function(item) {
+        if (!item.nama_produk && produkKonsinyasiMap[item.kode_produk]) {
+            item.nama_produk = produkKonsinyasiMap[item.kode_produk];
+        }
+        return item;
+    });
+
+    // Filter produk berdasarkan consignor
+    document.querySelector('select[name="kode_consignor"]').addEventListener('change', function() {
+        const consignor = this.value;
+        const produkSelect = document.getElementById('kode_produk');
+        produkSelect.innerHTML = '<option value="">---Pilih Produk---</option>';
+        if (consignor) {
+            const produkFiltered = allProdukKonsinyasi.filter(p => p.kode_consignor === consignor);
+            produkFiltered.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.kode_produk;
+                opt.textContent = p.nama_produk;
+                opt.setAttribute('data-nama', p.nama_produk);
+                produkSelect.appendChild(opt);
+            });
+        }
+    });
 
     function tambahProdukTitip() {
         const produkSelect = document.getElementById('kode_produk');
@@ -116,8 +147,13 @@
             return;
         }
 
-        const subtotal = jumlah_stok * harga_titip;
+        // Cek jika produk sudah ada, jangan tambahkan lagi
+        if (daftarProdukTitip.some(p => p.kode_produk === kode_produk)) {
+            alert('Produk sudah ada di daftar!');
+            return;
+        }
 
+        const subtotal = jumlah_stok * harga_titip;
         daftarProdukTitip.push({ kode_produk, nama_produk, jumlah_stok, harga_titip, subtotal });
         updateTabelTitip();
 
@@ -133,39 +169,67 @@
     }
 
     function formatRupiah(angka) {
-        return angka.toLocaleString('id-ID');
+        if (!angka && angka !== 0) return '';
+        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
     }
 
     function updateTabelTitip() {
         const tbody = document.querySelector('#daftar-produk-titip tbody');
         tbody.innerHTML = '';
-
         let totalTitip = 0;
-
         daftarProdukTitip.forEach((item, index) => {
-            const subtotal = Number(item.subtotal) || 0;
+            const subtotal = Number(item.jumlah_stok) * Number(item.harga_titip);
+            item.subtotal = subtotal;
             totalTitip += subtotal;
-
             const row = `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
-                    <td>${item.jumlah_stok}</td>
-                    <td>${formatRupiah(item.harga_titip)}</td>
+                    <td><input type="number" class="form-control form-control-sm" value="${item.jumlah_stok}" min="1" onchange="ubahJumlahStok(${index}, this.value)"></td>
+                    <td><input type="number" class="form-control form-control-sm" value="${item.harga_titip}" min="1" onchange="ubahHargaTitip(${index}, this.value)"></td>
                     <td>${formatRupiah(subtotal)}</td>
-                    <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisTitip(${index})">X</button></td>
+                    <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisTitip(${index})" title="Hapus"><span style='font-size:1.2em;'>&#128465;</span></button></td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
         });
-
         document.getElementById('total_titip_view').value = formatRupiah(totalTitip);
         document.getElementById('total_titip').value = totalTitip;
         document.getElementById('detail_json').value = JSON.stringify(daftarProdukTitip);
     }
 
-    // Inisialisasi tabel saat halaman dibuka
-    updateTabelTitip();
+    window.ubahJumlahStok = function(idx, val) {
+        const jumlah = Number(val);
+        if (jumlah > 0) {
+            daftarProdukTitip[idx].jumlah_stok = jumlah;
+            daftarProdukTitip[idx].subtotal = jumlah * daftarProdukTitip[idx].harga_titip;
+            updateTabelTitip();
+        }
+    }
+
+    window.ubahHargaTitip = function(idx, val) {
+        const harga = Number(val);
+        if (harga > 0) {
+            daftarProdukTitip[idx].harga_titip = harga;
+            daftarProdukTitip[idx].subtotal = harga * daftarProdukTitip[idx].jumlah_stok;
+            updateTabelTitip();
+        }
+    }
+
+    // Inisialisasi produk sesuai consignor terpilih saat load
+    document.addEventListener('DOMContentLoaded', function() {
+        const consignorSelect = document.querySelector('select[name="kode_consignor"]');
+        if (consignorSelect.value) {
+            const event = new Event('change');
+            consignorSelect.dispatchEvent(event);
+        }
+        updateTabelTitip();
+    });
+
+    // Sinkronkan tanggal_titip dengan tanggal_masuk
+    document.getElementById('tanggal_masuk').addEventListener('input', function() {
+        document.getElementById('tanggal_titip').value = this.value;
+    });
 
     // Cegah submit jika belum ada produk titip
     document.querySelector('form').addEventListener('submit', function(e) {

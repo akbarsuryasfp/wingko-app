@@ -3,27 +3,27 @@
 @section('content')
 <div class="container mt-5" style="max-width:900px;">
     <h4 class="mb-4">DAFTAR PELUNASAN PIUTANG</h4>
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center">
-            <form method="GET" class="d-flex align-items-center gap-2">
-                <span class="me-2 mb-0 fw-semibold">Filter:</span>
-                <!-- Filter Status Piutang -->
-                <select name="status_piutang" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                    <option value="">Semua Status</option>
-                    <option value="lunas" {{ request('status_piutang') == 'lunas' ? 'selected' : '' }}>Lunas</option>
-                    <option value="belum lunas" {{ request('status_piutang') == 'belum lunas' ? 'selected' : '' }}>Belum Lunas</option>
-                </select>
-            </form>
+    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap">
+        <!-- Filter Periode Tanggal Jatuh Tempo + Urutkan -->
+        <form method="GET" class="d-flex align-items-center gap-2 mb-0 flex-wrap">
+            @foreach(request()->except(['tanggal_awal','tanggal_akhir','page','sort']) as $key => $val)
+                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+            @endforeach
+            <span class="fw-semibold">Periode:</span>
+            <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+            <span class="mx-1">s/d</span>
+            <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
             @php
                 $sort = request('sort', 'asc');
                 $nextSort = $sort === 'asc' ? 'desc' : 'asc';
                 $icon = $sort === 'asc' ? '▲' : '▼';
             @endphp
-            <a href="{{ route('piutang.index', array_merge(request()->except('page'), ['sort' => $nextSort])) }}"
+            <a href="{{ route('piutang.index', array_merge(request()->except('page','sort'), ['sort' => $nextSort])) }}"
                class="btn btn-outline-secondary btn-sm ms-2">
-                Urutkan No Piutang {{ $icon }}
+                Urutkan No Piutang {!! $icon !!}
             </a>
-        </div>
+        </form>
     </div>
     <table class="table table-bordered table-striped align-middle text-center">
         <thead class="table-light">
@@ -47,15 +47,16 @@
                 <td>{{ $p->no_piutang }}</td>
                 <td>{{ $p->no_jual }}</td>
                 <td>{{ $p->kode_pelanggan }}</td>
-                <td>{{ number_format($p->total_tagihan,0,',','.') }}</td>
+                <td>Rp{{ number_format($p->total_tagihan,0,',','.') }}</td>
                 <td>
-                    @if($p->sisa_piutang == 0)
-                        <span class="text-dark">{{ number_format($p->sisa_piutang,0,',','.') }}</span>
+                    @php $sisa = isset($p->sisa_piutang_penjualan) ? $p->sisa_piutang_penjualan : $p->sisa_piutang; @endphp
+                    @if($sisa == 0)
+                        <span class="text-dark">Rp{{ number_format($sisa,0,',','.') }}</span>
                     @else
-                        <span class="text-danger fw-bold">{{ number_format($p->sisa_piutang,0,',','.') }}</span>
+                        <span class="text-danger fw-bold">Rp{{ number_format($sisa,0,',','.') }}</span>
                     @endif
                 </td>
-                <td>{{ number_format($p->total_bayar,0,',','.') }}</td>
+                <td>Rp{{ number_format($p->total_bayar,0,',','.') }}</td>
                 <td>{{ $p->tanggal_jatuh_tempo ? \Carbon\Carbon::parse($p->tanggal_jatuh_tempo)->format('d-m-Y') : '-' }}</td>
                 <td>
                     @if($p->status_piutang == 'lunas')
