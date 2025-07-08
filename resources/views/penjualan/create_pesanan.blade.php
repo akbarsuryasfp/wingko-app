@@ -93,7 +93,6 @@
                     <th>Jumlah</th>
                     <th>Harga/Satuan</th>
                     <th>Subtotal</th>
-                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -111,7 +110,7 @@
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
-                    <label class="col-sm-4 col-form-label">Diskon</label>
+                    <label class="col-sm-4 col-form-label">Diskon (Rp)</label>
                     <div class="col-sm-8">
                         <input type="number" id="diskon" name="diskon" class="form-control" value="0" min="0" oninput="hitungTotalLain()">
                     </div>
@@ -137,7 +136,14 @@
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Piutang</label>
                     <div class="col-sm-8">
-                        <input type="text" id="piutang" name="piutang" class="form-control" readonly>
+                        <input type="text" id="piutang" class="form-control" readonly>
+                        <input type="hidden" name="piutang" id="piutang_hidden">
+                    </div>
+                </div>
+                <div class="mb-2 row align-items-center" id="row-jatuh-tempo" style="display:none;">
+                    <label class="col-sm-4 col-form-label">Tanggal Jatuh Tempo</label>
+                    <div class="col-sm-8">
+                        <input type="date" id="tanggal_jatuh_tempo" name="tanggal_jatuh_tempo" class="form-control">
                     </div>
                 </div>
             </div>
@@ -172,13 +178,19 @@
         updateTabel();
     });
 
+    function formatRupiah(angka) {
+        if (!angka && angka !== 0) return '';
+        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
+    }
+
     function updateTabel() {
         const tbody = document.querySelector('#daftar-produk tbody');
         tbody.innerHTML = '';
         let totalHarga = 0;
 
         daftarProduk.forEach((item, index) => {
-            // Pastikan subtotal selalu ada di array
+            // Pastikan kode_produk ada di setiap item
+            if (!item.kode_produk && item.kode) item.kode_produk = item.kode;
             item.subtotal = item.jumlah * item.harga_satuan;
             totalHarga += item.subtotal;
             const row = `
@@ -186,20 +198,22 @@
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
                     <td>${item.jumlah}</td>
-                    <td>${item.harga_satuan}</td>
-                    <td>${item.subtotal}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
+                    <td>${formatRupiah(item.harga_satuan)}</td>
+                    <td>${formatRupiah(item.subtotal)}</td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
         });
 
-        document.getElementById('total_harga').value = totalHarga;
-        document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
+        document.getElementById('total_harga').value = formatRupiah(totalHarga);
+        // Kirim detail_json tanpa format Rp
+        document.getElementById('detail_json').value = JSON.stringify(daftarProduk.map(item => ({
+            kode_produk: item.kode_produk,
+            nama_produk: item.nama_produk,
+            jumlah: Number(item.jumlah),
+            harga_satuan: Number(item.harga_satuan),
+            subtotal: Number(item.subtotal)
+        })));
         hitungTotalLain();
     }
 
@@ -209,26 +223,43 @@
     }
 
     function hitungTotalLain() {
-        let totalHarga = parseFloat(document.getElementById('total_harga').value) || 0;
-        let diskon = parseFloat(document.getElementById('diskon').value) || 0;
+        let totalHarga = parseFloat((document.getElementById('total_harga').value || '0').replace(/[^\d]/g, '')) || 0;
+        let diskon = parseFloat(document.getElementById('diskon').value || '0') || 0;
         let totalJual = totalHarga - diskon;
         if (totalJual < 0) totalJual = 0;
-        document.getElementById('total_jual').value = totalJual;
+        document.getElementById('total_jual').value = formatRupiah(totalJual);
 
-        let totalBayar = parseFloat(document.getElementById('total_bayar').value) || 0;
+        let totalBayar = parseFloat(document.getElementById('total_bayar').value || '0') || 0;
         let kembalian = 0, piutang = 0;
 
-        if (totalBayar >= totalJual) {
+        if (totalBayar > totalJual) {
             kembalian = totalBayar - totalJual;
             piutang = 0;
         } else {
             kembalian = 0;
-            piutang = totalJual - totalBayar;
+            piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
         }
-        document.getElementById('kembalian').value = kembalian;
-        document.getElementById('piutang').value = piutang;
+        document.getElementById('kembalian').value = formatRupiah(kembalian);
+        document.getElementById('piutang').value = formatRupiah(piutang);
+        document.getElementById('piutang_hidden').value = piutang;
+
+        // Tampilkan input tanggal jatuh tempo jika piutang > 0
+        document.getElementById('row-jatuh-tempo').style.display = (piutang > 0) ? '' : 'none';
+        document.getElementById('tanggal_jatuh_tempo').required = (piutang > 0);
     }
 
+    // HAPUS event input yang mem-format diskon dan total bayar ke format Rp
+    // document.getElementById('diskon').addEventListener('input', function() {
+    //     let val = this.value.replace(/[^\d]/g, '');
+    //     this.value = val ? formatRupiah(val) : '';
+    //     hitungTotalLain();
+    // });
+    // document.getElementById('total_bayar').addEventListener('input', function() {
+    //     let val = this.value.replace(/[^\d]/g, '');
+    //     this.value = val ? formatRupiah(val) : '';
+    //     hitungTotalLain();
+    // });
+    // Ganti dengan event input biasa agar tetap hitung ulang tanpa format Rp
     document.getElementById('diskon').addEventListener('input', hitungTotalLain);
     document.getElementById('total_bayar').addEventListener('input', hitungTotalLain);
 
@@ -238,6 +269,11 @@
             e.preventDefault();
             return false;
         }
+        // Pastikan hidden piutang ikut terkirim
+        document.getElementById('piutang_hidden').value = parseFloat((document.getElementById('piutang').value || '0').replace(/[^\\d]/g, '')) || 0;
+        // Pastikan total_harga dan total_jual juga dalam bentuk angka
+        document.getElementById('total_harga').value = parseFloat((document.getElementById('total_harga').value || '0').replace(/[^ -9]/g, '')) || 0;
+        document.getElementById('total_jual').value = parseFloat((document.getElementById('total_jual').value || '0').replace(/[^ -9]/g, '')) || 0;
     });
 </script>
 @endsection

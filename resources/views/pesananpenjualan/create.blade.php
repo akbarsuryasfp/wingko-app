@@ -19,11 +19,15 @@
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 160px;">No Pesanan</label>
-                    <input type="text" name="no_pesanan" class="form-control" value="{{ $no_pesanan }}" readonly>
+                    <input type="text" name="no_pesanan" class="form-control" value="{{ $no_pesanan }}" readonly tabindex="-1" style="background:#e9ecef;pointer-events:none;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 160px;">Tanggal Pesanan</label>
                     <input type="date" name="tanggal_pesanan" class="form-control" required>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 160px;">Tanggal Pengiriman</label>
+                    <input type="date" name="tanggal_pengiriman" class="form-control">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 160px;">Pelanggan</label>
@@ -72,7 +76,7 @@
 
         <hr>
 
-        <h4 class="text-center">DAFTAR PESANAN</h4>
+        <h4 class="text-center">DAFTAR PRODUK PESANAN</h4>
         <table class="table table-bordered text-center align-middle" id="daftar-produk">
             <thead>
                 <tr>
@@ -89,12 +93,8 @@
 
         <div class="d-flex justify-content-between mt-4">
             <div>
-                <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary" title="Kembali">
-                    Back
-                </a>
-                <button type="reset" class="btn btn-warning" title="Reset">
-                    Reset
-                </button>
+                <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary" title="Kembali">Back</a>
+                <button type="reset" class="btn btn-warning" title="Reset">Reset</button>
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Pesanan</label>
@@ -102,7 +102,6 @@
                 <button type="submit" class="btn btn-success">Submit</button>
             </div>
         </div>
-
         <input type="hidden" name="detail_json" id="detail_json">
     </form>
 </div>
@@ -143,6 +142,11 @@
         updateTabel();
     }
 
+    function formatRupiah(angka) {
+        if (!angka && angka !== 0) return '';
+        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
+    }
+
     function updateTabel() {
         const tbody = document.querySelector('#daftar-produk tbody');
         tbody.innerHTML = '';
@@ -157,8 +161,8 @@
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
                     <td>${item.jumlah}</td>
-                    <td>${item.harga_satuan}</td>
-                    <td>${item.subtotal}</td>
+                    <td>${formatRupiah(item.harga_satuan)}</td>
+                    <td>${formatRupiah(item.subtotal)}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">
                             <i class="bi bi-trash"></i>

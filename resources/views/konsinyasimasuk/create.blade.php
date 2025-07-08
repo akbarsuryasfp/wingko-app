@@ -18,8 +18,12 @@
             <!-- Kolom Kiri: Data Konsinyasi -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Titip Jual</label>
-                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $no_surattitipjual }}" readonly>
+                    <label class="me-2" style="width: 180px;">No Konsinyasi Masuk</label>
+                    <input type="text" name="no_konsinyasimasuk" class="form-control" value="{{ $no_konsinyasimasuk }}" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">No Surat Titip Jual</label>
+                    <input type="text" name="no_surat_titip_jual" class="form-control" value="{{ old('no_surat_titip_jual') }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Nama Consignor</label>
@@ -32,7 +36,7 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Tanggal Masuk</label>
-                    <input type="date" name="tanggal_titip" class="form-control" required>
+                    <input type="date" name="tanggal_masuk" class="form-control" required>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
@@ -86,7 +90,7 @@
                 <button type="reset" class="btn btn-warning">Reset</button>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total</label>
+                <label class="mb-0">Total Titip Jual</label>
                 <input type="text" id="total_titip_view" readonly class="form-control" style="width: 160px;">
                 <input type="hidden" id="total_titip" name="total_titip">
                 <button type="submit" class="btn btn-success">Submit</button>
@@ -116,6 +120,88 @@ document.querySelector('select[name="kode_consignor"]').addEventListener('change
             produkSelect.appendChild(opt);
         });
     }
+});
+
+// Data array untuk detail produk titip
+let produkTitipList = [];
+
+function tambahProdukTitip() {
+    const kode_produk = document.getElementById('kode_produk').value;
+    const jumlah_stok = parseInt(document.getElementById('jumlah_stok').value);
+    const harga_titip = parseFloat(document.getElementById('harga_titip').value);
+    const produkSelect = document.getElementById('kode_produk');
+    const nama_produk = produkSelect.options[produkSelect.selectedIndex]?.text || '';
+
+
+    // Cek duplikat produk
+    if (produkTitipList.some(p => p.kode_produk === kode_produk)) {
+        alert('Produk sudah ditambahkan!');
+        return;
+    }
+
+    const subtotal = jumlah_stok * harga_titip;
+    produkTitipList.push({ kode_produk, nama_produk, jumlah_stok, harga_titip, subtotal });
+    renderTabelProdukTitip();
+    resetInputProduk();
+}
+
+function renderTabelProdukTitip() {
+    const tbody = document.querySelector('#daftar-produk-titip tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+    function formatRupiah(angka) {
+        if (!angka && angka !== 0) return '';
+        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
+    }
+    produkTitipList.forEach((item, idx) => {
+        total += item.subtotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${item.nama_produk}</td>
+            <td>${item.jumlah_stok}</td>
+            <td>${formatRupiah(item.harga_titip)}</td>
+            <td>${formatRupiah(item.subtotal)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusProdukTitip(${idx})" title="Hapus"><span style='font-size:1.2em;'>&#128465;</span></button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('total_titip_view').value = formatRupiah(total);
+    document.getElementById('total_titip').value = total;
+    document.getElementById('detail_json').value = JSON.stringify(produkTitipList.map(p => ({
+        kode_produk: p.kode_produk,
+        jumlah_stok: p.jumlah_stok,
+        harga_titip: p.harga_titip,
+        subtotal: p.subtotal
+    })));
+}
+
+function hapusProdukTitip(idx) {
+    produkTitipList.splice(idx, 1);
+    renderTabelProdukTitip();
+}
+
+function resetInputProduk() {
+    document.getElementById('kode_produk').value = '';
+    document.getElementById('jumlah_stok').value = '';
+    document.getElementById('harga_titip').value = '';
+}
+
+// Validasi sebelum submit form
+const form = document.querySelector('form[action="{{ route('konsinyasimasuk.store') }}"]');
+form.addEventListener('submit', function(e) {
+    if (produkTitipList.length === 0) {
+        alert('Minimal 1 produk harus ditambahkan!');
+        e.preventDefault();
+        return false;
+    }
+    // Pastikan detail_json terisi data terbaru
+    document.getElementById('detail_json').value = JSON.stringify(produkTitipList.map(p => ({
+        kode_produk: p.kode_produk,
+        jumlah_stok: p.jumlah_stok,
+        harga_titip: p.harga_titip,
+        subtotal: p.subtotal
+    })));
 });
 </script>
 @endsection

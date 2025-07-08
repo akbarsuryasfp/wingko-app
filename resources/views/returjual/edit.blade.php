@@ -20,11 +20,11 @@
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Retur Jual</label>
-                    <input type="text" name="no_returjual" class="form-control" value="{{ $returjual->no_returjual }}" readonly>
+                    <input type="text" name="no_returjual" class="form-control" value="{{ $returjual->no_returjual }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Jual</label>
-                    <input type="text" class="form-control" value="{{ $returjual->no_jual }}" readonly>
+                    <input type="text" class="form-control" value="{{ $returjual->no_jual }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
                     <input type="hidden" name="no_jual" value="{{ $returjual->no_jual }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
@@ -50,7 +50,7 @@
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 120px;">Produk</label>
-                    <select id="kode_produk" class="form-control">
+                    <select id="kode_produk" class="form-control" disabled tabindex="-1" style="background:#e9ecef; pointer-events:none;">
                         <option value="">---Pilih Produk---</option>
                         @foreach($produk as $pr)
                             <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}">{{ $pr->nama_produk }}</option>
@@ -59,15 +59,15 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 120px;">Jumlah Retur</label>
-                    <input type="number" id="jumlah_retur" class="form-control">
+                    <input type="number" id="jumlah_retur" class="form-control" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 120px;">Harga Satuan</label>
-                    <input type="number" id="harga_satuan" class="form-control">
+                    <input type="number" id="harga_satuan" class="form-control" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 120px;">Alasan</label>
-                    <input type="text" id="alasan" class="form-control">
+                    <input type="text" id="alasan" class="form-control" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
                 </div>
                 <div class="mb-3">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProdukRetur()">Tambah Produk Retur</button>
@@ -96,7 +96,6 @@
         <div class="d-flex justify-content-between mt-4">
             <div>
                 <a href="{{ route('returjual.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning">Reset</button>
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Retur</label>
@@ -128,6 +127,26 @@
         }
     });
 
+    // Mapping harga satuan per produk
+    let hargaSatuanProduk = {};
+    @foreach($produk as $pr)
+        hargaSatuanProduk['{{ $pr->kode_produk }}'] = {{ $pr->harga_satuan ?? 0 }};
+    @endforeach
+
+    // Event: saat produk dipilih, isi harga satuan otomatis
+    function setHargaSatuanOtomatis() {
+        const produkSelect = document.getElementById('kode_produk');
+        const kode = produkSelect.value;
+        const harga = hargaSatuanProduk[kode] || '';
+        document.getElementById('harga_satuan').value = harga;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const produkSelect = document.getElementById('kode_produk');
+        produkSelect.addEventListener('change', setHargaSatuanOtomatis);
+        // Jalankan sekali saat halaman dibuka jika ada produk terpilih
+        setHargaSatuanOtomatis();
+    });
+
     function tambahProdukRetur() {
         const produkSelect = document.getElementById('kode_produk');
         const kode_produk = produkSelect.value;
@@ -138,6 +157,13 @@
 
         if (!kode_produk || isNaN(jumlah_retur) || isNaN(harga_satuan) || jumlah_retur <= 0 || harga_satuan <= 0 || !alasan) {
             alert("Silakan lengkapi data produk retur dengan benar.");
+            return;
+        }
+
+        // Cek apakah produk sudah ada di daftar
+        const sudahAda = daftarProdukRetur.some(item => item.kode_produk === kode_produk);
+        if (sudahAda) {
+            alert("Produk sudah ada di daftar retur. Tidak boleh input produk yang sama dua kali.");
             return;
         }
 
@@ -166,7 +192,7 @@
     }
 
     function formatRupiah(angka) {
-        return angka.toLocaleString('id-ID');
+        return 'Rp' + angka.toLocaleString('id-ID');
     }
 
     function updateTabelRetur() {

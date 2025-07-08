@@ -6,50 +6,42 @@
     <title>Nota Tagihan - {{ $penjualan->no_jual }}</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 14px; }
-        .container { width: 700px; margin: 0 auto; border: 1px solid #333; padding: 24px 32px; }
+        .nota-container { width: 700px; margin: 0 auto; border: 1px solid #333; padding: 24px 32px; }
         .nota-header { display: flex; align-items: center; justify-content: space-between; }
-        .nota-logo { width: 80px; height: 80px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .nota-title { text-align: left; flex: 1; margin-left: 24px; }
-        .nota-title h2 { margin: 0 0 4px 0; font-size: 19px; }
+        .nota-title { text-align: left; flex: 1; }
+        .nota-title h2 { margin: 0 0 4px 0; font-size: 20px; }
         .nota-title .sub { font-size: 14px; }
         .nota-print { text-align: right; }
+        .nota-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+        .nota-table th, .nota-table td { border: 1px solid #333; padding: 6px 8px; text-align: center; }
+        .nota-table th { background: #f2f2f2; }
+        .nota-summary { margin-left: 0; }
+        .nota-summary td { padding: 4px 8px; }
+        .fw-bold { font-weight: bold; }
         .section-title { font-size: 15px; font-weight: bold; margin-top: 24px; margin-bottom: 8px; }
-        .table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-        .table th, .table td { border: 1px solid #333; padding: 6px 8px; text-align: center; font-size: 13px; }
-        .table th { background: #f2f2f2; font-size: 13.5px; }
-        .summary-list { list-style: none; padding: 0; }
-        .summary-list li { margin-bottom: 4px; }
-        .check { color: green; font-weight: bold; }
-        .bank-info { margin-top: 8px; }
         .footer { margin-top: 32px; font-size: 13px; }
         @media print {
             .no-print { display: none; }
-            .container { border: none; }
+            .nota-container { border: none; }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <!-- Kop Nota Tagihan -->
-    <div class="nota-header" style="display: flex; align-items: center; justify-content: space-between;">
-        <div class="nota-logo" style="width: 80px; height: 80px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 12px;">
-            Logo
+<div class="nota-container">
+    <div class="nota-header">
+        <div class="nota-title">
+            <h2>WINGKO BABAT PRATAMA</h2>
+            <div class="sub">Nota Tagihan</div>
+            <div class="sub">Tanggal Tagihan: {{ $penjualan->tanggal_jual }}</div>
+            <div class="sub">Nama Pelanggan: {{ $penjualan->nama_pelanggan ?? ($penjualan->pelanggan->nama_pelanggan ?? '-') }}</div>
         </div>
-        <div class="nota-title" style="text-align: left; flex: 1; margin-left: 24px;">
-            <h2 style="margin: 0 0 4px 0; font-size: 20px;">WINGKO BABAT PRATAMA</h2>
-            <div class="sub" style="font-size: 14px;">Nota Tagihan</div>
-            <div class="sub" style="font-size: 14px;">Tanggal Tagihan: {{ $penjualan->tanggal_jual }}</div>
-            <div class="sub" style="font-size: 14px;">Nama Pelanggan: {{ $penjualan->nama_pelanggan ?? ($penjualan->pelanggan->nama_pelanggan ?? '-') }}</div>
-        </div>
-        <div class="nota-print no-print" style="text-align: right;">
+        <div class="nota-print no-print">
             <button onclick="window.print()" style="padding:4px 12px;">Print</button>
         </div>
     </div>
-    <div class="subtitle" style="margin-top:8px;">Nomor Tagihan: {{ $penjualan->no_jual }}</div>
+    <div class="nota-info" style="margin-top:8px;">Nomor Tagihan: {{ $penjualan->no_jual }}</div>
 
-    <!-- Rincian Penjualan -->
-    <div class="section-title">📦 Rincian Penjualan</div>
-    <table class="table">
+    <table class="nota-table" style="margin-top: 18px;">
         <thead>
             <tr>
                 <th>No</th>
@@ -57,7 +49,7 @@
                 <th>Satuan</th>
                 <th>Jumlah</th>
                 <th>Harga Satuan</th>
-                <th>Total</th>
+                <th>Subtotal</th>
             </tr>
         </thead>
         <tbody>
@@ -74,29 +66,44 @@
         </tbody>
     </table>
 
-    <!-- Rincian Pembayaran -->
-    <div class="section-title">💰 Rincian Pembayaran</div>
-    <ul class="summary-list">
-        <li>Total Penjualan : Rp{{ number_format($penjualan->total_harga, 0, ',', '.') }}</li>
-        <li>Diskon : Rp{{ number_format($penjualan->diskon, 0, ',', '.') }}</li>
-        <li>Pembayaran Sebelumnya : Rp{{ number_format($penjualan->total_bayar, 0, ',', '.') }}</li>
-        <li>Metode Pembayaran : {{ ucfirst($penjualan->metode_pembayaran) }}</li>
-        <li><b>Sisa Tagihan (Piutang) : Rp{{ number_format($penjualan->piutang, 0, ',', '.') }}</b></li>
-    </ul>
+    <table class="nota-summary" style="margin-left:0; width: 350px;">
+        <tr>
+            <td class="fw-bold" style="width:170px;">Total Penjualan</td>
+            <td>: Rp{{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Diskon</td>
+            <td>:
+                @if(isset($penjualan->tipe_diskon) && $penjualan->tipe_diskon == 'persen')
+                    {{ $penjualan->diskon }}%
+                @else
+                    Rp{{ number_format($penjualan->diskon, 0, ',', '.') }}
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Pembayaran Sebelumnya</td>
+            <td>: Rp{{ number_format($penjualan->total_bayar, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Metode Pembayaran</td>
+            <td>: {{ ucfirst($penjualan->metode_pembayaran) }}</td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Sisa Tagihan (Piutang)</td>
+            <td>: <b>Rp{{ number_format($penjualan->piutang, 0, ',', '.') }}</b></td>
+        </tr>
+    </table>
 
-    <!-- Instruksi Pembayaran -->
-    <div class="section-title">🏦 Instruksi Pembayaran</div>
-    <div>
+    <div class="section-title">Instruksi Pembayaran</div>
+    <div style="font-size:13px;">
         Silakan lakukan pelunasan sisa tagihan sebesar <b>Rp{{ number_format($penjualan->piutang, 0, ',', '.') }}</b> melalui:
-        <ul>
-            <li>
-                <span class="check">&#x2611;</span> <b>Tunai</b><br>
-                Datang langsung ke toko Wingko Babat Pratama.
-            </li>
-            <li style="margin-top:8px;">
-                <span class="check">&#x2611;</span> <b>Non Tunai</b><br>
+        <ul style="margin-top:8px;">
+            <li><b>Tunai</b><br>
+                Datang langsung ke toko Wingko Babat Pratama.</li>
+            <li style="margin-top:8px;"><b>Non Tunai</b><br>
                 Transfer ke:<br>
-                <div class="bank-info">
+                <div style="margin-left:12px;">
                     <b>Bank Jateng</b><br>
                     No. Rekening: 123456789<br>
                     a.n. Wingko Babat Pratama
@@ -107,7 +114,6 @@
 
     <div class="footer">
         Mohon lakukan pelunasan sebelum jatuh tempo untuk menjaga kelancaran transaksi Anda.<br>
-        <br>
         Terima kasih atas kepercayaannya.<br>
         Hormat kami,<br>
         <b>Wingko Babat Pratama</b><br>

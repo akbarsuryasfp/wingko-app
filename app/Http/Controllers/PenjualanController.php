@@ -34,11 +34,13 @@ class PenjualanController extends Controller
 
         foreach ($penjualan as $jual) {
             $details = DB::table('t_penjualan_detail')
-                ->join('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+                ->leftJoin('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+                ->leftJoin('t_produk_konsinyasi', 't_penjualan_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
                 ->where('t_penjualan_detail.no_jual', $jual->no_jual)
                 ->select(
                     't_penjualan_detail.*',
-                    't_produk.nama_produk'
+                    DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                    DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
                 )
                 ->get();
             $jual->details = $details;
@@ -60,7 +62,12 @@ class PenjualanController extends Controller
         $no_jual = 'PJ' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
 
         $pelanggan = DB::table('t_pelanggan')->get();
-        $produk = DB::table('t_produk')->get();
+        // Ambil produk sendiri
+        $produkSendiri = DB::table('t_produk')->get();
+        // Ambil produk konsinyasi
+        $produkKonsinyasi = DB::table('t_produk_konsinyasi')->get();
+        // Gabungkan
+        $produk = $produkSendiri->concat($produkKonsinyasi);
         $jenis_penjualan = $request->get('jenis_penjualan', 'langsung');
 
         return view('penjualan.create', compact('no_jual', 'pelanggan', 'produk', 'jenis_penjualan'));
@@ -68,124 +75,96 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'no_jual' => 'required|unique:t_penjualan,no_jual',
-            'tanggal_jual' => 'required|date',
-            'kode_pelanggan' => 'required',
-            'total_harga' => 'required|numeric',
-            'diskon' => 'required|numeric',
-            'total_jual' => 'required|numeric',
-            'total_bayar' => 'required|numeric',
-            'kembalian' => 'required|numeric',
-            'piutang' => 'required|numeric',
-            'metode_pembayaran' => 'required|in:tunai,non tunai',
-            'status_pembayaran' => 'nullable', // ubah jadi nullable, akan diisi otomatis
-            'keterangan' => 'nullable|string|max:255',
-            'detail_json' => 'required|json'
-        ]);
+        \Log::info('PenjualanController@store - request data', $request->all());
+        try {
+            $rules = [
+                'no_jual' => 'required|unique:t_penjualan,no_jual',
+                'tanggal_jual' => 'required|date',
+                'kode_pelanggan' => 'required',
+                'total_harga' => 'required|numeric',
+                'diskon' => 'required|numeric',
+                'total_jual' => 'required|numeric',
+                'total_bayar' => 'required|numeric',
+                'kembalian' => 'required|numeric',
+                'piutang' => 'required|numeric',
+                'metode_pembayaran' => 'required|in:tunai,non tunai',
+                'keterangan' => 'nullable|string|max:255',
+                'detail_json' => 'required|json',
+                'jenis_penjualan' => 'required',
+            ];
+            // no_pesanan hanya required jika jenis_penjualan == 'pesanan'
+            if ($request->jenis_penjualan === 'pesanan') {
+                $rules['no_pesanan'] = 'required';
+            }
+            $request->validate($rules);
+            \Log::info('PenjualanController@store - validasi sukses');
 
-        // Tentukan status pembayaran otomatis
-        $status_pembayaran = ($request->piutang == 0) ? 'lunas' : 'belum lunas';
+            $status_pembayaran = ($request->piutang == 0) ? 'lunas' : 'belum lunas';
 
-        DB::transaction(function () use ($request, $status_pembayaran) {
-            // Simpan penjualan
-            DB::table('t_penjualan')->insert([
-                'no_jual' => $request->no_jual,
-                'tanggal_jual' => $request->tanggal_jual,
-                'kode_pelanggan' => $request->kode_pelanggan,
-                'total_harga' => $request->total_harga,
-                'diskon' => $request->diskon,
-                'total_jual' => $request->total_jual,
-                'total_bayar' => $request->total_bayar,
-                'kembalian' => $request->kembalian,
-                'piutang' => $request->piutang,
-                'metode_pembayaran' => $request->metode_pembayaran,
-                'status_pembayaran' => $status_pembayaran,
-                'keterangan' => $request->keterangan,
-                'jenis_penjualan' => $request->jenis_penjualan,
-                'no_pesanan' => $request->no_pesanan ?? null, // <-- tambahkan baris ini
-            ]);
-
-            // Simpan detail penjualan
-            $details = json_decode($request->detail_json, true);
-            foreach ($details as $i => $detail) {
-                DB::table('t_penjualan_detail')->insert([
-                    'no_detailjual' => $request->no_jual . '-' . ($i+1),
+            DB::transaction(function () use ($request, $status_pembayaran) {
+                // Insert ke t_penjualan
+                DB::table('t_penjualan')->insert([
                     'no_jual' => $request->no_jual,
-                    'kode_produk' => $detail['kode_produk'],
-                    'jumlah' => $detail['jumlah'],
-                    'harga_satuan' => $detail['harga_satuan'],
-                    'subtotal' => $detail['subtotal'],
+                    'tanggal_jual' => $request->tanggal_jual,
+                    'kode_pelanggan' => $request->kode_pelanggan,
+                    'total_harga' => $request->total_harga,
+                    'diskon' => $request->diskon,
+                    'total_jual' => $request->total_jual,
+                    'total_bayar' => $request->total_bayar,
+                    'kembalian' => $request->kembalian,
+                    'piutang' => $request->piutang,
+                    'metode_pembayaran' => $request->metode_pembayaran,
+                    'status_pembayaran' => $status_pembayaran,
+                    'keterangan' => $request->keterangan,
+                    'jenis_penjualan' => $request->jenis_penjualan,
+                    'no_pesanan' => $request->no_pesanan,
+                    'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo ?? null,
                 ]);
-            }
 
-            // Kurangi stok produk
-            foreach ($details as $i => $detail) {
-                $jumlahDijual = $detail['jumlah'];
-                $kode_produk = $detail['kode_produk'];
-
-                // Ambil stok produksi detail FIFO
-                $produksiDetails = DB::table('t_produksi_detail')
-                    ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
-                    ->where('t_produksi_detail.kode_produk', $kode_produk)
-                    ->where('t_produksi_detail.jumlah_unit', '>', 0)
-                    ->orderBy('t_produksi.tanggal_produksi', 'asc')
-                    ->select('t_produksi_detail.no_detail_produksi', 't_produksi_detail.jumlah_unit')
-                    ->get();
-
-                // dd($produksiDetails);
-
-                foreach ($produksiDetails as $pd) {
-                    if ($jumlahDijual <= 0) break;
-
-                    $stokTersedia = $pd->jumlah_unit;
-                    $pakai = min($stokTersedia, $jumlahDijual);
-
-                    // Kurangi stok pada produksi detail
-                    DB::table('t_produksi_detail')
-                        ->where('no_detail_produksi', $pd->no_detail_produksi)
-                        ->decrement('jumlah_unit', $pakai);
-
-                    $jumlahDijual -= $pakai;
+                // Insert ke t_penjualan_detail
+                $details = json_decode($request->detail_json, true);
+                foreach ($details as $i => $detail) {
+                    DB::table('t_penjualan_detail')->insert([
+                        'no_detailjual' => $request->no_jual . '-' . ($i+1),
+                        'no_jual' => $request->no_jual,
+                        'kode_produk' => $detail['kode_produk'],
+                        'jumlah' => $detail['jumlah'],
+                        'harga_satuan' => $detail['harga_satuan'],
+                        'subtotal' => $detail['subtotal'],
+                    ]);
                 }
 
-                // Catat ke t_kartupersproduk (stok keluar)
-                DB::table('t_kartupersproduk')->insert([
-                    'kode_produk' => $kode_produk,
-                    'tanggal' => $request->tanggal_jual,
-                    'no_transaksi' => $request->no_jual,
-                    'keluar' => $detail['jumlah'],
-                    'masuk' => 0,
-                    'satuan' => DB::table('t_produk')->where('kode_produk', $kode_produk)->value('satuan'),
-                    'keterangan' => 'Penjualan'
-                ]);
-            }
-
-            // === Tambahkan pencatatan piutang di sini ===
-            if ($request->piutang > 0) {
-                // Generate no_piutang otomatis
-                $last = DB::table('t_piutang')->orderBy('no_piutang', 'desc')->first();
-                if ($last && preg_match('/PI(\d+)/', $last->no_piutang, $match)) {
-                    $nextNumber = (int)$match[1] + 1;
-                } else {
-                    $nextNumber = 1;
+                // Insert ke t_piutang jika ada piutang
+                if ($request->piutang > 0) {
+                    $last = DB::table('t_piutang')->orderBy('no_piutang', 'desc')->first();
+                    if ($last && preg_match('/PI(\d+)/', $last->no_piutang, $match)) {
+                        $nextNumber = (int)$match[1] + 1;
+                    } else {
+                        $nextNumber = 1;
+                    }
+                    $no_piutang = 'PI' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+                    DB::table('t_piutang')->insert([
+                        'no_piutang'         => $no_piutang,
+                        'no_jual'            => $request->no_jual,
+                        'kode_pelanggan'     => $request->kode_pelanggan,
+                        'total_tagihan'      => $request->total_jual,
+                        'sisa_piutang'       => $request->piutang,
+                        'total_bayar'        => $request->total_bayar,
+                        'status_piutang'     => $status_pembayaran,
+                        'tanggal_jatuh_tempo'=> $request->tanggal_jatuh_tempo ?? null,
+                    ]);
                 }
-                $no_piutang = 'PI' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+            });
 
-                DB::table('t_piutang')->insert([
-                    'no_piutang'         => $no_piutang,
-                    'no_jual'            => $request->no_jual,
-                    'kode_pelanggan'     => $request->kode_pelanggan,
-                    'total_tagihan'      => $request->total_jual,
-                    'sisa_piutang'       => $request->piutang,
-                    'total_bayar'        => $request->total_bayar,
-                    'status_piutang'     => $status_pembayaran,
-                    'tanggal_jatuh_tempo'=> $request->tanggal_jatuh_tempo ?? null, // tambahkan jika ada field ini
-                ]);
-            }
-        });
-
-        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil disimpan!');
+            \Log::info('PenjualanController@store - transaksi sukses');
+            return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil disimpan!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('PenjualanController@store - validasi gagal', $e->errors());
+            return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Log::error('PenjualanController@store - exception', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Terjadi kesalahan saat menyimpan penjualan.')->withInput();
+        }
     }
 
     public function edit($no_jual)
@@ -237,15 +216,16 @@ class PenjualanController extends Controller
             'kembalian' => 'required|numeric',
             'piutang' => 'required|numeric',
             'metode_pembayaran' => 'required|in:tunai,non tunai',
-            'status_pembayaran' => 'nullable', // ubah jadi nullable, akan diisi otomatis
+            'status_pembayaran' => 'nullable',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
         ]);
 
-        // Tentukan status pembayaran otomatis
+        // Cek jenis penjualan
+        $jenis_penjualan = DB::table('t_penjualan')->where('no_jual', $no_jual)->value('jenis_penjualan');
         $status_pembayaran = ($request->piutang == 0) ? 'lunas' : 'belum lunas';
 
-        DB::transaction(function () use ($request, $no_jual, $status_pembayaran) {
+        DB::transaction(function () use ($request, $no_jual, $status_pembayaran, $jenis_penjualan) {
             DB::table('t_penjualan')->where('no_jual', $no_jual)->update([
                 'tanggal_jual' => $request->tanggal_jual,
                 'kode_pelanggan' => $request->kode_pelanggan,
@@ -260,17 +240,56 @@ class PenjualanController extends Controller
                 'keterangan' => $request->keterangan,
             ]);
 
-            DB::table('t_penjualan_detail')->where('no_jual', $no_jual)->delete();
+            // Jika jenis_penjualan bukan pesanan, detail produk boleh diupdate
+            if ($jenis_penjualan !== 'pesanan') {
+                DB::table('t_penjualan_detail')->where('no_jual', $no_jual)->delete();
+                $details = json_decode($request->detail_json, true);
+                foreach ($details as $i => $detail) {
+                    DB::table('t_penjualan_detail')->insert([
+                        'no_detailjual' => $no_jual . '-' . ($i+1),
+                        'no_jual' => $no_jual,
+                        'kode_produk' => $detail['kode_produk'],
+                        'jumlah' => $detail['jumlah'],
+                        'harga_satuan' => $detail['harga_satuan'],
+                        'subtotal' => $detail['subtotal'],
+                    ]);
+                    // Jika produk konsinyasi, catat ke kartu stok konsinyasi (barang keluar)
+                    $isKonsinyasi = DB::table('t_produk_konsinyasi')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isKonsinyasi) {
+                        $lastStok = DB::table('t_kartuperskonsinyasi')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->where('lokasi', 'Gudang')
+                            ->orderByDesc('tanggal')
+                            ->orderByDesc('id')
+                            ->value('sisa');
+                        $lastStok = $lastStok ?? 0;
+                        $sisaBaru = $lastStok - $detail['jumlah'];
+                        DB::table('t_kartuperskonsinyasi')->insert([
+                            'tanggal' => $request->tanggal_jual,
+                            'kode_produk' => $detail['kode_produk'],
+                            'masuk' => 0,
+                            'keluar' => $detail['jumlah'],
+                            'sisa' => $sisaBaru,
+                            'harga_konsinyasi' => $detail['harga_satuan'],
+                            'lokasi' => 'Gudang',
+                            'keterangan' => 'Penjualan'
+                        ]);
+                    }
+                }
+            }
 
-            $details = json_decode($request->detail_json, true);
-            foreach ($details as $i => $detail) {
-                DB::table('t_penjualan_detail')->insert([
-                    'no_detailjual' => $no_jual . '-' . ($i+1),
-                    'no_jual' => $no_jual,
-                    'kode_produk' => $detail['kode_produk'],
-                    'jumlah' => $detail['jumlah'],
-                    'harga_satuan' => $detail['harga_satuan'],
-                    'subtotal' => $detail['subtotal'],
+            // Sinkronisasi ke t_piutang jika ada
+            $piutangRow = DB::table('t_piutang')->where('no_jual', $no_jual)->first();
+            if ($piutangRow) {
+                $sisa_piutang = $request->piutang;
+                $total_bayar = $request->total_bayar;
+                $status_piutang = ($sisa_piutang <= 0) ? 'lunas' : 'belum lunas';
+                DB::table('t_piutang')->where('no_jual', $no_jual)->update([
+                    'total_tagihan' => $request->total_jual,
+                    'sisa_piutang' => $sisa_piutang,
+                    'total_bayar' => $total_bayar,
+                    'status_piutang' => $status_piutang,
+                    'kode_pelanggan' => $request->kode_pelanggan,
                 ]);
             }
         });
@@ -298,13 +317,15 @@ class PenjualanController extends Controller
             ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan')
             ->first();
 
+        // Ambil detail produk dari t_penjualan_detail saja (termasuk produk sendiri & konsinyasi jika sudah masuk di sini)
         $details = DB::table('t_penjualan_detail')
-            ->join('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_penjualan_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
             ->where('t_penjualan_detail.no_jual', $no_jual)
             ->select(
                 't_penjualan_detail.*',
-                't_produk.nama_produk',
-                't_produk.satuan' // sudah benar, field satuan diambil
+                DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
             )
             ->get();
 
@@ -319,13 +340,15 @@ class PenjualanController extends Controller
             ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan')
             ->first();
 
+        // Ambil detail produk dari t_penjualan_detail saja (termasuk produk sendiri & konsinyasi jika sudah masuk di sini)
         $details = DB::table('t_penjualan_detail')
-            ->join('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_penjualan_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
             ->where('t_penjualan_detail.no_jual', $no_jual)
             ->select(
                 't_penjualan_detail.*',
-                't_produk.nama_produk',
-                't_produk.satuan' // pastikan field satuan ada di t_produk
+                DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
             )
             ->get();
 
@@ -371,8 +394,8 @@ class PenjualanController extends Controller
 
     public function cetakTagihan($no_jual)
     {
-        // Ambil data penjualan beserta relasi pelanggan dan details
-        $penjualan = \App\Models\Penjualan::with(['pelanggan', 'details'])->where('no_jual', $no_jual)->firstOrFail();
+        // Ambil data penjualan beserta relasi pelanggan dan details+produk
+        $penjualan = \App\Models\Penjualan::with(['pelanggan', 'details.produk'])->where('no_jual', $no_jual)->firstOrFail();
 
         // Pastikan hanya status "belum lunas" yang bisa dicetak tagihannya
         if ($penjualan->status_pembayaran !== 'belum lunas') {

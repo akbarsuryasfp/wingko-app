@@ -31,33 +31,22 @@ class ConsignorController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'kode_consignor' => 'required|unique:t_consignor,kode_consignor',
             'nama_consignor' => 'required',
             'alamat' => 'required',
             'no_telp' => 'required',
             'bank' => 'required',
             'rekening' => 'required',
-            'nama_produk' => 'required',
-            'jumlah' => 'required|numeric|min:1',
         ]);
 
-        // Gabungkan bank dan rekening
         $rekening = $request->bank . ' ' . $request->rekening;
 
-        // Gabungkan nama produk dan jumlah
-        $keterangan = 'Produk: ' . $request->nama_produk . ', Jumlah: ' . $request->jumlah . ' unit';
-
-        // Generate kode_consignor otomatis
-        $last = Consignor::orderBy('kode_consignor', 'desc')->first();
-        $newNumber = $last ? intval(substr($last->kode_consignor, 2)) + 1 : 1;
-        $kode_consignor = 'CR' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
-
         Consignor::create([
-            'kode_consignor' => $kode_consignor,
+            'kode_consignor' => $request->kode_consignor,
             'nama_consignor' => $request->nama_consignor,
             'alamat' => $request->alamat,
             'no_telp' => $request->no_telp,
             'rekening' => $rekening,
-            'keterangan' => $keterangan,
         ]);
 
         return redirect()->route('consignor.index')->with('success', 'Data consignor berhasil disimpan!');

@@ -29,7 +29,7 @@
 <body>
 <div class="nota-container">
     <div class="nota-header">
-        <div class="nota-logo">
+        <div class="nota-logo>
             Logo
         </div>
         <div class="nota-title">
@@ -42,6 +42,7 @@
             <button onclick="window.print()" style="padding:4px 12px;">Print</button>
         </div>
     </div>
+    <div class="nota-info" style="margin-top:8px;">Nomor Penjualan: {{ $penjualan->no_jual }}</div>
 
     <table class="nota-table" style="margin-top: 18px;">
         <thead>
@@ -61,8 +62,8 @@
                 <td>{{ $detail->nama_produk }}</td>
                 <td>{{ $detail->satuan ?? '-' }}</td>
                 <td>{{ $detail->jumlah }}</td>
-                <td>{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
-                <td>{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -71,15 +72,21 @@
     <table class="nota-summary" style="margin-left:0; width: 350px;">
         <tr>
             <td class="fw-bold" style="width:170px;">Total Harga</td>
-            <td>: {{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
+            <td>: Rp{{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <td class="fw-bold">Diskon</td>
-            <td>: {{ number_format($penjualan->diskon, 0, ',', '.') }}</td>
+            <td>:
+                @if(isset($penjualan->tipe_diskon) && $penjualan->tipe_diskon == 'persen')
+                    {{ $penjualan->diskon }}%
+                @else
+                    Rp{{ number_format($penjualan->diskon, 0, ',', '.') }}
+                @endif
+            </td>
         </tr>
         <tr>
             <td class="fw-bold">Total Penjualan</td>
-            <td>: {{ number_format($penjualan->total_jual, 0, ',', '.') }}</td>
+            <td>: Rp{{ number_format($penjualan->total_jual, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <td class="fw-bold">Jenis Pembayaran</td>
@@ -87,18 +94,14 @@
         </tr>
         <tr>
             <td class="fw-bold">Total Bayar</td>
-            <td>: {{ number_format($penjualan->total_bayar, 0, ',', '.') }}</td>
+            <td>:
+                Rp{{ number_format(($penjualan->piutang == 0 ? $penjualan->total_jual : $penjualan->total_bayar), 0, ',', '.') }}
+            </td>
         </tr>
         <tr>
             <td class="fw-bold">Kembalian</td>
-            <td>: {{ number_format($penjualan->kembalian, 0, ',', '.') }}</td>
+            <td>: Rp{{ number_format($penjualan->kembalian, 0, ',', '.') }}</td>
         </tr>
-        @if($penjualan->status_pembayaran == 'belum lunas')
-        <tr>
-            <td class="fw-bold">Total Tagihan</td>
-            <td>: {{ number_format($penjualan->piutang, 0, ',', '.') }}</td>
-        </tr>
-        @endif
     </table>
 </div>
 </body>

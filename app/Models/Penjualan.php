@@ -29,7 +29,7 @@ class Penjualan extends Model
 
     public function pelanggan()
     {
-        return $this->belongsTo(\App\Models\Pelanggan::class, 'kode_pelanggan', 'kode_pelanggan');
+        return $this->belongsTo(Pelanggan::class, 'kode_pelanggan', 'kode_pelanggan');
     }
 
     public function details()
@@ -59,5 +59,10 @@ class PenjualanDetail extends Model
     public function penjualan()
     {
         return $this->belongsTo(Penjualan::class, 'no_jual', 'no_jual');
+    }
+
+    public function produk()
+    {
+        return $this->belongsTo(Produk::class, 'kode_produk', 'kode_produk');
     }
 }

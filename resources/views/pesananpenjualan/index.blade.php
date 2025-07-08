@@ -42,6 +42,7 @@
                 <th>No</th>
                 <th>No Pesanan</th>
                 <th>Tanggal Pesanan</th>
+                <th>Tanggal Pengiriman</th>
                 <th>Pelanggan</th>
                 <th>Total Pesanan</th>
                 <th>Keterangan</th>
@@ -54,28 +55,31 @@
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $psn->no_pesanan }}</td>
                     <td>{{ $psn->tanggal_pesanan }}</td>
+                    <td>{{ $psn->tanggal_pengiriman ?? '-' }}</td>
                     <td>{{ $psn->nama_pelanggan ?? '-' }}</td>
-                    <td>{{ number_format($psn->total_pesanan, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($psn->total_pesanan, 0, ',', '.') }}</td>
                     <td>{{ $psn->keterangan ?? '-' }}</td>
                     <td>
-                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $psn->no_pesanan }}" title="Detail">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <a href="{{ route('pesananpenjualan.edit', $psn->no_pesanan) }}" class="btn btn-warning btn-sm" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <form action="{{ route('pesananpenjualan.destroy', $psn->no_pesanan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
+                        <div class="d-flex gap-1 flex-wrap align-items-center">
+                            <a href="{{ route('pesananpenjualan.show', $psn->no_pesanan) }}" class="btn btn-info btn-sm" title="Detail">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ route('pesananpenjualan.edit', $psn->no_pesanan) }}" class="btn btn-warning btn-sm" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form action="{{ route('pesananpenjualan.destroy', $psn->no_pesanan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center">Data tidak tersedia.</td>
+                    <td colspan="8" class="text-center">Data tidak tersedia.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -83,49 +87,4 @@
 </div>
 @endsection
 
-@foreach ($pesanan as $psn)
-<!-- Modal Detail Pesanan -->
-<div class="modal fade" id="detailModal{{ $psn->no_pesanan }}" tabindex="-1" aria-labelledby="detailModalLabel{{ $psn->no_pesanan }}" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="detailModalLabel{{ $psn->no_pesanan }}">Detail Pesanan: {{ $psn->no_pesanan }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered text-center">
-            <thead class="table-light">
-                <tr>
-                    <th>No</th>
-                    <th>Produk</th>
-                    <th>Jumlah</th>
-                    <th>Harga Satuan</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($psn->details as $i => $detail)
-                <tr>
-                    <td>{{ $i+1 }}</td>
-                    <td>
-                        {{ $detail->nama_produk ?? ($detail->produk->nama_produk ?? '-') }}
-                    </td>
-                    <td>{{ $detail->jumlah }}</td>
-                    <td>{{ number_format($detail->harga_satuan,0,',','.') }}</td>
-                    <td>{{ number_format($detail->subtotal,0,',','.') }}</td>
-                </tr>
-                @endforeach
-                @php
-                    $grandTotal = $psn->details->sum('subtotal');
-                @endphp
-                <tr>
-                    <td colspan="4" class="text-end fw-bold">Grand Total</td>
-                    <td class="fw-bold">{{ number_format($grandTotal,0,',','.') }}</td>
-                </tr>
-            </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-@endforeach
+{{-- Hapus/komentari modal detail pesanan jika tidak dipakai lagi --}}

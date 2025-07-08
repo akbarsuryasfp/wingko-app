@@ -5,9 +5,10 @@
     <h2>Tambah Consignor</h2>
     <form action="{{ route('consignor.store') }}" method="POST">
         @csrf
+        <input type="hidden" name="kode_consignor" value="{{ $kode_consignor ?? old('kode_consignor') }}">
         <div class="mb-3 d-flex align-items-center">
             <label for="kode_consignor" class="form-label mb-0" style="width:150px;">Kode Consignor</label>
-            <input type="text" class="form-control" id="kode_consignor" name="kode_consignor" value="{{ $kode_consignor ?? old('kode_consignor') }}" readonly style="width:300px;">
+            <input type="text" class="form-control" id="kode_consignor" value="{{ $kode_consignor ?? old('kode_consignor') }}" readonly style="width:300px;">
         </div>
         <div class="mb-3 d-flex align-items-center">
             <label for="nama_consignor" class="form-label mb-0" style="width:150px;">Nama Consignor</label>

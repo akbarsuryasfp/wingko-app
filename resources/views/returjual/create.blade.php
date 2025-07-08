@@ -102,7 +102,7 @@
     }
 
     function formatRupiah(angka) {
-        return angka.toLocaleString('id-ID');
+        return 'Rp' + angka.toLocaleString('id-ID');
     }
 
     function updateTabelRetur() {

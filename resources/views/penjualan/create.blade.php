@@ -47,7 +47,8 @@
                         @foreach($produk as $pr)
                             <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}"
                                 data-harga="{{ $pr->nama_produk == 'Moaci' ? 25000 : ($pr->nama_produk == 'Wingko Babat' ? 20000 : 0) }}">
-                                {{ $pr->nama_produk }}
+                                {{ $pr->nama_produk }} 
+                                @if(isset($pr->jenis) && $pr->jenis == 'konsinyasi') (Konsinyasi) @endif
                             </option>
                         @endforeach
                     </select>
@@ -76,7 +77,7 @@
                     <th>Nama Produk</th>
                     <th>Jumlah</th>
                     <th>Harga/Satuan</th>
-                    <th>Subtotal</th> <!-- Ubah dari Total ke Subtotal -->
+                    <th>Subtotal</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -94,8 +95,17 @@
                 </div>
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Diskon</label>
-                    <div class="col-sm-8">
+                    <div class="col-sm-4">
                         <input type="number" id="diskon" name="diskon" class="form-control" value="0" min="0" oninput="hitungTotalLain()">
+                    </div>
+                    <div class="col-sm-4">
+                        <select id="tipe_diskon" name="tipe_diskon" class="form-control" onchange="hitungTotalLain()">
+                            <option value="rupiah">Rp</option>
+                            <option value="persen">%</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-4">
+                        <span id="diskon_label">Rp0</span>
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
@@ -151,6 +161,14 @@
 
 <script>
     let daftarProduk = [];
+    const defaultForm = {
+        tanggal_jual: '',
+        kode_pelanggan: '',
+        metode_pembayaran: '',
+        keterangan: '',
+        diskon: 0,
+        total_bayar: 0
+    };
 
     function tambahProduk() {
         const produkSelect = document.getElementById('kode_produk');
@@ -185,6 +203,15 @@
         updateTabel();
     }
 
+    function formatRupiah(angka) {
+        if (isNaN(angka)) return '-';
+        return 'Rp' + angka.toLocaleString('id-ID');
+    }
+    function parseRupiah(str) {
+        if (!str) return 0;
+        return parseInt(String(str).replace(/[^\d]/g, '')) || 0;
+    }
+
     function updateTabel() {
         const tbody = document.querySelector('#daftar-produk tbody');
         tbody.innerHTML = '';
@@ -199,8 +226,8 @@
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
                     <td>${item.jumlah}</td>
-                    <td>${item.harga_satuan}</td>
-                    <td>${item.subtotal}</td>
+                    <td>${formatRupiah(item.harga_satuan)}</td>
+                    <td>${formatRupiah(item.subtotal)}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">
                             <i class="bi bi-trash"></i>
@@ -217,32 +244,44 @@
     }
 
     function hitungTotalLain() {
-        let totalHarga = parseFloat(document.getElementById('total_harga').value) || 0;
+        let totalHarga = daftarProduk.reduce((sum, item) => sum + item.subtotal, 0);
         let diskon = parseFloat(document.getElementById('diskon').value) || 0;
-        let totalJual = totalHarga - diskon;
+        let tipeDiskon = document.getElementById('tipe_diskon') ? document.getElementById('tipe_diskon').value : 'rupiah';
+        let diskonValue = diskon;
+        if (tipeDiskon === 'persen') {
+            diskonValue = totalHarga * (diskon / 100);
+        }
+        let totalJual = totalHarga - diskonValue;
         if (totalJual < 0) totalJual = 0;
+        document.getElementById('total_harga').value = totalHarga;
         document.getElementById('total_jual').value = totalJual;
-
         let totalBayar = parseFloat(document.getElementById('total_bayar').value) || 0;
         let kembalian = 0, piutang = 0;
-
-        const metode = document.getElementById('metode_pembayaran') ? document.getElementById('metode_pembayaran').value : 'tunai';
-        const status = document.querySelector('select[name="status_pembayaran"]') ? document.querySelector('select[name="status_pembayaran"]').value : 'belum lunas';
-
-        if (metode === 'tunai') {
-            if (status === 'belum lunas') {
-                piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
-                kembalian = 0;
-            } else {
-                kembalian = totalBayar > totalJual ? totalBayar - totalJual : 0;
-                piutang = 0;
-            }
+        if (totalBayar > totalJual) {
+            kembalian = totalBayar - totalJual;
+            piutang = 0;
         } else {
             kembalian = 0;
             piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
         }
         document.getElementById('kembalian').value = kembalian;
         document.getElementById('piutang').value = piutang;
+
+        // Tampilkan format Rupiah di field readonly
+        document.getElementById('total_harga').setAttribute('data-view', formatRupiah(totalHarga));
+        document.getElementById('total_jual').setAttribute('data-view', formatRupiah(totalJual));
+        document.getElementById('kembalian').setAttribute('data-view', formatRupiah(kembalian));
+        document.getElementById('piutang').setAttribute('data-view', formatRupiah(piutang));
+
+        // Tampilkan diskon dengan format sesuai tipe
+        let diskonLabel = document.getElementById('diskon_label');
+        if (diskonLabel) {
+            if (tipeDiskon === 'persen') {
+                diskonLabel.innerText = diskon + '%';
+            } else {
+                diskonLabel.innerText = formatRupiah(diskon);
+            }
+        }
     }
 
     document.getElementById('diskon').addEventListener('input', hitungTotalLain);
@@ -257,12 +296,118 @@
             e.preventDefault();
             return false;
         }
+
+        // Pisahkan produk sendiri dan konsinyasi
+        const produkSendiri = daftarProduk.filter(p => !p.jenis || p.jenis !== 'konsinyasi');
+        const produkKonsinyasi = daftarProduk.filter(p => p.jenis === 'konsinyasi');
+
+        // Kirim produk sendiri ke PenjualanController
+        if (produkSendiri.length > 0) {
+            // Buat form dinamis untuk produk sendiri
+            const formSendiri = document.createElement('form');
+            formSendiri.method = 'POST';
+            formSendiri.action = "{{ route('penjualan.store') }}";
+            formSendiri.style.display = 'none';
+            // CSRF
+            formSendiri.innerHTML = `<input type='hidden' name='_token' value='${document.querySelector('input[name="_token"]').value}'>`;
+            // Field lain
+            ['no_jual','tanggal_jual','kode_pelanggan','metode_pembayaran','keterangan','total_harga','diskon','total_jual','total_bayar','kembalian','piutang','jenis_penjualan'].forEach(f => {
+                const el = document.querySelector(`[name='${f}']`);
+                if (el) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = f;
+                    if(['total_harga','total_jual','kembalian','piutang'].includes(f)) {
+                        input.value = parseRupiah(el.value);
+                    } else {
+                        input.value = el.value;
+                    }
+                    formSendiri.appendChild(input);
+                }
+            });
+            // Detail produk sendiri
+            const detailSendiri = document.createElement('input');
+            detailSendiri.type = 'hidden';
+            detailSendiri.name = 'detail_json';
+            detailSendiri.value = JSON.stringify(produkSendiri);
+            formSendiri.appendChild(detailSendiri);
+            document.body.appendChild(formSendiri);
+            formSendiri.submit();
+        }
+
+        // Kirim produk konsinyasi ke JualKonsinyasiMasukController
+        if (produkKonsinyasi.length > 0) {
+            // Buat form dinamis untuk produk konsinyasi
+            const formKonsinyasi = document.createElement('form');
+            formKonsinyasi.method = 'POST';
+            formKonsinyasi.action = "{{ route('jualkonsinyasimasuk.store') }}";
+            formKonsinyasi.style.display = 'none';
+            // CSRF
+            formKonsinyasi.innerHTML = `<input type='hidden' name='_token' value='${document.querySelector('input[name="_token"]').value}'>`;
+            // Field lain (gunakan field yang sesuai kebutuhan controller konsinyasi)
+            ['tanggal_jual','keterangan'].forEach(f => {
+                const el = document.querySelector(`[name='${f}']`);
+                if (el) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = f;
+                    input.value = el.value;
+                    formKonsinyasi.appendChild(input);
+                }
+            });
+            // Field khusus konsinyasi
+            // Misal: kode_consignor (bisa diambil dari produkKonsinyasi[0] jika satu consignor, atau tambahkan input di form)
+            if (produkKonsinyasi.length > 0 && produkKonsinyasi[0].kode_consignor) {
+                const inputConsignor = document.createElement('input');
+                inputConsignor.type = 'hidden';
+                inputConsignor.name = 'kode_consignor';
+                inputConsignor.value = produkKonsinyasi[0].kode_consignor;
+                formKonsinyasi.appendChild(inputConsignor);
+            }
+            // Total jual konsinyasi
+            const totalJualKonsinyasi = produkKonsinyasi.reduce((sum, p) => sum + (p.subtotal || 0), 0);
+            const inputTotalJual = document.createElement('input');
+            inputTotalJual.type = 'hidden';
+            inputTotalJual.name = 'total_jual';
+            inputTotalJual.value = totalJualKonsinyasi;
+            formKonsinyasi.appendChild(inputTotalJual);
+            // Detail produk konsinyasi
+            const detailKonsinyasi = document.createElement('input');
+            detailKonsinyasi.type = 'hidden';
+            detailKonsinyasi.name = 'detail_json';
+            detailKonsinyasi.value = JSON.stringify(produkKonsinyasi);
+            formKonsinyasi.appendChild(detailKonsinyasi);
+            document.body.appendChild(formKonsinyasi);
+            formKonsinyasi.submit();
+        }
+
+        // Cegah submit form utama
+        e.preventDefault();
+        return false;
     });
 
     document.getElementById('kode_produk').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
         const harga = selected.getAttribute('data-harga');
         document.getElementById('harga_satuan').value = harga ? harga : '';
+    });
+
+    document.querySelector('form').addEventListener('reset', function(e) {
+        setTimeout(function() {
+            // Reset field ke nilai awal
+            document.querySelector("input[name='tanggal_jual']").value = defaultForm.tanggal_jual;
+            document.querySelector("select[name='kode_pelanggan']").value = defaultForm.kode_pelanggan;
+            document.querySelector("select[name='metode_pembayaran']").value = defaultForm.metode_pembayaran;
+            document.querySelector("input[name='keterangan']").value = defaultForm.keterangan;
+            document.getElementById('diskon').value = defaultForm.diskon;
+            document.getElementById('total_bayar').value = defaultForm.total_bayar;
+            // Reset produk
+            daftarProduk = [];
+            updateTabel();
+            // Reset field total
+            document.getElementById('kembalian').value = 0;
+            document.getElementById('piutang').value = 0;
+        }, 10);
     });
 </script>
 @endsection
