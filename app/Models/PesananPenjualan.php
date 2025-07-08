@@ -16,9 +16,11 @@ class PesananPenjualan extends Model
     protected $fillable = [
         'no_pesanan',
         'tanggal_pesanan',
+        'tanggal_pengiriman',
         'kode_pelanggan',
         'total_pesanan',
         'keterangan',
+        // status dihapus
     ];
 
     public function pelanggan()

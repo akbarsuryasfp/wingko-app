@@ -15,7 +15,7 @@
                         <select name="kas" class="form-control" required>
                             <option value="">-- Pilih Kas --</option>
                             @foreach($kasList as $kas)
-                                <option value="{{ $kas->id_akun }}">{{ $kas->nama_akun }}</option>
+                                <option value="{{ $kas->kode_akun }}">{{ $kas->nama_akun }}</option>
                             @endforeach
                         </select>
                     </td>
@@ -65,7 +65,10 @@
                 <tr>
                     <th>Nominal Pembayaran</th>
                     <td>
-                        <input type="number" name="jumlah_bayar" class="form-control" min="1" max="{{ $piutang->sisa_piutang }}" required>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" name="jumlah_bayar" class="form-control" min="1" max="{{ $piutang->sisa_piutang }}" required>
+                        </div>
                     </td>
                 </tr>
                 <tr>
@@ -76,9 +79,9 @@
                 </tr>
             </tbody>
         </table>
-        <div class="d-flex justify-content-end mt-4">
-            <button type="submit" class="btn btn-success me-2">Simpan Pembayaran</button>
+        <div class="d-flex justify-content-between mt-4">
             <a href="{{ route('piutang.index') }}" class="btn btn-secondary">Back</a>
+            <button type="submit" class="btn btn-success">Simpan Pembayaran</button>
         </div>
     </form>
 </div>

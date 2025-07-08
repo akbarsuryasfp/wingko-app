@@ -35,7 +35,7 @@
             @enderror
         </div>
         <button type="submit" class="btn btn-success">Update</button>
-        <a href="{{ route('consignee.index') }}" class="btn btn-secondary">Kembali</a>
+        <a href="{{ route('consignee.index') }}" class="btn btn-secondary">Back</a>
     </form>
 </div>
 @endsection

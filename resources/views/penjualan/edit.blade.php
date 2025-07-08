@@ -98,10 +98,7 @@
                 <div class="row mb-3 align-items-center">
                     <label class="col-sm-4 col-form-label">Status Pembayaran</label>
                     <div class="col-sm-8">
-                        <select class="form-control" name="status_pembayaran" id="status_pembayaran" required readonly>
-                            <option value="lunas" {{ $penjualan->status_pembayaran == 'lunas' ? 'selected' : '' }}>Lunas</option>
-                            <option value="belum lunas" {{ $penjualan->status_pembayaran == 'belum lunas' ? 'selected' : '' }}>Belum Lunas</option>
-                        </select>
+                        <input type="text" class="form-control" name="status_pembayaran" id="status_pembayaran" value="{{ $penjualan->status_pembayaran }}" readonly tabindex="-1">
                     </div>
                 </div>
             </div>
@@ -144,7 +141,7 @@
         <div class="d-flex justify-content-between mt-4">
             <div>
                 <a href="{{ route('penjualan.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning ms-2">Reset</button>
+                <!-- Reset button dihapus -->
             </div>
             <button type="submit" class="btn btn-success">Update</button>
         </div>
@@ -158,7 +155,17 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+jQuery(function($) {
     let daftarProduk = @json($details);
+    const defaultForm = {
+        tanggal_jual: "{{ $penjualan->tanggal_jual }}",
+        kode_pelanggan: "{{ $penjualan->kode_pelanggan }}",
+        metode_pembayaran: "{{ $penjualan->metode_pembayaran }}",
+        keterangan: "{{ $penjualan->keterangan }}",
+        diskon: "{{ $penjualan->diskon }}",
+        total_bayar: "{{ $penjualan->total_bayar }}"
+    };
+    const defaultProduk = JSON.parse(JSON.stringify(daftarProduk));
 
     function tambahProduk() {
         const kode_produk = $('#kode_produk').val();
@@ -200,12 +207,12 @@
         daftarProduk.forEach((item, i) => {
             html += `<tr>
                 <td>${item.nama_produk}</td>
-                <td>${item.jumlah}</td>
-                <td>${item.harga_satuan.toLocaleString('id-ID')}</td>
-                <td>${item.subtotal.toLocaleString('id-ID')}</td>
+                <td><input type="number" class="form-control jumlah-edit" value="${item.jumlah}" data-index="${i}" min="1"></td>
+                <td><input type="number" class="form-control harga-edit" value="${item.harga_satuan}" data-index="${i}" min="0"></td>
+                <td class="subtotal-edit">Rp${(item.jumlah * item.harga_satuan).toLocaleString('id-ID')}</td>
                 <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${i})">Hapus</button></td>
             </tr>`;
-            totalHarga += item.subtotal;
+            totalHarga += item.jumlah * item.harga_satuan;
         });
         html += `</tbody></table>`;
         $('#detail_produk').html(html);
@@ -214,39 +221,65 @@
         $('#detail_json').val(JSON.stringify(daftarProduk));
     }
 
-function hitungTotal() {
-    let totalHarga = parseInt($('#total_harga').val()) || 0;
-    let diskon = parseInt($('#diskon').val()) || 0;
-    let totalJual = totalHarga - diskon;
-    if (totalJual < 0) totalJual = 0;
-    $('#total_jual').val(totalJual);
-
-    let totalBayar = parseInt($('#total_bayar').val()) || 0;
-    let kembalian = 0, piutang = 0;
-
-    if ($('#metode_pembayaran').val() === 'tunai') {
-        kembalian = totalBayar > totalJual ? totalBayar - totalJual : 0;
-        piutang = 0;
-    } else {
-        kembalian = 0;
-        piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
-    }
-    $('#kembalian').val(kembalian);
-    $('#piutang').val(piutang);
-
-    // Status pembayaran otomatis
-    let status = 'belum lunas';
-    if (totalBayar === totalJual && totalJual > 0) {
-        status = 'lunas';
-    }
-    $('#status_pembayaran').val(status);
-}
-    $(document).ready(function() {
-        let produkOptions = `<option value="">---Pilih Produk---</option>
-            @foreach($produk as $p)
-                <option value="{{ $p->kode_produk }}" data-nama="{{ $p->nama_produk }}">{{ $p->kode_produk }} - {{ $p->nama_produk }}</option>
-            @endforeach`;
-        $('#kode_produk').html(produkOptions);
+    // Event delegation untuk input jumlah/harga_satuan
+    $(document).on('input', '.jumlah-edit, .harga-edit', function() {
+        const idx = $(this).data('index');
+        const jumlah = parseInt($(this).closest('tr').find('.jumlah-edit').val()) || 0;
+        const harga = parseInt($(this).closest('tr').find('.harga-edit').val()) || 0;
+        daftarProduk[idx].jumlah = jumlah;
+        daftarProduk[idx].harga_satuan = harga;
+        daftarProduk[idx].subtotal = jumlah * harga;
+        // Update subtotal di tabel
+        $(this).closest('tr').find('.subtotal-edit').text('Rp' + (jumlah * harga).toLocaleString('id-ID'));
+        // Update total
+        let totalHarga = daftarProduk.reduce((sum, item) => sum + (item.jumlah * item.harga_satuan), 0);
+        $('#total_harga').val(totalHarga);
+        hitungTotal();
+        $('#detail_json').val(JSON.stringify(daftarProduk));
     });
+    // Event untuk input total bayar agar piutang dan status otomatis update
+    $(document).on('input', '#total_bayar', function() {
+        hitungTotal();
+    });
+    // Event untuk diskon dan metode pembayaran
+    $(document).on('input', '#diskon', function() {
+        hitungTotal();
+    });
+    $(document).on('change', '#metode_pembayaran', function() {
+        hitungTotal();
+    });
+    function hitungTotal() {
+        let totalHarga = parseFloat($('#total_harga').val()) || 0;
+        let diskon = parseFloat($('#diskon').val()) || 0;
+        let totalJual = totalHarga - diskon;
+        if (totalJual < 0) totalJual = 0;
+        $('#total_jual').val(totalJual);
+        let totalBayar = parseFloat($('#total_bayar').val()) || 0;
+        let kembalian = 0, piutang = 0;
+        if (totalBayar > totalJual) {
+            kembalian = totalBayar - totalJual;
+            piutang = 0;
+        } else {
+            kembalian = 0;
+            piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
+        }
+        $('#kembalian').val(kembalian);
+        $('#piutang').val(piutang);
+        // Status pembayaran otomatis
+        let status = 'belum lunas';
+        if (totalBayar === totalJual && totalJual > 0) {
+            status = 'lunas';
+        }
+        $('#status_pembayaran').val(status);
+    }
+
+    // Inisialisasi produk select dan tabel saat dokumen siap
+    let produkOptions = `<option value="">---Pilih Produk---</option>
+        @foreach($produk as $p)
+            <option value="{{ $p->kode_produk }}" data-nama="{{ $p->nama_produk }}">{{ $p->kode_produk }} - {{ $p->nama_produk }}</option>
+        @endforeach`;
+    $('#kode_produk').html(produkOptions);
+    updateTabel();
+});
 </script>
 @endsection

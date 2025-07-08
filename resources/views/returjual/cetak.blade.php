@@ -61,9 +61,9 @@
                 <td>{{ $i+1 }}</td>
                 <td>{{ $detail->nama_produk }}</td>
                 <td>{{ $detail->jumlah_retur }}</td>
-                <td>{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
                 <td>{{ $detail->alasan }}</td>
-                <td>{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -73,7 +73,7 @@
         <tr>
             <td class="fw-bold" style="width:170px;">Total Nilai Retur</td>
             <td style="width:10px;">:</td>
-            <td>{{ number_format($returjual->total_nilai_retur, 0, ',', '.') }}</td>
+            <td>Rp{{ number_format($returjual->total_nilai_retur, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <td class="fw-bold" style="vertical-align: top;">Keterangan</td>

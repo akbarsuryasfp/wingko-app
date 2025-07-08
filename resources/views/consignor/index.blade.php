@@ -40,7 +40,7 @@
                         @endif
                     </td>
                     <td>
-                        <div class="d-flex flex-column gap-2">
+                        <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center">
                             <!-- Button Tambah Produk Konsinyasi Masuk -->
                             <a href="{{ route('produk-konsinyasi.create', ['kode_consignor' => $item->kode_consignor]) }}"
                                class="btn btn-success btn-sm" title="Tambah Produk Konsinyasi Masuk">

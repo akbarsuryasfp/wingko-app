@@ -22,7 +22,7 @@
         </tr>
         <tr>
             <th>Total Nilai Retur</th>
-            <td>{{ number_format($returjual->total_nilai_retur,0,',','.') }}</td>
+            <td>Rp{{ number_format($returjual->total_nilai_retur,0,',','.') }}</td>
         </tr>
         <tr>
             <th>Keterangan</th>
@@ -48,9 +48,9 @@
                 <td>{{ $i+1 }}</td>
                 <td>{{ $d->nama_produk ?? '-' }}</td>
                 <td>{{ $d->jumlah_retur }}</td>
-                <td>{{ number_format($d->harga_satuan,0,',','.') }}</td>
+                <td>Rp{{ number_format($d->harga_satuan,0,',','.') }}</td>
                 <td>{{ $d->alasan }}</td>
-                <td>{{ number_format($d->subtotal,0,',','.') }}</td>
+                <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
             @endforeach
         </tbody>

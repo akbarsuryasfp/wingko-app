@@ -5,12 +5,16 @@
     <h4>DETAIL KONSINYASI MASUK</h4>
     <table class="table">
         <tr>
-            <th>Kode Titip Jual</th>
+            <th>No Konsinyasi Masuk</th>
+            <td>{{ $konsinyasi->no_konsinyasimasuk }}</td>
+        </tr>
+        <tr>
+            <th>No Surat Titip Jual</th>
             <td>{{ $konsinyasi->no_surattitipjual }}</td>
         </tr>
         <tr>
             <th>Tanggal Masuk</th>
-            <td>{{ $konsinyasi->tanggal_titip }}</td>
+            <td>{{ $konsinyasi->tanggal_masuk }}</td>
         </tr>
         <tr>
             <th>Nama Consignor</th>
@@ -18,7 +22,7 @@
         </tr>
         <tr>
             <th>Total Titip Jual</th>
-            <td>{{ number_format($konsinyasi->total_titip,0,',','.') }}</td>
+            <td>Rp{{ number_format($konsinyasi->total_titip,0,',','.') }}</td>
         </tr>
         <tr>
             <th>Keterangan</th>
@@ -43,8 +47,8 @@
                 <td>{{ $i+1 }}</td>
                 <td>{{ $d->nama_produk ?? '-' }}</td>
                 <td>{{ $d->jumlah_stok }}</td>
-                <td>{{ number_format($d->harga_titip,0,',','.') }}</td>
-                <td>{{ number_format($d->subtotal,0,',','.') }}</td>
+                <td>Rp{{ number_format($d->harga_titip,0,',','.') }}</td>
+                <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
             @endforeach
         </tbody>

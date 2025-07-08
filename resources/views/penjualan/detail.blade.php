@@ -5,8 +5,8 @@
 
 @section('content')
 <div class="container mt-4">
-    <h4 class="mb-4">DETAIL PENJUALAN</h4>
-    <table class="table table-borderless">
+    <h4>DETAIL PENJUALAN</h4>
+    <table class="table">
         <tr>
             <th style="width:220px;">No Jual</th>
             <td>{{ $penjualan->no_jual ?? '-' }}</td>
@@ -35,27 +35,33 @@
         </tr>
         <tr>
             <th>Total Harga</th>
-            <td>{{ number_format($penjualan->total_harga ?? 0, 0, ',', '.') }}</td>
+            <td>Rp{{ number_format($penjualan->total_harga ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <th>Diskon</th>
-            <td>{{ number_format($penjualan->diskon ?? 0, 0, ',', '.') }}</td>
+            <td>
+                @if(isset($penjualan->tipe_diskon) && $penjualan->tipe_diskon == 'persen')
+                    {{ $penjualan->diskon }}%
+                @else
+                    Rp{{ number_format($penjualan->diskon ?? 0, 0, ',', '.') }}
+                @endif
+            </td>
         </tr>
         <tr>
             <th>Total Jual</th>
-            <td>{{ number_format($penjualan->total_jual ?? 0, 0, ',', '.') }}</td>
+            <td>Rp{{ number_format($penjualan->total_jual ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <th>Total Bayar</th>
-            <td>{{ number_format($penjualan->total_bayar ?? 0, 0, ',', '.') }}</td>
+            <td>Rp{{ number_format($penjualan->total_bayar ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <th>Kembalian</th>
-            <td>{{ number_format($penjualan->kembalian ?? 0, 0, ',', '.') }}</td>
+            <td>Rp{{ number_format($penjualan->kembalian ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <th>Piutang</th>
-            <td>{{ number_format($penjualan->piutang ?? 0, 0, ',', '.') }}</td>
+            <td>Rp{{ number_format($penjualan->piutang ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <th>Keterangan</th>
@@ -63,7 +69,7 @@
         </tr>
     </table>
 
-    <h5 class="text-center mb-3">DAFTAR PRODUK TERJUAL</h5>
+    <h5 class="text-center">DETAIL PRODUK TERJUAL</h5>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -77,24 +83,20 @@
         </thead>
         <tbody>
             @php $grandTotal = 0; @endphp
-            @forelse($details as $i => $detail)
+            @foreach($details as $i => $d)
             <tr>
                 <td>{{ $i+1 }}</td>
-                <td>{{ $detail->nama_produk ?? ($detail->produk->nama_produk ?? '-') }}</td>
-                <td>{{ $detail->jumlah }}</td>
-                <td>{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
-                <td>{{ $detail->satuan ?? ($detail->produk->satuan ?? '-') }}</td>
-                <td>{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
+                <td>{{ $d->nama_produk ?? ($d->produk->nama_produk ?? '-') }}</td>
+                <td>{{ $d->jumlah }}</td>
+                <td>Rp{{ number_format($d->harga_satuan,0,',','.') }}</td>
+                <td>{{ $d->satuan ?? '-' }}</td>
+                <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
-            @php $grandTotal += $detail->subtotal; @endphp
-            @empty
-            <tr>
-                <td colspan="6" class="text-center">Tidak ada produk.</td>
-            </tr>
-            @endforelse
+            @php $grandTotal += $d->subtotal; @endphp
+            @endforeach
             <tr>
                 <td colspan="5" class="text-end fw-bold">Grand Total</td>
-                <td class="fw-bold">{{ number_format($grandTotal, 0, ',', '.') }}</td>
+                <td class="fw-bold">Rp{{ number_format($grandTotal,0,',','.') }}</td>
             </tr>
         </tbody>
     </table>

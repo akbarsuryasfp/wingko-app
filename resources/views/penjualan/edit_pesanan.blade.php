@@ -54,7 +54,6 @@
                     <th>Jumlah Pesan</th>
                     <th>Harga Jual</th>
                     <th>Sub Total</th>
-                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -114,12 +113,9 @@
             <div class="col-md-6 d-flex align-items-end">
                 <div class="w-100">
                     <label class="col-form-label">Piutang</label>
-                    <input type="text" id="piutang" name="piutang" class="form-control mb-2" readonly>
+                    <input type="number" id="piutang" name="piutang" class="form-control mb-2" readonly>
                     <label class="col-form-label">Status Pembayaran</label>
-                    <select name="status_pembayaran" id="status_pembayaran" class="form-control mb-2" required>
-                        <option value="lunas">Lunas</option>
-                        <option value="belum lunas">Belum Lunas</option>
-                    </select>
+                    <input type="text" id="status_pembayaran" name="status_pembayaran" class="form-control mb-2" readonly tabindex="-1">
                     <label class="col-form-label">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control mb-2">
                 </div>
@@ -158,56 +154,75 @@
         const tbody = document.querySelector('#daftar-produk tbody');
         tbody.innerHTML = '';
         let totalHarga = 0;
-
         daftarProduk.forEach((item, index) => {
             const subtotal = item.jumlah * item.harga_jual;
+            item.subtotal = subtotal;
             totalHarga += subtotal;
             const row = `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${item.nama_bahan}</td>
-                    <td>${item.satuan}</td>
-                    <td>${item.jumlah}</td>
-                    <td>${item.harga_jual}</td>
-                    <td>${subtotal}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})">X</button>
-                    </td>
+                    <td>${item.nama_bahan || item.nama_produk || '-'}</td>
+                    <td><input type="text" class="form-control satuan-edit" value="${item.satuan || ''}" data-index="${index}" readonly></td>
+                    <td><input type="number" class="form-control jumlah-edit" value="${item.jumlah}" data-index="${index}" min="1"></td>
+                    <td><input type="number" class="form-control harga-edit" value="${item.harga_jual}" data-index="${index}" min="0"></td>
+                    <td class="subtotal-edit">${subtotal.toLocaleString('id-ID')}</td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
         });
-
         document.getElementById('total_harga').value = totalHarga;
         document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
         hitungTotalJual();
     }
 
-    function hapusBaris(index) {
-        daftarProduk.splice(index, 1);
-        updateTabel();
-    }
+    // Event delegation untuk input jumlah/harga_satuan
+    // agar update subtotal, total, piutang, status otomatis
+    $(document).on('input', '.jumlah-edit, .harga-edit', function() {
+        const idx = $(this).data('index');
+        const tr = $(this).closest('tr');
+        const jumlah = parseInt(tr.find('.jumlah-edit').val()) || 0;
+        const harga = parseInt(tr.find('.harga-edit').val()) || 0;
+        daftarProduk[idx].jumlah = jumlah;
+        daftarProduk[idx].harga_jual = harga;
+        daftarProduk[idx].subtotal = jumlah * harga;
+        tr.find('.subtotal-edit').text((jumlah * harga).toLocaleString('id-ID'));
+        let totalHarga = daftarProduk.reduce((sum, item) => sum + (item.jumlah * item.harga_jual), 0);
+        $('#total_harga').val(totalHarga);
+        $('#detail_json').val(JSON.stringify(daftarProduk));
+        hitungTotalJual();
+    });
 
+    // Event untuk input total bayar, diskon, ongkos kirim, metode pembayaran
+    $(document).on('input', '#total_bayar, #diskon, #ongkos_kirim', function() {
+        hitungTotalJual();
+    });
+    $(document).on('change', '#metode_pembayaran', function() {
+        hitungTotalJual();
+    });
     function hitungTotalJual() {
-        let totalHarga = parseFloat(document.getElementById('total_harga').value) || 0;
-        let ongkosKirim = parseFloat(document.getElementById('ongkos_kirim').value) || 0;
-        let diskon = parseFloat(document.getElementById('diskon').value) || 0;
+        let totalHarga = parseInt($('#total_harga').val()) || 0;
+        let ongkosKirim = parseInt($('#ongkos_kirim').val()) || 0;
+        let diskon = parseInt($('#diskon').val()) || 0;
         let totalJual = totalHarga + ongkosKirim - diskon;
         if (totalJual < 0) totalJual = 0;
-        document.getElementById('total_jual').value = totalJual;
-
-        let totalBayar = parseFloat(document.getElementById('total_bayar').value) || 0;
+        $('#total_jual').val(totalJual);
+        let totalBayar = parseInt($('#total_bayar').val()) || 0;
         let kembalian = 0, piutang = 0;
-
-        if (totalBayar >= totalJual) {
-            kembalian = totalBayar - totalJual;
+        if ($('#metode_pembayaran').val() === 'tunai') {
+            kembalian = totalBayar > totalJual ? totalBayar - totalJual : 0;
             piutang = 0;
         } else {
             kembalian = 0;
-            piutang = totalJual - totalBayar;
+            piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
         }
-        document.getElementById('kembalian').value = kembalian;
-        document.getElementById('piutang').value = piutang;
+        $('#kembalian').val(kembalian);
+        $('#piutang').val(piutang);
+        // Status pembayaran otomatis
+        let status = 'belum lunas';
+        if (totalBayar === totalJual && totalJual > 0) {
+            status = 'lunas';
+        }
+        $('#status_pembayaran').val(status);
     }
 
     // Inisialisasi jika sudah ada pesanan terpilih

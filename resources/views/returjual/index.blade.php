@@ -44,7 +44,7 @@
                 <th>Tanggal Retur</th>
                 <th>Pelanggan</th>
                 <th>Jumlah Retur & Nama Produk</th>
-                <th>Total Nilai Retur</th>
+                <th>Total Retur</th>
                 <th>Keterangan</th>
                 <th>Aksi</th>
             </tr>
@@ -57,7 +57,7 @@
                     <td>{{ $rj->tanggal_returjual }}</td>
                     <td>{{ $rj->nama_pelanggan ?? '-' }}</td>
                     <td>{{ $rj->produk_jumlah ?? '-' }}</td>
-                    <td>{{ number_format($rj->total_nilai_retur, 0, ',', '.') }}</td>
+                    <td>Rp{{ number_format($rj->total_nilai_retur, 0, ',', '.') }}</td>
                     <td>{{ $rj->keterangan }}</td>
                     <td>
                         <div class="d-flex flex-column gap-2">
