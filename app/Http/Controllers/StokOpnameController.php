@@ -208,21 +208,24 @@ class StokOpnameController extends Controller
                 ]);
 
                 // Insert detail
+                // Insert detail pertama
+                $no_jurnal_detail1 = JurnalHelper::generateNoJurnalDetail($no_jurnal);
                 DB::table('t_jurnal_detail')->insert([
-                    [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                        'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => $kode_akun_persediaan,
-                        'debit'            => $total_kredit,
-                        'kredit'           => $total_debet,
-                    ],
-                    [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                        'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => $kode_akun_penyesuaian,
-                        'debit'            => $total_debet,
-                        'kredit'           => $total_kredit,
-                    ],
+                    'no_jurnal_detail' => $no_jurnal_detail1,
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_persediaan,
+                    'debit'            => $total_kredit,
+                    'kredit'           => $total_debet,
+                ]);
+
+                // Insert detail kedua
+                $no_jurnal_detail2 = JurnalHelper::generateNoJurnalDetail($no_jurnal);
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => $no_jurnal_detail2,
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_penyesuaian,
+                    'debit'            => $total_debet,
+                    'kredit'           => $total_kredit,
                 ]);
             }
 
@@ -386,14 +389,14 @@ $harga = getHargaFIFOProduk($kode_produk, abs($selisih));
                 // Insert detail
                 DB::table('t_jurnal_detail')->insert([
                     [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                         'no_jurnal'        => $no_jurnal,
                         'kode_akun'        => $kode_akun_persediaan_produk,
                         'debit'            => $total_kredit,
                         'kredit'           => 0,
                     ],
                     [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                         'no_jurnal'        => $no_jurnal,
                         'kode_akun'        => $kode_akun_penyesuaian,
                         'debit'            => 0,

@@ -49,8 +49,7 @@
                 </tr>
             </thead>
             <tbody>
-                @if(isset($order_details) && count($order_details))
-                    @foreach($order_details as $detail)
+                    @foreach(($order_details ?? []) as $detail)
                     <tr>
                         <td>
                             <input type="hidden" name="detail[{{ $loop->index }}][kode_bahan]" value="{{ $detail->kode_bahan }}">
@@ -63,12 +62,20 @@
                         <td>
                             <input type="number" class="form-control" name="detail[{{ $loop->index }}][bahan_masuk]" value="{{ $detail->jumlah_beli }}">
                         </td>
-                        <td>
-                            <input type="date" class="form-control" name="detail[{{ $loop->index }}][tanggal_exp]">
-                        </td>
-                    </tr>
+            <td>
+                <input type="number" class="form-control" name="detail[{{ $loop->index }}][harga_beli]" value="{{ $detail->harga_beli }}" readonly>
+            </td>
+            <td>
+                <input type="number" class="form-control" value="{{ $detail->jumlah_beli * $detail->harga_beli }}" readonly>
+            </td>
+            <td>
+    <input type="date" class="form-control" name="detail[{{ $loop->index }}][tanggal_exp]">
+</td>
+<td>
+    <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">Hapus</button>
+</td>
+</tr>
                     @endforeach
-                @endif
             </tbody>
         </table>
 
@@ -114,6 +121,11 @@ function hapusDetail(index) {
     updateTabel();
 }
 
+function hapusBaris(btn) {
+    const row = btn.closest('tr');
+    row.remove();
+}
+
 function updateTabel() {
     const tbody = document.querySelector('#tabel-detail tbody');
     tbody.innerHTML = '';
@@ -133,7 +145,9 @@ function updateTabel() {
                 <td>
                     <input type="date" class="form-control" value="${item.tanggal_exp || ''}" onchange="setTanggalExp(${idx}, this.value)">
                 </td>
-                <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusDetail(${idx})">Hapus</button></td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="hapusDetail(${idx})">Hapus</button>
+                </td>
             </tr>
         `;
         tbody.insertAdjacentHTML('beforeend', row);
@@ -214,11 +228,56 @@ function ambilDetailOrderBeli() {
         });
 }
 
+@if(isset($order_details) && count($order_details))
+    daftarDetail = [
+        @foreach($order_details as $detail)
+        {
+            kode_bahan: "{{ $detail->kode_bahan }}",
+            nama_bahan: "{{ $detail->nama_bahan }}",
+            satuan: "{{ $detail->satuan ?? '' }}",
+            jumlah_order: {{ $detail->jumlah_beli }},
+            bahan_masuk: {{ $detail->jumlah_beli }},
+            sisa: {{ $detail->jumlah_beli }},
+            harga_beli: {{ $detail->harga_beli }},
+            total: {{ $detail->jumlah_beli * $detail->harga_beli }},
+            tanggal_exp: ""
+        }@if(!$loop->last),@endif
+        @endforeach
+    ];
+@endif
 document.addEventListener('DOMContentLoaded', function() {
     // Jika ada order yang sudah terpilih (misal dari parameter ?order=...), panggil ambilDetailOrderBeli()
     var orderSelect = document.getElementById('no_order_beli');
     if (orderSelect && orderSelect.value) {
         ambilDetailOrderBeli();
+    }
+    updateTabel();
+});
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    let detailJson = document.getElementById('detail_json');
+    // Jika daftarDetail (JS) ada dan tidak kosong, gunakan itu
+    if (typeof daftarDetail !== 'undefined' && Array.isArray(daftarDetail) && daftarDetail.length > 0) {
+        detailJson.value = JSON.stringify(daftarDetail.filter(item => parseFloat(item.bahan_masuk) > 0));
+    } else {
+        // Jika tidak, ambil dari input form (PHP)
+        let rows = document.querySelectorAll('#tabel-detail tbody tr');
+        let arr = [];
+        rows.forEach(function(row, idx) {
+            let kode_bahan = row.querySelector('input[name^="detail["][name$="[kode_bahan]"]');
+            if (!kode_bahan) return; // skip baris kosong
+            arr.push({
+                kode_bahan: kode_bahan.value,
+                nama_bahan: row.cells[0].innerText.trim(),
+                satuan: row.cells[1].innerText.trim(),
+                jumlah_beli: row.querySelector('input[name^="detail["][name$="[jumlah_beli]"]').value,
+                bahan_masuk: row.querySelector('input[name^="detail["][name$="[bahan_masuk]"]').value,
+                harga_beli: row.querySelector('input[name^="detail["][name$="[harga_beli]"]').value,
+                total: row.cells[5].querySelector('input') ? row.cells[5].querySelector('input').value : row.cells[5].innerText.trim(),
+                tanggal_exp: row.querySelector('input[name^="detail["][name$="[tanggal_exp]"]').value
+            });
+        });
+        detailJson.value = JSON.stringify(arr);
     }
 });
 </script>

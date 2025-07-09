@@ -64,7 +64,11 @@
                             <td>{{ $order->metode_bayar ?? '-' }}</td>
                             <td>
                                 <div class="d-flex justify-content-center gap-1">
-                                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $order->no_order_beli }}" title="Detail">
+                                    <button type="button"
+                                        class="btn btn-info btn-sm"
+                                        title="Detail"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#detailModal{{ $order->no_order_beli }}">
                                         <i class="bi bi-info-circle"></i>
                                     </button>
                                     @if(($order->status_penerimaan === 'Disetujui' || $order->status_penerimaan === 'Diterima Sebagian') && $order->status !== 'Diterima Sepenuhnya')
@@ -104,9 +108,9 @@
     </div>
 </div>
 
-{{-- Modal detail tetap seperti sebelumnya --}}
+
+{{-- Modal detail --}}
 @foreach ($orders as $order)
-<!-- Modal -->
 <div class="modal fade" id="detailModal{{ $order->no_order_beli }}" tabindex="-1" aria-labelledby="detailModalLabel{{ $order->no_order_beli }}" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -115,6 +119,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        {{-- Tabel detail bahan --}}
         <table class="table table-bordered text-center">
             <thead class="table-light">
                 <tr>
@@ -127,6 +132,7 @@
                 </tr>
             </thead>
             <tbody>
+                @php $grandTotal = 0; @endphp
                 @foreach($order->details as $i => $detail)
                 <tr>
                     <td>{{ $i+1 }}</td>
@@ -136,10 +142,8 @@
                     <td>{{ number_format($detail->harga_beli,0,',','.') }}</td>
                     <td>{{ number_format($detail->total,0,',','.') }}</td>
                 </tr>
+                @php $grandTotal += $detail->total; @endphp
                 @endforeach
-                @php
-                    $grandTotal = $order->details->sum('total');
-                @endphp
                 <tr>
                     <td colspan="5" class="text-end fw-bold">Grand Total</td>
                     <td class="fw-bold">{{ number_format($grandTotal,0,',','.') }}</td>
@@ -147,46 +151,37 @@
             </tbody>
         </table>
 
-        @if($order->status !== 'Disetujui')
-            <form action="{{ route('orderbeli.setujui', $order->no_order_beli) }}" method="POST" style="display:inline;">
-                @csrf
-                <button type="submit" class="btn btn-success">Setujui</button>
-            </form>
-        @else
-            <form action="{{ route('orderbeli.uangmuka', $order->no_order_beli) }}" method="POST" class="mt-3" onsubmit="return validateUangMuka{{ $order->no_order_beli }}();">
-                @csrf
-                <div class="mb-3 d-flex align-items-center">
-                    <label for="uang_muka{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Uang Muka</label>
-                    <input type="number" class="form-control" id="uang_muka{{ $order->no_order_beli }}" name="uang_muka" value="{{ old('uang_muka', $order->uang_muka) }}" style="width:300px;" required>
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label for="metode_bayar{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Metode Bayar</label>
-                    <select class="form-control" id="metode_bayar{{ $order->no_order_beli }}" name="metode_bayar" style="width:300px;" required>
-                        <option value="">-- Pilih Metode --</option>
-                        <option value="Transfer" {{ old('metode_bayar', $order->metode_bayar) == 'Transfer' ? 'selected' : '' }}>Transfer</option>
-                        <option value="Tunai" {{ old('metode_bayar', $order->metode_bayar) == 'Tunai' ? 'selected' : '' }}>Tunai</option>
-                    </select>
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        {{ ($order->uang_muka && $order->metode_bayar) ? 'Update Pembayaran' : 'Simpan Pembayaran' }}
-                    </button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                </div>
-            </form>
-            <script>
-            function validateUangMuka{{ $order->no_order_beli }}() {
-                var uangMuka = parseFloat(document.getElementById('uang_muka{{ $order->no_order_beli }}').value);
-                var grandTotal = {{ $grandTotal }};
-                if(uangMuka > grandTotal) {
-                    alert('Uang muka tidak boleh melebihi Grand Total!');
-                    return false;
-                }
-                return true;
+        {{-- Form pengaturan uang muka & metode bayar --}}
+        <form action="{{ route('orderbeli.updatePembayaran', $order->no_order_beli) }}" method="POST" class="mt-3" onsubmit="return validateUangMuka{{ $order->no_order_beli }}();">
+            @csrf
+            <div class="mb-3 d-flex align-items-center">
+                <label for="uang_muka{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Uang Muka</label>
+                <input type="number" class="form-control" id="uang_muka{{ $order->no_order_beli }}" name="uang_muka" value="{{ old('uang_muka', $order->uang_muka) }}" style="width:300px;">
+            </div>
+            <div class="mb-3 d-flex align-items-center">
+                <label for="metode_bayar{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Metode Bayar</label>
+                <select class="form-control" id="metode_bayar{{ $order->no_order_beli }}" name="metode_bayar" style="width:300px;">
+                    <option value="">-- Pilih Metode --</option>
+                    <option value="Transfer" {{ old('metode_bayar', $order->metode_bayar) == 'Transfer' ? 'selected' : '' }}>Transfer</option>
+                    <option value="Tunai" {{ old('metode_bayar', $order->metode_bayar) == 'Tunai' ? 'selected' : '' }}>Tunai</option>
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Update Pembayaran</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            </div>
+        </form>
+        <script>
+        function validateUangMuka{{ $order->no_order_beli }}() {
+            var uangMuka = parseFloat(document.getElementById('uang_muka{{ $order->no_order_beli }}').value) || 0;
+            var grandTotal = {{ $grandTotal }};
+            if(uangMuka > grandTotal) {
+                alert('Uang muka tidak boleh melebihi Grand Total!');
+                return false;
             }
-            </script>
-        @endif
-
+            return true;
+        }
+        </script>
       </div>
     </div>
   </div>

@@ -12,6 +12,7 @@
                 <th>Satuan</th>
                 <th>Stok Minimum</th>
                 <th>Stok Akhir</th>
+                <th>Total</th>
                 <th>Status</th>
             </tr>
         </thead>
@@ -34,14 +35,16 @@
                             <div>
                                 <b>{{ $stok->stok }}</b> {{ $bahan->satuan }} 
                                 @if(isset($stok->harga))
-                                    dengan harga <b>Rp{{ number_format($stok->harga,0,',','.') }}</b>/{{ $bahan->satuan }}
+                                    @ <b>Rp{{ number_format($stok->harga,0,',','.') }}</b>/{{ $bahan->satuan }}
                                 @endif
                             </div>
                         @endforeach
-                        <div><i>Total: <b>{{ $totalStok }}</b> {{ $bahan->satuan }}</i></div>
                     @else
                         <span class="text-danger">Kosong</span>
                     @endif
+                </td>
+                <td>
+                    <b>{{ $totalStok }}</b> {{ $bahan->satuan }}
                 </td>
                 <td>
                     @if($status == 'Aman')

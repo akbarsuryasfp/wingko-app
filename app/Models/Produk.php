@@ -16,7 +16,8 @@ class Produk extends Model
         'kode_produk',
         'kode_kategori',
         'nama_produk',
-        'satuan'
+        'satuan',
+        'stokmin'
     ];
 
     public function resep()

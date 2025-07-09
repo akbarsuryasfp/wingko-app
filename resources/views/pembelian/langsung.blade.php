@@ -91,6 +91,13 @@
                 <input type="number" class="form-control" id="hutang" name="hutang" readonly>
             </div>
         </div>
+        <div class="row mb-2 align-items-center" id="row_jatuh_tempo" style="display: {{ ($pembelian->hutang ?? 0) > 0 ? 'flex' : 'none' }};">
+    <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+    <div class="col-sm-8">
+        <input type="date" class="form-control" name="jatuh_tempo" id="jatuh_tempo"
+            value="{{ old('jatuh_tempo', $pembelian->jatuh_tempo ?? '') }}">
+    </div>
+</div>
 
         <input type="hidden" name="status" id="status" value="Proses">
 
@@ -158,6 +165,22 @@ function hitungTotal() {
 
     $jq('#total_pembelian').val(totalPembelian);
     $jq('#hutang').val(hutang);
+
+    toggleJatuhTempo();
 }
+
+function toggleJatuhTempo() {
+    var kurangBayar = parseFloat(document.getElementById('hutang').value) || 0;
+    var row = document.getElementById('row_jatuh_tempo');
+    row.style.display = kurangBayar > 0 ? 'flex' : 'none';
+}
+document.getElementById('total_bayar').addEventListener('input', hitungTotal);
+document.getElementById('diskon').addEventListener('input', hitungTotal);
+document.getElementById('ongkir').addEventListener('input', hitungTotal);
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateSubtotal();
+    toggleJatuhTempo();
+    });
 </script>
 @endsection

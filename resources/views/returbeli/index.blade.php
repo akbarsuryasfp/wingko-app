@@ -28,7 +28,10 @@
                 <i class="bi bi-file-earmark-pdf me-1"></i> Cetak PDF
             </a>
         </form>
-        <a href="{{ route('returbeli.create') }}" class="btn btn-primary btn-sm">Tambah Data</a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('returbeli.create') }}" class="btn btn-primary btn-sm">Retur Barang</a>
+            <a href="{{ route('returbeli.createbahan') }}" class="btn btn-warning btn-sm">Retur Uang</a>
+        </div>
     </div>
 
     <div class="table-responsive">

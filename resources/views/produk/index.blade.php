@@ -62,6 +62,7 @@
                             <th style="width: 130px;">Kode Kategori</th>
                             <th style="width: 220px;">Nama Produk</th>
                             <th style="width: 90px;">Satuan</th>
+                            <th style="width: 90px;">Stok Minimal</th> <!-- Tambah ini -->
                             <th style="width: 100px;">Aksi</th>
                         </tr>
                     </thead>
@@ -72,6 +73,7 @@
                                 <td>{{ $item->kode_kategori }}</td>
                                 <td class="text-start">{{ $item->nama_produk }}</td>
                                 <td>{{ $item->satuan }}</td>
+                                <td>{{ $item->stokmin }}</td> <!-- Tambah ini -->
                                 <td>
                                     <div class="d-flex justify-content-center gap-1">
                                         <a href="{{ route('produk.edit', $item->kode_produk) }}" class="btn btn-sm btn-warning" title="Edit">
@@ -89,7 +91,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center">Data tidak tersedia.</td>
+                                <td colspan="6" class="text-center">Data tidak tersedia.</td>
                             </tr>
                         @endforelse
                     </tbody>

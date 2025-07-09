@@ -182,21 +182,22 @@ $tanggal_exp = DB::table('t_terimab_detail')
                 : JurnalHelper::getKodeAkun('kas_bank');
             $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
+            // Insert baris pertama (debit)
             DB::table('t_jurnal_detail')->insert([
-                [
-                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                    'no_jurnal'        => $no_jurnal,
-                    'kode_akun'        => $kode_akun_debit,
-                    'debit'            => $total_retur,
-                    'kredit'           => 0,
-                ],
-                [
-                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                    'no_jurnal'        => $no_jurnal,
-                    'kode_akun'        => $kode_akun_persediaan,
-                    'debit'            => 0,
-                    'kredit'           => $total_retur,
-                ],
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal'        => $no_jurnal,
+                'kode_akun'        => $kode_akun_debit,
+                'debit'            => $total_retur,
+                'kredit'           => 0,
+            ]);
+
+            // Insert baris kedua (kredit)
+            DB::table('t_jurnal_detail')->insert([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal'        => $no_jurnal,
+                'kode_akun'        => $kode_akun_persediaan,
+                'debit'            => 0,
+                'kredit'           => $total_retur,
             ]);
         }
 
@@ -374,22 +375,23 @@ $tanggal_exp = DB::table('t_terimab_detail')
             : JurnalHelper::getKodeAkun('kas_bank');
         $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
-        DB::table('t_jurnal_detail')->insert([
-            [
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => $kode_akun_debit,
-                'debit'            => $total_retur,
-                'kredit'           => 0,
-            ],
-            [
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => $kode_akun_persediaan,
-                'debit'            => 0,
-                'kredit'           => $total_retur,
-            ],
-        ]);
+        // Insert baris pertama (debit)
+DB::table('t_jurnal_detail')->insert([
+    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+    'no_jurnal'        => $no_jurnal,
+    'kode_akun'        => $kode_akun_debit,
+    'debit'            => $total_retur,
+    'kredit'           => 0,
+]);
+
+// Insert baris kedua (kredit)
+DB::table('t_jurnal_detail')->insert([
+    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+    'no_jurnal'        => $no_jurnal,
+    'kode_akun'        => $kode_akun_persediaan,
+    'debit'            => 0,
+    'kredit'           => $total_retur,
+]);
     }
 
     return redirect()->route('returbeli.index')->with('success', 'Data retur berhasil diupdate.');

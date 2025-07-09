@@ -35,6 +35,13 @@
             </div>
         </div>
 
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+            <div class="col-sm-8">
+                <input type="date" class="form-control" name="jatuh_tempo" value="{{ old('jatuh_tempo', $pembelian->jatuh_tempo ?? '') }}">
+            </div>
+        </div>
+
         <h5 class="mt-4">Input Bahan</h5>
         <table class="table table-bordered" id="bahan_table">
             <thead>

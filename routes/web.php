@@ -59,8 +59,7 @@ Route::resource('produk', ProdukController::class);
 Route::resource('orderbeli', OrderBeliController::class);
 Route::post('orderbeli/{no_order_beli}/setujui', [OrderBeliController::class, 'setujui'])->name('orderbeli.setujui');
 Route::get('/orderbeli/{no_order_beli}/cetak', [OrderBeliController::class, 'cetak'])->name('orderbeli.cetak');
-Route::post('orderbeli/{no_order_beli}/uangmuka', [OrderBeliController::class, 'simpanUangMuka'])->name('orderbeli.uangmuka');
-Route::get('orderbeli/{no_order_beli}/detail', [OrderBeliController::class, 'getDetail'])->name('orderbeli.detail');
+Route::post('orderbeli/{no_order_beli}/update-pembayaran', [OrderBeliController::class, 'updatePembayaran'])->name('orderbeli.updatePembayaran');
 
 // Route pelanggan
 Route::resource('pelanggan', PelangganController::class);
@@ -70,6 +69,8 @@ Route::resource('consignor', ConsignorController::class);
 
 // Route consignee
 Route::resource('consignee', ConsigneeController::class);
+Route::get('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 'setor'])->name('consignee.setor');
+Route::post('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 'storeSetor'])->name('consignee.storeSetor');
 
 // Route terima bahan
 Route::get('/terimabahan/laporan', [TerimabahanController::class, 'laporan'])->name('terimabahan.laporan');
@@ -148,6 +149,8 @@ Route::get('/hpp/input/{no_detail}', [HppController::class, 'create'])->name('hp
 Route::post('/hpp/simpan', [HppController::class, 'store'])->name('hpp.store');
 Route::get('/hpp/edit/{no_detail}', [HppController::class, 'edit'])->name('hpp.edit');
 Route::put('/hpp/update/{no_detail}', [HppController::class, 'update'])->name('hpp.update');
+Route::get('/hpp/laporan', [App\Http\Controllers\HppController::class, 'laporan'])->name('hpp.laporan');
+Route::get('/hpp/laporan/pdf', [App\Http\Controllers\HppController::class, 'laporanPdf'])->name('hpp.laporan.pdf');
 
 // Route karyawan
 Route::resource('karyawan', KaryawanController::class);
@@ -159,6 +162,8 @@ Route::post('/hutang', [HutangController::class, 'store'])->name('hutang.store')
 Route::get('/hutang/{no_utang}/detail', [HutangController::class, 'detail'])->name('hutang.detail');
 Route::get('/hutang/{no_utang}/bayar', [HutangController::class, 'bayar'])->name('hutang.bayar');
 Route::post('/hutang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('hutang.bayar.store');
+Route::get('hutang/{no_utang}/pembayaran/{no_jurnal}/edit', [HutangController::class, 'editPembayaran'])->name('hutang.editPembayaran');Route::delete('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'hapusPembayaran'])->name('hutang.hapusPembayaran');
+Route::put('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'updatePembayaran'])->name('hutang.bayar.update');
 
 // Route kartu stok
 Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kartustok.bahan');

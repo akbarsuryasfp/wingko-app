@@ -70,7 +70,7 @@ class KartuStokController extends Controller
                 'tanggal',
                 'masuk',
                 'keluar',
-                'harga',
+                'hpp',
                 'satuan',
                 'keterangan',
                 'tanggal_exp',
@@ -123,8 +123,8 @@ class KartuStokController extends Controller
 
         // Ambil stok akhir per produk dan HPP dari t_kartupersproduk
         $stokAkhirList = \DB::table('t_kartupersproduk')
-            ->select('kode_produk', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
-            ->groupBy('kode_produk', 'hpp')
+            ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+            ->groupBy('kode_produk', 'lokasi', 'hpp')
             ->havingRaw('stok > 0')
             ->get();
 

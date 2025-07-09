@@ -46,12 +46,12 @@ class JurnalController extends Controller
 
         $mutasi = [];
         if ($kode_akun) {
-            $mutasi = JurnalDetail::with(['jurnalUmum'])
+            $mutasi = JurnalDetail::with('jurnalUmum')
                 ->where('kode_akun', $kode_akun)
-                ->orderByHas('jurnalUmum', function($q) {
-                    $q->orderBy('tanggal');
-                })
-                ->get();
+                ->get()
+                ->sortBy(function($item) {
+                    return $item->jurnalUmum->tanggal ?? '';
+                });
         }
 
         return view('jurnal.buku_besar', compact('akuns', 'mutasi', 'kode_akun'));

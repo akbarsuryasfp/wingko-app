@@ -13,6 +13,7 @@ class JurnalHelper
         'kas_bank'            => '1010', // Kas di Bank
         'kas_kecil'           => '1011', // Kas Kecil
         'piutang_usaha'       => '1020', // Piutang Usaha
+        'uang_muka'           => '1025', // Uang Muka     
         'persediaan_bahan'    => '1030', // Persediaan Bahan
         'persediaan_jadi'     => '1040', // Persediaan Barang Jadi
         'aset_tetap'          => '1100', // Aset Tetap
@@ -20,7 +21,6 @@ class JurnalHelper
         'bangunan'            => '1120', // Bangunan
         'mesin'               => '1130', // Mesin
         'akumulasi_penyusutan'=> '1140', // Akumulasi Penyusutan
-        'uang_muka'           => '1150', // Uang Muka
         'utang_usaha'         => '2000', // Utang Usaha
         'utang_bank'          => '2010', // Utang Bank
         'utang_pajak'         => '2020', // Utang Pajak
@@ -58,14 +58,21 @@ class JurnalHelper
             'nomor_bukti' => 'AUTO-HPP-' . $no_detail,
         ]);
 
-        // 2. Buat jurnal detail dengan mapping akun
+        // 2. Jurnal: 
+        //    Debit  Persediaan Barang Jadi (total_hpp)
+        //    Kredit Persediaan Bahan Baku (total_bahan)
+        //    Kredit Upah/BTKL (total_tk)
+        //    Kredit Overhead Pabrik (total_overhead)
+
+        // Debit Persediaan Barang Jadi
         JurnalDetail::create([
             'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
             'no_jurnal' => $no_jurnal,
-            'kode_akun' => self::getKodeAkun('kas_bank'),
+            'kode_akun' => self::getKodeAkun('persediaan_jadi'),
             'debit' => $total_hpp,
             'kredit' => 0,
         ]);
+        // Kredit Persediaan Bahan Baku
         JurnalDetail::create([
             'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
             'no_jurnal' => $no_jurnal,
@@ -73,27 +80,7 @@ class JurnalHelper
             'debit' => 0,
             'kredit' => $total_bahan,
         ]);
-        JurnalDetail::create([
-            'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
-            'no_jurnal' => $no_jurnal,
-            'kode_akun' => self::getKodeAkun('persediaan_jadi'),
-            'debit' => 0,
-            'kredit' => $total_tk,
-        ]);
-        JurnalDetail::create([
-            'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
-            'no_jurnal' => $no_jurnal,
-            'kode_akun' => self::getKodeAkun('utang_usaha'),
-            'debit' => 0,
-            'kredit' => $total_overhead,
-        ]);
-        JurnalDetail::create([
-            'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
-            'no_jurnal' => $no_jurnal,
-            'kode_akun' => self::getKodeAkun('hpp'),
-            'debit' => 0,
-            'kredit' => $total_hpp,
-        ]);
+        // Kredit Upah/BTKL
         JurnalDetail::create([
             'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
             'no_jurnal' => $no_jurnal,
@@ -101,17 +88,11 @@ class JurnalHelper
             'debit' => 0,
             'kredit' => $total_tk,
         ]);
+        // Kredit Overhead Pabrik
         JurnalDetail::create([
             'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
             'no_jurnal' => $no_jurnal,
             'kode_akun' => self::getKodeAkun('overhead'),
-            'debit' => 0,
-            'kredit' => $total_overhead,
-        ]);
-        JurnalDetail::create([
-            'no_jurnal_detail' => self::generateNoJurnalDetail($no_jurnal),
-            'no_jurnal' => $no_jurnal,
-            'kode_akun' => self::getKodeAkun('beban_lain'),
             'debit' => 0,
             'kredit' => $total_overhead,
         ]);

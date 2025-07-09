@@ -49,6 +49,7 @@ class ProdukController extends Controller
             'kode_kategori' => 'required',
             'nama_produk' => 'required',
             'satuan' => 'required',
+            'stokmin' => 'required|numeric|min:0', // tambahkan validasi stokmin
         ]);
 
         // Generate kode_produk otomatis
@@ -63,9 +64,10 @@ class ProdukController extends Controller
 
         Produk::create([
             'kode_produk' => $kode_produk,
-            'kode_kategori' => $request->kode_kategori, // gunakan kode_kategori
+            'kode_kategori' => $request->kode_kategori,
             'nama_produk' => $request->nama_produk,
             'satuan' => $request->satuan,
+            'stokmin' => $request->stokmin, // simpan stokmin
         ]);
 
         return redirect()->route('produk.index')->with('success', 'Data produk berhasil ditambahkan.');
@@ -84,13 +86,15 @@ class ProdukController extends Controller
             'kode_kategori' => 'required',
             'nama_produk' => 'required',
             'satuan' => 'required',
+            'stokmin' => 'required|numeric|min:0', // tambahkan validasi stokmin
         ]);
 
         $produk = Produk::findOrFail($kode_produk);
         $produk->update([
-            'kode_kategori' => $request->kode_kategori, // gunakan kode_kategori
+            'kode_kategori' => $request->kode_kategori,
             'nama_produk' => $request->nama_produk,
             'satuan' => $request->satuan,
+            'stokmin' => $request->stokmin, // update stokmin
         ]);
 
         return redirect()->route('produk.index')->with('success', 'Data produk berhasil diupdate.');

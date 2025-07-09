@@ -14,29 +14,67 @@
                 <th>Stok Toko 1</th>
                 <th>Stok Toko 2</th>
                 <th>Stok Akhir</th>
+                <th>Status</th> <!-- Tambahkan kolom status -->
             </tr>
         </thead>
         <tbody>
             @foreach($produkList as $i => $produk)
             @php
-                $gudang = $produk->stok_akhir->where('lokasi', 'Gudang')->sum('stok');
-                $toko1  = $produk->stok_akhir->where('lokasi', 'Toko 1')->sum('stok');
-                $toko2  = $produk->stok_akhir->where('lokasi', 'Toko 2')->sum('stok');
-                $totalStok = $gudang + $toko1 + $toko2;
+                $gudangList = $produk->stok_akhir->where('lokasi', 'Gudang');
+                $toko1List  = $produk->stok_akhir->where('lokasi', 'Toko 1');
+                $toko2List  = $produk->stok_akhir->where('lokasi', 'Toko 2');
+                $totalStok = $produk->stok_akhir->sum('stok');
+                $stokmin = $produk->stokmin ?? 0;
+                // Status: jika stok akhir <= stokmin, perlu produksi
+                $status = ($totalStok <= $stokmin) ? 'Perlu Produksi' : 'Aman';
             @endphp
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>{{ $produk->kode_produk }}</td>
                 <td>{{ $produk->nama_produk }}</td>
                 <td>{{ $produk->satuan }}</td>
-                <td>{{ $gudang }}</td>
-                <td>{{ $toko1 }}</td>
-                <td>{{ $toko2 }}</td>
+                <td>
+                    @forelse($gudangList as $row)
+                        <div>{{ $row->stok }} @ Rp{{ number_format($row->hpp, 0, ',', '.') }}</div>
+                    @empty
+                        <span class="text-danger">-</span>
+                    @endforelse
+                </td>
+                <td>
+                    @forelse($toko1List as $row)
+                        <div>{{ $row->stok }} @ Rp{{ number_format($row->hpp, 0, ',', '.') }}</div>
+                    @empty
+                        <span class="text-danger">-</span>
+                    @endforelse
+                </td>
+                <td>
+                    @forelse($toko2List as $row)
+                        <div>{{ $row->stok }} @ Rp{{ number_format($row->hpp, 0, ',', '.') }}</div>
+                    @empty
+                        <span class="text-danger">-</span>
+                    @endforelse
+                </td>
                 <td>
                     @if($totalStok > 0)
-                        <b>{{ $totalStok }}</b> {{ $produk->satuan }}
+                        @php
+                            // Gabungkan stok akhir dengan HPP yang sama
+                            $grouped = $produk->stok_akhir
+                                ->groupBy(function($item) {
+                                    return $item->hpp;
+                                });
+                        @endphp
+                        @foreach($grouped as $hpp => $rows)
+                            <div>{{ $rows->sum('stok') }} @ Rp{{ number_format($hpp, 0, ',', '.') }}</div>
+                        @endforeach
                     @else
                         <span class="text-danger">Kosong</span>
+                    @endif
+                </td>
+                <td>
+                    @if($status == 'Aman')
+                        <span class="badge bg-success">Aman</span>
+                    @else
+                        <span class="badge bg-danger">Perlu Produksi</span>
                     @endif
                 </td>
             </tr>

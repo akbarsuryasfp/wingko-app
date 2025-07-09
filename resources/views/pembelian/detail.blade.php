@@ -87,6 +87,12 @@
                     <input type="text" class="form-control" value="{{ $pembelian->hutang }}" readonly>
                 </div>
             </div>
+            <div class="mb-3 row">
+    <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+    <div class="col-sm-8">
+        <input type="text" class="form-control" value="{{ $jatuh_tempo ?? '-' }}" readonly>
+    </div>
+</div>
         </div>
     </div>
 

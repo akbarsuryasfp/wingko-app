@@ -50,11 +50,11 @@
                     <th>No</th>
                     <th>No Transaksi</th>
                     <th>Tanggal</th>
-                    <th>Harga</th>
+                    <th>HPP</th> <!-- Kolom HPP setelah tanggal -->
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
                     <th>Sisa (Qty)</th>
-                    <th>HPP</th>
+                    <th>Lokasi</th> <!-- Kolom Lokasi setelah Sisa -->
                 </tr>
             </thead>
             <tbody>
@@ -101,8 +101,8 @@ function setSatuanProdukOtomatis() {
                     data.forEach(function(row, idx) {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
-                        let harga = parseFloat(row.harga) || 0; // perbaiki di sini
-                        let hpp = parseFloat(row.harga) || 0;   // perbaiki di sini
+                        let harga = parseFloat(row.hpp) || 0; // perbaiki di sini
+                        let hpp = parseFloat(row.hpp) || 0;   // perbaiki di sini
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
@@ -113,17 +113,17 @@ function setSatuanProdukOtomatis() {
                         saldoPerRow.push(saldoQty);
 
                         tbody += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td>${row.no_transaksi}</td>
-                                <td>${formatTanggal(row.tanggal)}</td>
-                                <td>Rp${harga.toLocaleString('id-ID')}</td>
-                                <td>${masuk}</td>
-                                <td>${keluar}</td>
-                                <td>${saldoQty}</td>
-                                <td>Rp${hpp.toLocaleString('id-ID')}</td>
-                            </tr>
-                        `;
+    <tr>
+        <td>${idx + 1}</td>
+        <td>${row.no_transaksi}</td>
+        <td>${formatTanggal(row.tanggal)}</td>
+        <td>Rp${hpp.toLocaleString('id-ID')}</td> <!-- HPP setelah tanggal -->
+        <td>${masuk}</td>
+        <td>${keluar}</td>
+        <td>${saldoQty}</td>
+        <td>${row.lokasi || '-'}</td> <!-- Lokasi setelah Sisa -->
+    </tr>
+`;
                     });
                 }
 

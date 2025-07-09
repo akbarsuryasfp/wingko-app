@@ -40,6 +40,13 @@
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="stokmin" class="form-label mb-0" style="width:150px;">Stok Minimal</label>
+            <input type="number" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin', $produk->stokmin) }}" required min="0" style="width:300px;">
+            @error('stokmin')
+                <div class="text-danger ms-2">{{ $message }}</div>
+            @enderror
+        </div>
         <button type="submit" class="btn btn-success">Update</button>
         <a href="{{ route('produk.index') }}" class="btn btn-secondary">Kembali</a>
     </form>

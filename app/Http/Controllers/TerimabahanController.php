@@ -98,7 +98,7 @@ class TerimaBahanController extends Controller
                 ->select('t_order_detail.*', 't_bahan.nama_bahan', 't_bahan.satuan')
                 ->get();
         }
-
+        $order_details = $order_details ?? [];
         return view('terimabahan.create', compact('kode', 'orderbeli', 'order_selected', 'order_details'));
     }
 
@@ -113,7 +113,7 @@ class TerimaBahanController extends Controller
         ];
         \DB::table('t_terimabahan')->insert($header);
 
-        $details = json_decode($request->detail_json, true);
+        $details = json_decode($request->detail_json, true) ?? [];
         foreach ($details as $detail) {
             if (isset($detail['bahan_masuk']) && $detail['bahan_masuk'] > 0) {
                 $no_terimab_detail = 'TD' . date('ymdHis') . rand(100,999);
@@ -123,7 +123,7 @@ class TerimaBahanController extends Controller
                     'kode_bahan'        => $detail['kode_bahan'],
                     'bahan_masuk'       => $detail['bahan_masuk'],
                     'harga_beli'        => $detail['harga_beli'] ?? 0,
-                    'total'             => $detail['total'] ?? 0,
+                    'total'             => ($detail['bahan_masuk'] ?? 0) * ($detail['harga_beli'] ?? 0),
                     'tanggal_exp'       => $detail['tanggal_exp'] ?? null,
                 ]);
 
@@ -292,7 +292,7 @@ $terimaBahan->details = $details;
             $order->ringkasan_bahan = implode(', ', $bahans);
             return $order;
         });
-
+        $terimaBahan->details = $details ?? [];
     return view('terimabahan.edit', compact('terimaBahan', 'orderbeli'));
 }
 

@@ -63,7 +63,7 @@ class ProduksiController extends Controller
                     'kode_produk' => $kode_produk,
                     'masuk' => $jumlah_unit,
                     'keluar' => 0,
-                    'harga' => $harga_per_unit,
+                    'hpp' => $harga_per_unit,
                     'satuan' => null,
                     'keterangan' => 'Hasil produksi ' . $kode,
                     'tanggal_exp' => $tanggal_expired,
