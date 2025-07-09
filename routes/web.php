@@ -30,11 +30,12 @@ use App\Http\Controllers\PenyesuaianBarangController;
 use App\Http\Controllers\TransferProdukController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BarcodeBatchController;
+use App\Http\Controllers\JurnalController;
 
 Route::get('/', function () {
     $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
     return view('welcome', compact('reminder'));
-})->middleware('auth');
+})->middleware('auth')->name('welcome');
 
 // Route login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -243,6 +244,7 @@ Route::resource('kartuperskonsinyasi', App\Http\Controllers\KartuPersKonsinyasiC
 // Route jurnal
 Route::get('/jurnal', [JurnalController::class, 'index'])->name('jurnal.index');
 Route::get('/buku-besar', [JurnalController::class, 'bukuBesar'])->name('jurnal.buku_besar');
+Route::get('/jurnalpenyesuaian', [JurnalController::class, 'penyesuaian'])->name('jurnal.penyesuaian');
 
 // Barcode batch routes
 Route::get('/barcode-batch/info', [BarcodeBatchController::class, 'info']);

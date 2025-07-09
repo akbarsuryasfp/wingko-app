@@ -205,6 +205,7 @@ class StokOpnameController extends Controller
                     'tanggal'     => $tanggal,
                     'keterangan'  => 'Stok Opname ' . $no_opname,
                     'nomor_bukti' => $no_opname,
+                    'jenis_jurnal'=> 'opname', // atau 'penyesuaian'
                 ]);
 
                 // Insert detail
