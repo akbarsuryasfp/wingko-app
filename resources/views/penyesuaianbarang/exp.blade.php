@@ -41,7 +41,7 @@
                 {{-- Bahan --}}
 @foreach ($bahanKadaluarsa as $item)
 @php
-    $item->harga = $item->hpp;
+    $item->harga = $item->harga;
     $subTotal = $item->stok * $item->harga;
     $grandTotal += $subTotal;
 @endphp
