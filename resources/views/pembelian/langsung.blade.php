@@ -5,35 +5,56 @@
     <h3>Pembelian Langsung</h3>
     <form action="{{ route('pembelian.storeLangsung') }}" method="POST">
         @csrf
-        <div class="row">
-            <div class="col-md-6">
-                <label>Kode Pembelian</label>
-                <input type="text" class="form-control mb-2" name="kode_pembelian" value="{{ $kode_pembelian }}" readonly>
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group row mb-3">
+            <label class="col-sm-4 col-form-label">Kode Pembelian</label>
+            <div class="col-sm-8">
+                <input type="text" class="form-control" name="kode_pembelian" value="{{ $kode_pembelian }}" readonly>
+            </div>
+        </div>
 
-                <label>Tanggal Pembelian</label>
-                <input type="date" class="form-control mb-2" name="tanggal_pembelian" required>
+        <div class="form-group row mb-3">
+            <label class="col-sm-4 col-form-label">Tanggal Pembelian</label>
+            <div class="col-sm-8">
+                <input type="date" class="form-control" name="tanggal_pembelian" 
+                       value="{{ date('Y-m-d') }}" required>
+            </div>
+        </div>
 
-                <label>Supplier</label>
-                <select class="form-control mb-2" name="kode_supplier" required>
+        <div class="form-group row mb-3">
+            <label class="col-sm-4 col-form-label">Supplier</label>
+            <div class="col-sm-8">
+                <select class="form-control" name="kode_supplier" required>
                     <option value="">--- Pilih Supplier ---</option>
                     @foreach ($supplier as $sup)
                         <option value="{{ $sup->kode_supplier }}">{{ $sup->nama_supplier }}</option>
                     @endforeach
                 </select>
             </div>
+        </div>
+    </div>
 
-            <div class="col-md-6">
-                <label>Jenis Pembayaran</label>
-                <select class="form-control mb-2" id="metode_bayar" name="metode_bayar" required>
+    <div class="col-md-6">
+        <div class="form-group row mb-3">
+            <label class="col-sm-4 col-form-label">Jenis Pembayaran</label>
+            <div class="col-sm-8">
+                <select class="form-control" id="metode_bayar" name="metode_bayar" required>
                     <option value="">---Pilih Pembayaran---</option>
                     <option value="Tunai">Tunai</option>
                     <option value="Hutang">Transfer</option>
                 </select>
-
-                <label>No Nota</label>
-                <input type="text" class="form-control mb-2" name="no_nota">
             </div>
         </div>
+
+        <div class="form-group row mb-3">
+            <label class="col-sm-4 col-form-label">No Nota</label>
+            <div class="col-sm-8">
+                <input type="text" class="form-control" name="no_nota">
+            </div>
+        </div>
+    </div>
+</div>
 
         <h5 class="mt-4">Input Bahan</h5>
         <table class="table table-bordered" id="bahan_table">

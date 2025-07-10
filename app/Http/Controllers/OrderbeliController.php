@@ -12,12 +12,32 @@ use App\Models\JadwalProduksi;
 
 class OrderBeliController extends Controller
 {
-    public function index()
+public function index()
 {
     $orders = \App\Models\OrderBeli::with('supplier')
-        ->orderBy('no_order_beli', 'asc') // urutkan ASC berdasarkan kode order
+        ->when(request('search'), function($query) {
+            $query->where('no_order_beli', 'like', '%'.request('search').'%')
+                  ->orWhereHas('supplier', function($q) {
+                      $q->where('nama_supplier', 'like', '%'.request('search').'%');
+                  });
+        })
+        ->when(request('tanggal_mulai') && request('tanggal_selesai'), function($query) {
+            $query->whereBetween('tanggal_order', [
+                request('tanggal_mulai'),
+                request('tanggal_selesai')
+            ]);
+        })
+        ->when(request('status'), function($query) {
+            if (request('status') === 'Menunggu Persetujuan') {
+                $query->whereNull('status');
+            } else {
+                $query->where('status', request('status'));
+            }
+        })
+        ->orderBy('no_order_beli', 'asc')
         ->get();
 
+    // Rest of your existing code for processing orders...
     foreach ($orders as $order) {
         $order->details = \DB::table('t_order_detail')
             ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')
@@ -301,53 +321,55 @@ public function updatePembayaran(Request $request, $no_order_beli)
     // Simpan/update uang muka dan metode bayar
     $order->uang_muka = $request->uang_muka ?? 0;
     $order->metode_bayar = $request->metode_bayar ?? null;
-    $order->save();
 
-    // Jika uang muka > 0, catat ke jurnal (hapus jurnal lama jika perlu, atau update)
-    if ($order->uang_muka > 0) {
-        // Cek apakah sudah ada jurnal untuk order ini
-        $jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $order->no_order_beli)->first();
-        if (!$jurnal) {
-            $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
-            DB::table('t_jurnal_umum')->insert([
-                'no_jurnal'   => $no_jurnal,
-                'tanggal'     => now(),
-                'keterangan'  => 'Uang Muka Order Pembelian ' . $order->no_order_beli,
-                'nomor_bukti' => $order->no_order_beli,
-            ]);
-            // Debit Uang Muka Pembelian
-            DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
-                'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => \App\Helpers\JurnalHelper::getKodeAkun('uang_muka'),
-                'debit'            => $order->uang_muka,
-                'kredit'           => 0,
-            ]);
-            // Kredit Kas/Bank
-            DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
-                'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => \App\Helpers\JurnalHelper::getKodeAkun('kas_bank'),
-                'debit'            => 0,
-                'kredit'           => $order->uang_muka,
-            ]);
-        } else {
-            // Jika sudah ada jurnal, update nilai uang muka di jurnal detail
-            DB::table('t_jurnal_detail')
-                ->where('no_jurnal', $jurnal->no_jurnal)
-                ->where('kode_akun', \App\Helpers\JurnalHelper::getKodeAkun('uang_muka'))
-                ->update(['debit' => $order->uang_muka]);
-            DB::table('t_jurnal_detail')
-                ->where('no_jurnal', $jurnal->no_jurnal)
-                ->where('kode_akun', \App\Helpers\JurnalHelper::getKodeAkun('kas_bank'))
-                ->update(['kredit' => $order->uang_muka]);
+    if ($request->action === 'setujui') {
+        $order->status = 'Disetujui';
+        if ($order->uang_muka > 0) {
+            // Cek apakah sudah ada jurnal untuk order ini
+            $jurnal = DB::table('t_jurnal_umum')->where('nomor_bukti', $order->no_order_beli)->first();
+            if (!$jurnal) {
+                $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
+                DB::table('t_jurnal_umum')->insert([
+                    'no_jurnal'   => $no_jurnal,
+                    'tanggal'     => now(),
+                    'keterangan'  => 'Uang Muka Order Pembelian ' . $order->no_order_beli,
+                    'nomor_bukti' => $order->no_order_beli,
+                ]);
+                // Debit Uang Muka Pembelian
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => \App\Helpers\JurnalHelper::getKodeAkun('uang_muka'),
+                    'debit'            => $order->uang_muka,
+                    'kredit'           => 0,
+                ]);
+                // Kredit Kas/Bank
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => \App\Helpers\JurnalHelper::getKodeAkun('kas_bank'),
+                    'debit'            => 0,
+                    'kredit'           => $order->uang_muka,
+                ]);
+            } else {
+                // Jika sudah ada jurnal, update nilai uang muka di jurnal detail
+                DB::table('t_jurnal_detail')
+                    ->where('no_jurnal', $jurnal->no_jurnal)
+                    ->where('kode_akun', \App\Helpers\JurnalHelper::getKodeAkun('uang_muka'))
+                    ->update(['debit' => $order->uang_muka]);
+                DB::table('t_jurnal_detail')
+                    ->where('no_jurnal', $jurnal->no_jurnal)
+                    ->where('kode_akun', \App\Helpers\JurnalHelper::getKodeAkun('kas_bank'))
+                    ->update(['kredit' => $order->uang_muka]);
+            }
         }
+        $order->save();
+        return redirect()->route('orderbeli.index')->with('success', 'Order berhasil disetujui!');
+    } else {
+        $order->save();
+        return redirect()->route('orderbeli.index')->with('success', 'Pembayaran berhasil diupdate!');
     }
-
-    return redirect()->route('orderbeli.index', $order->no_order_beli)->with('success', 'Pembayaran berhasil diupdate!');
-}
-
-    
+} 
 
 public function cetak($no_order_beli)
 {

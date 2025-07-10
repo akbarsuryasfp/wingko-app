@@ -174,8 +174,16 @@ class HppController extends Controller
         // Catat jurnal menggunakan mapping dari JurnalHelper
         JurnalHelper::catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead);
 
+        // Update HPP per produk di t_kartupersproduk
+         DB::table('t_kartupersproduk')
+            ->where('no_transaksi', $no_detail)
+            ->update(['hpp' => $hpp_per_produk]);
+    
+
         return redirect()->route('hpp.index')->with('success', 'Data HPP berhasil disimpan!');
-    }
+
+        
+      } 
 
     public function edit($no_detail)
     {
@@ -264,6 +272,11 @@ class HppController extends Controller
 
         // Catat jurnal baru menggunakan mapping dari JurnalHelper
         JurnalHelper::catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead);
+
+        //update hpp 
+        DB::table('t_kartupersproduk')
+            ->where('no_transaksi', $no_detail)
+            ->update(['hpp' => $hpp_per_produk]);
 
         return redirect()->route('hpp.index')->with('success', 'Data HPP berhasil diupdate!');
     }

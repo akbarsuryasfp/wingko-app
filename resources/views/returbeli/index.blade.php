@@ -19,6 +19,13 @@
             <span class="mb-0">s.d.</span>
             <input type="date" name="tanggal_selesai" value="{{ $tanggal_selesai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
 
+            <select name="status" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+        <option value="">-- Semua Status --</option>
+        <option value="menunggu_terima_barang" {{ request('status') == 'menunggu_terima_barang' ? 'selected' : '' }}>Menunggu Terima Barang</option>
+        <option value="menunggu_pengembalian" {{ request('status') == 'menunggu_pengembalian' ? 'selected' : '' }}>Menunggu Pengembalian</option>
+        <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
+    </select>
+    
             <a href="{{ route('returbeli.laporan.pdf', [
                     'tanggal_mulai' => $tanggal_mulai,
                     'tanggal_selesai' => $tanggal_selesai
@@ -29,8 +36,7 @@
             </a>
         </form>
         <div class="d-flex gap-2">
-            <a href="{{ route('returbeli.create') }}" class="btn btn-primary btn-sm">Retur Barang</a>
-            <a href="{{ route('returbeli.createbahan') }}" class="btn btn-warning btn-sm">Retur Uang</a>
+            <a href="{{ route('returbeli.create') }}" class="btn btn-primary btn-sm">Tambah Retur Pembelian</a>
         </div>
     </div>
 
@@ -44,6 +50,8 @@
                     <th>Tanggal Retur</th>
                     <th>Supplier</th>
                     <th>Keterangan</th>
+                    <th>Jenis Pengembalian</th>
+                    <th>Status</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -64,26 +72,53 @@
                             <td>
                                 <b>{{ $detail->nama_bahan }}</b> ({{ $detail->jumlah_retur }}) {{ $detail->alasan }}
                             </td>
-
+<td rowspan="{{ $retur->details->count() }}">
+    {{ ucfirst($retur->jenis_pengembalian ?? '-') }}
+</td>
+                            <td rowspan="{{ $retur->details->count() }}">
+        <span class="badge bg-info text-dark">
+            {{ ucfirst(str_replace('_', ' ', $retur->status ?? '-')) }}
+        </span>
+    </td>
+    
+    
                             @if($index === 0)
-                                <td rowspan="{{ $retur->details->count() }}">
-                                    <a href="{{ route('returbeli.cetak', $retur->no_retur_beli) }}" class="btn btn-success btn-sm" title="Cetak" target="_blank">
-                                        <i class="bi bi-printer"></i>
-                                    </a>
-                                    <a href="{{ route('returbeli.show', $retur->no_retur_beli) }}" class="btn btn-info btn-sm" title="Detail">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{{ route('returbeli.edit', $retur->no_retur_beli) }}" class="btn btn-warning btn-sm" title="Edit">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <form action="{{ route('returbeli.destroy', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm" title="Hapus" onclick="return confirm('Yakin hapus?')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
+    <td rowspan="{{ $retur->details->count() }}">
+        @if($retur->status === 'selesai')
+            <a href="{{ route('returbeli.show', $retur->no_retur_beli) }}" class="btn btn-info btn-sm" title="Detail">
+                <i class="bi bi-eye"></i>
+            </a>
+        @else
+            <a href="{{ route('returbeli.cetak', $retur->no_retur_beli) }}" class="btn btn-success btn-sm" title="Cetak" target="_blank">
+                <i class="bi bi-printer"></i>
+            </a>
+            <a href="{{ route('returbeli.show', $retur->no_retur_beli) }}" class="btn btn-info btn-sm" title="Detail">
+                <i class="bi bi-eye"></i>
+            </a>
+            <a href="{{ route('returbeli.edit', $retur->no_retur_beli) }}" class="btn btn-warning btn-sm" title="Edit">
+                <i class="bi bi-pencil"></i>
+            </a>
+            <form action="{{ route('returbeli.destroy', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-sm" title="Hapus" onclick="return confirm('Yakin hapus?')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </form>
+            @if($retur->jenis_pengembalian === 'barang' && $retur->status === 'menunggu_terima_barang')
+                <a href="{{ route('returbeli.terimabarang', $retur->no_retur_beli) }}" class="btn btn-primary btn-sm">
+                    Terima Barang
+                </a>
+            @elseif($retur->jenis_pengembalian === 'uang' && $retur->status === 'menunggu_pengembalian')
+                <form action="{{ route('returbeli.kasretur', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check2-circle"></i> Pengembalian Uang
+                    </button>
+                </form>
+            @endif
+        @endif
+    </td>
                             @endif
                         </tr>
                     @endforeach

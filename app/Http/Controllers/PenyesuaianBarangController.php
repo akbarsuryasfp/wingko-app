@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log; // tambahkan di atas
 use Illuminate\Support\Str;
 use App\Models\PenyesuaianBarang;
 use Carbon\Carbon;
@@ -157,45 +158,50 @@ class PenyesuaianBarangController extends Controller
                 'tanggal'     => $request->tanggal,
                 'keterangan'  => 'Penyesuaian persediaan',
                 'nomor_bukti' => $no_penyesuaian,
+                'jenis_jurnal'=> 'penyesuaian', // tambahkan ini
             ]);
 
             $jurnal = [];
+            $urutan = 1;
 
             // Beban kerugian persediaan (debit)
-            $jurnal[] = [
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+            DB::table('t_jurnal_detail')->insert([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal, $urutan++),
                 'no_jurnal'        => $no_jurnal,
-                'kode_akun'        => '511', // contoh kode akun kerugian
+                'kode_akun'        => JurnalHelper::getKodeAkun('beban_kerugian'),
                 'debit'            => $totalKerugian,
                 'kredit'           => 0,
-            ];
+            ]);
 
             if ($kreditBahan > 0) {
-                $jurnal[] = [
-                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal, $urutan++),
                     'no_jurnal' => $no_jurnal,
-                    'kode_akun' => 103,
+                    'kode_akun' => JurnalHelper::getKodeAkun('persediaan_bahan'),
                     'debit' => 0,
                     'kredit' => $kreditBahan,
-                ];
+                ]);
             }
 
             if ($kreditProduk > 0) {
-                $jurnal[] = [
-                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal, $urutan++),
                     'no_jurnal' => $no_jurnal,
-                    'kode_akun' => 105,
+                    'kode_akun' => JurnalHelper::getKodeAkun('persediaan_jadi'),
                     'debit' => 0,
                     'kredit' => $kreditProduk,
-                ];
+                ]);
             }
-
-            DB::table('t_jurnal_detail')->insert($jurnal);
 
             DB::commit();
             return redirect()->route('welcome')->with('success', 'Penyesuaian dan jurnal berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('PenyesuaianBarangController@store error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
             return back()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
         }
     }

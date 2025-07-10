@@ -37,6 +37,12 @@
                 <input type="date" name="tanggal_mulai" value="{{ $tanggal_mulai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
                 <span class="mb-0">s.d.</span>
                 <input type="date" name="tanggal_selesai" value="{{ $tanggal_selesai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+            
+                    <select name="status" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+        <option value="">-- Semua Status --</option>
+        <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
+        <option value="belum" {{ request('status') == 'belum' ? 'selected' : '' }}>Lanjutkan Pembayaran</option>
+    </select>
             </form>
         </div>
         <div class="col-md-4 col-12 text-end">
@@ -62,7 +68,8 @@
                 <table class="table table-bordered table-sm align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="text-center py-2" style="width:110px;">Kode Bahan</th>
+                            <th class="text-center py-2" style="width:50px;">No</th>
+                            <th class="text-center py-2" style="width:110px;">Kode Terima</th>
                             <th class="text-center py-2" style="width:130px;">Kode Referensi</th>
                             <th class="text-center py-2" style="width:110px;">Tanggal</th>
                             <th class="text-center py-2" style="width:180px;">Nama Supplier</th>
@@ -72,9 +79,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($terimabahan as $item)
-                            @if($item)
-                            <tr>
+                            @php $no = 1; @endphp
+    @forelse($terimabahan as $item)
+        @if($item)
+        <tr>
+            <td class="text-center py-2">{{ $no++ }}</td>
                                 <td class="text-center py-2">{{ $item->no_terima_bahan ?? '-' }}</td>
                                 <td class="text-center py-2">{{ $item->no_order_beli ?? $item->no_pembelian ?? '-' }}</td>
                                 <td class="text-center py-2">{{ $item->tanggal_terima ?? '-' }}</td>

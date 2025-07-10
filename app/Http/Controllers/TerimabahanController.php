@@ -28,11 +28,38 @@ class TerimaBahanController extends Controller
         }
 
         // Filter tanggal
-        $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
-        $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
-        $query->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
+    $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
+    $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+    $search = $request->search;
+    $status = $request->status;
 
-        $terimabahan = $query->orderByDesc('t_terimabahan.tanggal_terima')->get();
+    $query = DB::table('t_terimabahan')
+        ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
+        ->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
+
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('t_terimabahan.no_terima_bahan', 'like', "%$search%")
+              ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+        });
+    }
+
+    // Filter status
+    if ($status == 'selesai') {
+        $query->whereExists(function($q) {
+            $q->select(DB::raw(1))
+              ->from('t_pembelian')
+              ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+        });
+    } elseif ($status == 'belum') {
+        $query->whereNotExists(function($q) {
+            $q->select(DB::raw(1))
+              ->from('t_pembelian')
+              ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+        });
+    }
+
+    $terimabahan = $query->orderBy('t_terimabahan.tanggal_terima', 'asc')->get();
 
         // Ambil detail bahan untuk setiap terima bahan (jika perlu)
         foreach ($terimabahan as $item) {
@@ -273,11 +300,11 @@ $terimaBahan->details = $details;
         'kode_supplier' => $terimaBahan->supplier_kode_supplier,
     ];
 
-    $details = DB::table('t_terimab_detail')
-    ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-    ->where('no_terima_bahan', $id)
-    ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
-    ->get();
+    //$details = DB::table('t_terimab_detail')
+    //->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+    //->where('no_terima_bahan', $id)
+    //->select('t_terimab_detail.*', 't_bahan.nama_bahan')
+    //->get();
 
     // Ambil data order beli untuk dropdown
     $orderbeli = DB::table('t_order_beli')

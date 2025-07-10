@@ -7,6 +7,8 @@
         <div class="col-md-6 col-12">
             <h4 class="mb-0 fw-semibold text-md-start text-center">Daftar Order Pembelian</h4>
         </div>
+
+
 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
     <form method="GET" action="{{ route('orderbeli.index') }}" class="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
         <input type="text" name="search"
@@ -25,9 +27,32 @@
         <div class="alert alert-success text-center">{{ session('success') }}</div>
     @endif
 
-    {{-- Baris 2: Tombol Tambah --}}
+@php
+        use Carbon\Carbon;
+        $now = Carbon::now();
+        $tanggal_mulai = request('tanggal_mulai') ?? $now->copy()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = request('tanggal_selesai') ?? $now->copy()->endOfMonth()->format('Y-m-d');
+    @endphp
     <div class="row align-items-center mb-3">
-        <div class="col-12 text-end">
+        <div class="col-md-8 col-12 mb-2 mb-md-0">
+            <form method="GET" class="d-flex align-items-center gap-2 flex-wrap">
+                {{-- Hidden untuk mempertahankan search saat submit --}}
+                <input type="hidden" name="search" value="{{ request('search') }}">
+                <label class="mb-0">Periode:</label>
+                <input type="date" name="tanggal_mulai" value="{{ $tanggal_mulai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+                <span class="mb-0">s.d.</span>
+                <input type="date" name="tanggal_selesai" value="{{ $tanggal_selesai }}" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+                
+                <select name="status" class="form-control form-control-sm w-auto" onchange="this.form.submit()">
+                    <option value="">-- Semua Status --</option>
+                    <option value="Menunggu Persetujuan" {{ request('status') == 'Menunggu Persetujuan' ? 'selected' : '' }}>Menunggu Persetujuan</option>
+                    <option value="Disetujui" {{ request('status') == 'Disetujui' ? 'selected' : '' }}>Disetujui</option>
+                    <option value="Diterima Sebagian" {{ request('status') == 'Diterima Sebagian' ? 'selected' : '' }}>Diterima Sebagian</option>
+                    <option value="Diterima Sepenuhnya" {{ request('status') == 'Diterima Sepenuhnya' ? 'selected' : '' }}>Diterima Sepenuhnya</option>
+                </select>
+            </form>
+        </div>
+        <div class="col-md-4 col-12 text-end">
             <a href="{{ route('orderbeli.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-circle"></i> Tambah Order Pembelian
             </a>
@@ -58,9 +83,11 @@
                             <td>{{ $order->no_order_beli }}</td>
                             <td>{{ $order->tanggal_order }}</td>
                             <td class="text-start">{{ $order->supplier->nama_supplier ?? '-' }}</td>
-                            <td>{{ number_format($order->total_order, 0, ',', '.') }}</td>
+                            <td>Rp {{ number_format($order->total_order, 0, ',', '.') }}</td>
                             <td>{{ $order->status ?? $order->status_penerimaan ?? '-' }}</td>
-                            <td>{{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
+                            <td>
+                                {{ $order->uang_muka ? 'Rp ' . number_format($order->uang_muka, 0, ',', '.') : '-' }}
+                            </td>
                             <td>{{ $order->metode_bayar ?? '-' }}</td>
                             <td>
                                 <div class="d-flex justify-content-center gap-1">
@@ -139,14 +166,14 @@
                     <td>{{ $detail->nama_bahan }}</td>
                     <td>{{ $detail->satuan }}</td>
                     <td>{{ $detail->jumlah_beli }}</td>
-                    <td>{{ number_format($detail->harga_beli,0,',','.') }}</td>
-                    <td>{{ number_format($detail->total,0,',','.') }}</td>
+                    <td>Rp {{ number_format($detail->harga_beli, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($detail->total, 0, ',', '.') }}</td>
                 </tr>
                 @php $grandTotal += $detail->total; @endphp
                 @endforeach
                 <tr>
                     <td colspan="5" class="text-end fw-bold">Grand Total</td>
-                    <td class="fw-bold">{{ number_format($grandTotal,0,',','.') }}</td>
+                    <td class="fw-bold">Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
                 </tr>
             </tbody>
         </table>
@@ -156,7 +183,9 @@
             @csrf
             <div class="mb-3 d-flex align-items-center">
                 <label for="uang_muka{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Uang Muka</label>
-                <input type="number" class="form-control" id="uang_muka{{ $order->no_order_beli }}" name="uang_muka" value="{{ old('uang_muka', $order->uang_muka) }}" style="width:300px;">
+                <input type="text" class="form-control uang-muka-input" id="uang_muka{{ $order->no_order_beli }}" name="uang_muka"
+                    value="{{ old('uang_muka', $order->uang_muka ? 'Rp ' . number_format($order->uang_muka, 0, ',', '.') : '') }}"
+                    style="width:300px;" placeholder="Rp 0" autocomplete="off">
             </div>
             <div class="mb-3 d-flex align-items-center">
                 <label for="metode_bayar{{ $order->no_order_beli }}" class="form-label mb-0" style="width:150px;">Metode Bayar</label>
@@ -166,8 +195,12 @@
                     <option value="Tunai" {{ old('metode_bayar', $order->metode_bayar) == 'Tunai' ? 'selected' : '' }}>Tunai</option>
                 </select>
             </div>
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">Update Pembayaran</button>
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                @if(empty($order->status) || $order->status === 'Menunggu Persetujuan')
+                    <button type="submit" name="action" value="setujui" class="btn btn-primary">Setujui Order</button>
+                @elseif($order->status === 'Disetujui')
+                    <button type="submit" name="action" value="update" class="btn btn-success">Update Pembayaran</button>
+                @endif
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
             </div>
         </form>
@@ -181,6 +214,24 @@
             }
             return true;
         }
+        document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.uang-muka-input').forEach(function(input) {
+        // Format saat load
+        if (input.value && !input.value.startsWith('Rp')) {
+            let val = input.value.replace(/\D/g, '');
+            input.value = val ? 'Rp ' + parseInt(val, 10).toLocaleString('id-ID') : '';
+        }
+        // Format saat input
+        input.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            this.value = value ? 'Rp ' + parseInt(value, 10).toLocaleString('id-ID') : '';
+        });
+        // Saat submit, kirim hanya angka
+        input.form && input.form.addEventListener('submit', function() {
+            input.value = input.value.replace(/\D/g, '');
+        });
+    });
+});
         </script>
       </div>
     </div>

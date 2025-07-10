@@ -19,12 +19,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
-    <script src="/build/assets/app-Dqi4qaFb.js"></script>
-    <script>
-    document.getElementById('sidebarToggle').onclick = function() {
-        var sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('collapsed');
-    };
-    </script>
+    <script src="/build/assets/app-BoTkVbuK.js"></script>
+    
 </body>
 </html>

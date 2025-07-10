@@ -6,10 +6,11 @@
 
     <form action="{{ route('penyesuaian.store') }}" method="POST">
         @csrf
-        <div class="mb-3">
-            <label for="tanggal" class="form-label">Tanggal Penyesuaian</label>
-            <input type="date" name="tanggal" class="form-control" required>
-        </div>
+<div class="mb-3">
+    <label for="tanggal" class="form-label">Tanggal Penyesuaian</label>
+    <input type="date" name="tanggal" class="form-control" 
+           value="{{ date('Y-m-d') }}" required>
+</div>
 
         <div class="mb-3">
             <label for="keterangan" class="form-label">Keterangan Umum</label>
@@ -41,7 +42,7 @@
                 {{-- Bahan --}}
 @foreach ($bahanKadaluarsa as $item)
 @php
-    $item->harga = $item->hpp;
+    $item->harga = $item->harga;
     $subTotal = $item->stok * $item->harga;
     $grandTotal += $subTotal;
 @endphp

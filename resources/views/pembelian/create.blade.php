@@ -15,12 +15,13 @@
                         <input type="text" class="form-control" name="kode_pembelian" value="{{ $kode_pembelian }}" readonly required>
                     </div>
                 </div>
-                <div class="row mb-3 align-items-center">
-                    <label for="tanggal_pembelian" class="col-sm-4 col-form-label">Tanggal Pembelian</label>
-                    <div class="col-sm-8">
-                        <input type="date" class="form-control" id="tanggal_pembelian" name="tanggal_pembelian" required>
-                    </div>
-                </div>
+<div class="row mb-3 align-items-center">
+    <label for="tanggal_pembelian" class="col-sm-4 col-form-label">Tanggal Pembelian</label>
+    <div class="col-sm-8">
+        <input type="date" class="form-control" id="tanggal_pembelian" name="tanggal_pembelian" 
+               value="{{ date('Y-m-d') }}" required>
+    </div>
+</div>
                 <div class="row mb-3 align-items-center">
                     <label for="metode_bayar" class="col-sm-4 col-form-label">Jenis Pembayaran</label>
                     <div class="col-sm-8">

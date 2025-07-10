@@ -4,29 +4,27 @@
 <div class="container mt-5">
     <h4 class="mb-4">KARTU PERSEDIAAN PRODUK</h4>
 
-        <div class="mb-3">
-        <a href="{{ route('transferproduk.create') }}" class="btn btn-primary">
+    <div class="mb-3">
+        <a href="{{ route('transferproduk.index') }}" class="btn btn-primary">
             <i class="bi bi-truck"></i> Transfer/Pengiriman Produk
         </a>
-        <a href="{{ route('kartustok.laporan_produk') }}" class="btn btn-primary mb-3">
+        <a href="{{ route('kartustok.laporan_produk') }}" class="btn btn-primary">
             Laporan Stok Akhir Produk
         </a>
     </div>
     
     <form method="GET" class="row g-3 mb-4">
-        <div class="col-md-4">
-            <label for="kode_produk" class="form-label">Nama Produk</label>
-            <select id="kode_produk" name="kode_produk" class="form-control" onchange="setSatuanProdukOtomatis()">
-                <option value="">-- Pilih Produk --</option>
-                @foreach($produkList as $produk)
-                    <option value="{{ $produk->kode_produk }}" data-satuan="{{ $produk->satuan }}">{{ $produk->nama_produk }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="satuan_produk" class="form-label">Satuan</label>
-            <input type="text" id="satuan_produk" name="satuan_produk" class="form-control" value="{{ $satuan ?? '' }}" readonly>
-        </div>
+<div class="col-md-4">
+    <label for="kode_produk" class="form-label">Nama Produk</label>
+    <select id="kode_produk" name="kode_produk" class="form-control" onchange="setSatuanProdukOtomatis()">
+        <option value="">-- Pilih Produk --</option>
+        @foreach($produkList as $produk)
+            <option value="{{ $produk->kode_produk }}" data-satuan="{{ $produk->satuan }}">
+                {{ $produk->nama_produk }} ({{ $produk->satuan }})
+            </option>
+        @endforeach
+    </select>
+</div>
         <div class="col-md-4">
             <label for="lokasi" class="form-label">Lokasi</label>
             <select id="lokasi" name="lokasi" class="form-control" onchange="setSatuanProdukOtomatis()">
@@ -49,17 +47,18 @@
                 <tr>
                     <th>No</th>
                     <th>No Transaksi</th>
+                    <th>Keterangan</th>
                     <th>Tanggal</th>
-                    <th>HPP</th> <!-- Kolom HPP setelah tanggal -->
+                    <th>HPP</th>
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
                     <th>Sisa (Qty)</th>
-                    <th>Lokasi</th> <!-- Kolom Lokasi setelah Sisa -->
+                    <th>Lokasi</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
+                    <td colspan="9" class="text-center">Tidak ada data persediaan.</td>
                 </tr>
             </tbody>
         </table>
@@ -96,13 +95,15 @@ function setSatuanProdukOtomatis() {
                 // Akumulasi stok akhir per harga
                 let stokAkhirMap = {};
                 if (data.length === 0) {
-                    tbody = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
+                    tbody = `<tr><td colspan="9" class="text-center">Tidak ada data persediaan.</td></tr>`;
                 } else {
                     data.forEach(function(row, idx) {
+                        let keterangan = row.keterangan || '-'; 
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
-                        let harga = parseFloat(row.hpp) || 0; // perbaiki di sini
-                        let hpp = parseFloat(row.hpp) || 0;   // perbaiki di sini
+                        let harga = parseFloat(row.hpp) || 0;
+                        let hpp = parseFloat(row.hpp) || 0;
+                        
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
@@ -116,12 +117,14 @@ function setSatuanProdukOtomatis() {
     <tr>
         <td>${idx + 1}</td>
         <td>${row.no_transaksi}</td>
+        <td>${keterangan}</td> 
         <td>${formatTanggal(row.tanggal)}</td>
-        <td>Rp${hpp.toLocaleString('id-ID')}</td> <!-- HPP setelah tanggal -->
+        <td>Rp${hpp.toLocaleString('id-ID')}</td>
         <td>${masuk}</td>
         <td>${keluar}</td>
         <td>${saldoQty}</td>
-        <td>${row.lokasi || '-'}</td> <!-- Lokasi setelah Sisa -->
+        <td>${row.lokasi || '-'}</td>
+        
     </tr>
 `;
                     });
@@ -146,7 +149,7 @@ function setSatuanProdukOtomatis() {
             });
     } else {
         document.getElementById('riwayat-title-produk').style.display = 'none';
-        document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
+        document.querySelector('#tabel-persediaan-produk tbody').innerHTML = `<tr><td colspan="9" class="text-center">Tidak ada data persediaan.</td></tr>`;
         document.getElementById('stok-akhir-box-produk').style.display = 'none';
     }
 }

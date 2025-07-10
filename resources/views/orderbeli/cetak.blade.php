@@ -135,10 +135,10 @@
                 <tr>
                     <td style="text-align:center">{{ $i + 1 }}</td>
                     <td>{{ $d->nama_bahan }}</td>
-                    <td style="text-align:right">{{ number_format($d->harga_beli, 0, ',', '.') }}</td>
+                    <td style="text-align:right">Rp {{ number_format($d->harga_beli, 0, ',', '.') }}</td>
                     <td style="text-align:center">{{ $d->jumlah_beli }}</td>
                     <td style="text-align:center">{{ $d->satuan }}</td>
-                    <td style="text-align:right">{{ number_format($subTotal, 0, ',', '.') }}</td>
+                    <td style="text-align:right">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -147,15 +147,15 @@
     <table class="summary-table">
         <tr>
             <td><strong>Total</strong></td>
-            <td style="text-align:right"><strong>{{ number_format($grandTotal, 0, ',', '.') }}</strong></td>
+            <td style="text-align:right"><strong>Rp {{ number_format($grandTotal, 0, ',', '.') }}</strong></td>
         </tr>
         <tr>
             <td>Uang Muka</td>
-            <td style="text-align:right">{{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
+            <td style="text-align:right">Rp {{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
         </tr>
         <tr>
             <td>Sisa</td>
-            <td style="text-align:right">{{ number_format($grandTotal - ($order->uang_muka ?? 0), 0, ',', '.') }}</td>
+            <td style="text-align:right">Rp {{ number_format($grandTotal - ($order->uang_muka ?? 0), 0, ',', '.') }}</td>
         </tr>
     </table>
 

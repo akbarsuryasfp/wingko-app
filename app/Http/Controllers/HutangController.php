@@ -93,6 +93,10 @@ class HutangController extends Controller
         $utang = \DB::table('t_utang')->where('no_utang', $no_utang)->first();
         $kode_supplier = $utang->kode_supplier ?? '';
 
+            // CEK: Nominal pembayaran tidak boleh melebihi sisa hutang
+    if ($request->jumlah > $utang->sisa_utang) {
+        return back()->withInput()->withErrors(['jumlah' => 'Nominal pembayaran tidak boleh melebihi sisa hutang!']);
+    }
         // 1. Buat no_jurnal baru
         $no_jurnal = JurnalHelper::generateNoJurnal();
 
@@ -204,7 +208,20 @@ class HutangController extends Controller
             'jumlah'     => 'required|numeric|min:1',
             'keterangan' => 'nullable|string',
         ]);
+    // Ambil data hutang
+    $hutang = \DB::table('t_utang')->where('no_utang', $no_utang)->first();
 
+    // Hitung sisa utang yang boleh dibayar (tambahkan jumlah pembayaran lama)
+    $pembayaranLama = \DB::table('t_jurnal_detail')
+        ->where('no_jurnal', $no_jurnal)
+        ->where('debit', '>', 0)
+        ->value('debit') ?? 0;
+    $batasMaksimal = $hutang->sisa_utang + $pembayaranLama;
+
+    // Validasi: jumlah tidak boleh melebihi sisa hutang + pembayaran lama
+    if ($request->jumlah > $batasMaksimal) {
+        return back()->withInput()->withErrors(['jumlah' => 'Nominal pembayaran tidak boleh melebihi sisa hutang!']);
+    }
         // Update t_jurnal_umum
         \DB::table('t_jurnal_umum')
             ->where('no_jurnal', $no_jurnal)

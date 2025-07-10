@@ -63,11 +63,11 @@ class ProduksiController extends Controller
                     'kode_produk' => $kode_produk,
                     'masuk' => $jumlah_unit,
                     'keluar' => 0,
-                    'hpp' => $harga_per_unit,
+                    'hpp' => null,
                     'satuan' => null,
-                    'keterangan' => 'Hasil produksi ' . $kode,
+                    'keterangan' => 'Hasil produksi',
                     'tanggal_exp' => $tanggal_expired,
-                    'lokasi' => 'gudang',
+                    'lokasi' => 'Gudang',
                 ]);
             }
 

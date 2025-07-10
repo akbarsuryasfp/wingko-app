@@ -36,6 +36,7 @@
                 <tr>
                     <th>No</th>
                     <th>No Transaksi</th>
+                    <th>Keterangan</th> <!-- New Keterangan column -->
                     <th>Tanggal</th>
                     <th>Harga per kg</th>
                     <th>Masuk (kg)</th>
@@ -45,7 +46,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="7" class="text-center">Tidak ada data persediaan.</td>
+                    <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
                 </tr>
             </tbody>
         </table>
@@ -81,12 +82,13 @@ function setSatuanOtomatis() {
                 // --- Akumulasi stok akhir per harga ---
                 let stokAkhirMap = {};
                 if (data.length === 0) {
-                    tbody = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+                    tbody = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
                 } else {
                     data.forEach(function(row, idx) {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
                         let harga = parseFloat(row.harga);
+                        let keterangan = row.keterangan || '-'; // Get keterangan from data
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
@@ -100,6 +102,7 @@ function setSatuanOtomatis() {
                             <tr>
                                 <td>${idx + 1}</td>
                                 <td>${row.no_transaksi}</td>
+                                <td>${keterangan}</td> <!-- Keterangan column -->
                                 <td>${formatTanggal(row.tanggal)}</td>
                                 <td>Rp${harga.toLocaleString('id-ID')}</td>
                                 <td>${masuk}</td>
@@ -129,7 +132,7 @@ function setSatuanOtomatis() {
             });
     } else {
         document.getElementById('riwayat-title').style.display = 'none';
-        document.querySelector('#tabel-persediaan tbody').innerHTML = `<tr><td colspan="7" class="text-center">Tidak ada data persediaan.</td></tr>`;
+        document.querySelector('#tabel-persediaan tbody').innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
         document.getElementById('stok-akhir-box').style.display = 'none';
     }
 }

@@ -23,10 +23,11 @@
                 @endforeach
             </select>
         </div>
-        <div class="mb-3 d-flex align-items-center">
-            <label for="tanggal_terima" class="form-label mb-0" style="width:180px;">Tanggal Terima</label>
-            <input type="date" class="form-control" id="tanggal_terima" name="tanggal_terima" required style="width:300px;">
-        </div>
+<div class="mb-3 d-flex align-items-center">
+    <label for="tanggal_terima" class="form-label mb-0" style="width:180px;">Tanggal Terima</label>
+    <input type="date" class="form-control" id="tanggal_terima" name="tanggal_terima" 
+           value="{{ date('Y-m-d') }}" required style="width:300px;">
+</div>
             <div class="mb-3 d-flex align-items-center">
                 <label for="nama_supplier" class="form-label mb-0" style="width:180px;">Supplier</label>
                 <input type="text" id="nama_supplier" class="form-control" readonly style="width:300px;" value="{{ $order_selected->nama_supplier ?? '' }}">

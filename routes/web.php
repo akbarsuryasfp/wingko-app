@@ -30,11 +30,12 @@ use App\Http\Controllers\PenyesuaianBarangController;
 use App\Http\Controllers\TransferProdukController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BarcodeBatchController;
+use App\Http\Controllers\JurnalController;
 
 Route::get('/', function () {
     $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
     return view('welcome', compact('reminder'));
-})->middleware('auth');
+})->middleware('auth')->name('welcome');
 
 // Route login
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -118,6 +119,9 @@ Route::get('/returbeli/create', [ReturBeliController::class, 'create'])->name('r
 Route::post('/returbeli/store', [ReturBeliController::class, 'store'])->name('returbeli.store');
 Route::get('/returbeli/detail-pembelian/{no_pembelian}', [ReturBeliController::class, 'getDetailPembelian']);
 Route::get('/returbeli/cetak/{no_retur_beli}', [ReturBeliController::class, 'cetak'])->name('returbeli.cetak');
+Route::get('/returbeli/terimabarang/{no_retur_beli}', [ReturBeliController::class, 'formTerimaBarang'])->name('returbeli.terimabarang');
+Route::post('/returbeli/terimabarang/{no_retur_beli}', [ReturBeliController::class, 'terimaBarang'])->name('returbeli.terimaBarang');
+Route::post('/returbeli/kasretur/{no_retur_beli}', [ReturBeliController::class, 'kasRetur'])->name('returbeli.kasretur');
 Route::get('/returbeli/laporan', [ReturBeliController::class, 'laporan'])->name('returbeli.laporan');
 
 // Route permintaan produksi
@@ -209,8 +213,7 @@ Route::get('/stokopname/bahan', [StokOpnameController::class, 'create'])->name('
 Route::post('/stokopname/bahan', [StokOpnameController::class, 'store'])->name('stokopname.store');
 
 Route::get('/stokopname/produk', [StokOpnameController::class, 'produk'])->name('stokopname.produk');
-Route::post('/stokopname/store-produk', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
-
+Route::post('/stokopname/produk/store', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
 // Route laporan pembelian
 Route::get('/pembelian/laporan/pdf', [PembelianController::class, 'laporanPdf'])->name('pembelian.laporan.pdf');
 
@@ -227,8 +230,13 @@ Route::post('/overhead/store', [OverheadController::class, 'store'])->name('over
 Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'create', 'store']);
 
 // Route transfer produk
+Route::resource('transferproduk', TransferProdukController::class);
 Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
 Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])->name('transferproduk.store');
+Route::get('/{no_transaksi}/edit', [TransferProdukController::class, 'edit'])->name('transferproduk.edit');
+Route::put('/{no_transaksi}', [TransferProdukController::class, 'update'])->name('transferproduk.update');
+Route::delete('/{no_transaksi}', [TransferProdukController::class, 'destroy'])->name('transferproduk.destroy');
+Route::get('/transferproduk/get-products', [TransferProdukController::class, 'getProductsByLocationAjax']);
 
 // Route transaksi penjualan produk konsinyasi masuk
 Route::resource('transaksikonsinyasimasuk', App\Http\Controllers\TransaksiKonsinyasiMasukController::class);
@@ -252,6 +260,7 @@ Route::resource('kartuperskonsinyasi', App\Http\Controllers\KartuPersKonsinyasiC
 // Route jurnal
 Route::get('/jurnal', [JurnalController::class, 'index'])->name('jurnal.index');
 Route::get('/buku-besar', [JurnalController::class, 'bukuBesar'])->name('jurnal.buku_besar');
+Route::get('/jurnalpenyesuaian', [JurnalController::class, 'penyesuaian'])->name('jurnal.penyesuaian');
 
 // Barcode batch routes
 Route::get('/barcode-batch/info', [BarcodeBatchController::class, 'info']);

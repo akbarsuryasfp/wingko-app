@@ -19,6 +19,6 @@ class JurnalDetail extends Model
     
     public function akun()
     {
-        return $this->belongsTo(\App\Models\Akun::class, 'kode_akun', 'kode_akun');
+        return $this->belongsTo(Akun::class, 'kode_akun', 'kode_akun');
     }
 }

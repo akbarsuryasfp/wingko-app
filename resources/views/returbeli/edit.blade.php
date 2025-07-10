@@ -2,17 +2,22 @@
 
 @section('content')
 <div class="container">
-    <h4>Edit Retur Pembelian</h4>
-    <form action="{{ route('returbeli.update', $retur->no_retur_beli) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div class="mb-3">
-            <label>No Retur</label>
-            <input type="text" class="form-control" value="{{ $retur->no_retur_beli }}" readonly>
+<h2>Edit Retur Pembelian</h2>
+<form action="{{ route('returbeli.update', $retur->no_retur_beli) }}" method="POST">
+    @csrf
+    @method('PUT')
+
+    <div class="row mb-3 align-items-center">
+        <label class="col-sm-3 col-form-label">Kode Retur Pembelian</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control" value="{{ $retur->no_retur_beli }}" readonly required style="max-width: 400px;">
         </div>
-        <div class="mb-3">
-            <label>No Pembelian</label>
-            <select name="kode_pembelian" class="form-control" required>
+    </div>
+
+    <div class="row mb-3 align-items-center">
+        <label class="col-sm-3 col-form-label">No Pembelian</label>
+        <div class="col-sm-9">
+            <select name="kode_pembelian" class="form-control" required style="max-width: 400px;">
                 @foreach($pembelian as $item)
                     <option value="{{ $item->no_pembelian }}" {{ $retur->no_pembelian == $item->no_pembelian ? 'selected' : '' }}>
                         {{ $item->no_pembelian }} | {{ $item->tanggal_pembelian }} | {{ $item->nama_supplier }}
@@ -20,14 +25,41 @@
                 @endforeach
             </select>
         </div>
-        <div class="mb-3">
-            <label>Tanggal Retur</label>
-            <input type="date" name="tanggal_retur_beli" class="form-control" value="{{ $retur->tanggal_retur_beli }}" required>
+    </div>
+
+    <div class="row mb-3 align-items-center">
+        <label class="col-sm-3 col-form-label">Tanggal Retur</label>
+        <div class="col-sm-9">
+            <input type="date" name="tanggal_retur_beli" class="form-control" value="{{ $retur->tanggal_retur_beli }}" required style="max-width: 400px;">
         </div>
-        <div class="mb-3">
-            <label>Keterangan (Opsional)</label>
-            <textarea class="form-control" name="keterangan">{{ $retur->keterangan }}</textarea>
+    </div>
+
+    <div class="row mb-3 align-items-center">
+        <label class="col-sm-3 col-form-label">Jenis Pengembalian</label>
+        <div class="col-sm-9">
+            <select name="jenis_pengembalian" class="form-control" required style="max-width: 400px;">
+                <option value="">-- Pilih Jenis Pengembalian --</option>
+                <option value="uang" {{ $retur->jenis_pengembalian == 'uang' ? 'selected' : '' }}>Uang</option>
+                <option value="barang" {{ $retur->jenis_pengembalian == 'barang' ? 'selected' : '' }}>Barang</option>
+            </select>
         </div>
+    </div>
+
+    <div class="row mb-3 align-items-start">
+        <label class="col-sm-3 col-form-label">Keterangan (Opsional)</label>
+        <div class="col-sm-9">
+            <textarea class="form-control" name="keterangan" style="max-width: 400px;">{{ $retur->keterangan }}</textarea>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="offset-sm-3 col-sm-9">
+            <button type="submit" class="btn btn-primary">Update Retur</button>
+        </div>
+    </div>
+</form>
+
+
         <h5>Detail Bahan</h5>
         <table class="table">
             <thead>

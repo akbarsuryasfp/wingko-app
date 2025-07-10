@@ -2,7 +2,8 @@
     <tr><th>Kode Order</th><td>{{ $order->no_order_beli }}</td></tr>
     <tr><th>Tanggal</th><td>{{ $order->tanggal_order }}</td></tr>
     <tr><th>Supplier</th><td>{{ $order->supplier->nama_supplier ?? '-' }}</td></tr>
-    <tr><th>Total Order</th><td>{{ number_format($order->total_order,0,',','.') }}</td></tr>
+    <tr><th>Jumlah Item</th><td>{{ $details->count() }}</td></tr>
+    <tr><th>Total Order</th><td>Rp {{ number_format($order->total_order,0,',','.') }}</td></tr>
 </table>
 
 <h5>Detail Bahan Dibeli</h5>
@@ -25,14 +26,14 @@
             <td>{{ $d->nama_bahan ?? '-' }}</td>
             <td>{{ $d->satuan ?? '-' }}</td>
             <td>{{ $d->jumlah_beli }}</td>
-            <td>{{ number_format($d->harga_beli,0,',','.') }}</td>
-            <td>{{ number_format($d->total,0,',','.') }}</td>
+            <td>Rp {{ number_format($d->harga_beli,0,',','.') }}</td>
+            <td>Rp {{ number_format($d->total,0,',','.') }}</td>
         </tr>
         @php $grandTotal += $d->total; @endphp
         @endforeach
         <tr>
             <td colspan="5" class="text-end fw-bold">Grand Total</td>
-            <td class="fw-bold">{{ number_format($grandTotal,0,',','.') }}</td>
+            <td class="fw-bold">Rp {{ number_format($grandTotal,0,',','.') }}</td>
         </tr>
     </tbody>
 </table>

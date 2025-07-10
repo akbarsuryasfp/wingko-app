@@ -28,8 +28,10 @@ class JurnalHelper
         'prive'               => '3010', // Prive
         'penjualan'           => '4000', // Penjualan
         'pendapatan_lain'     => '4010', // Pendapatan Lain-lain
+        'retur_pembelian'      => '4025', // Retur Pembelian
         'hpp'                 => '5000', // Harga Pokok Penjualan
         'beban_operasional'   => '5010', // Beban Operasional
+        'beban_kerugian'      => '5011', // Beban Kerugian
         'upah'                => '5020', // Upah/BTKL
         'overhead'            => '5030', // Overhead Pabrik
         'beban_lain'          => '5040', // Beban Lain-lain
