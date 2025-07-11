@@ -10,21 +10,14 @@ class ProdukController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil kategori dengan kode depan "P"
-        $kategoriList = Kategori::where('kode_kategori', 'like', 'P%')->get(); // Sudah benar
-
-        // Filter produk jika ada request kode_kategori
-        $query = Produk::query();
-        if ($request->filled('kode_kategori')) {
-            $query->where('kode_kategori', $request->kode_kategori);
-        }
+        $query = Produk::query(); 
         $produk = $query->get();
         if ($request->filled('search')) {
             $produk = $produk->filter(function ($item) use ($request) {
                 return str_contains(strtolower($item->nama_produk), strtolower($request->search));
             });
         }
-        return view('produk.index', compact('produk', 'kategoriList'));
+        return view('produk.index', compact('produk'));
     }
 
     public function create()
@@ -39,67 +32,64 @@ class ProdukController extends Controller
         }
         $kode_produk = 'BRG' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
 
-        $kategori = Kategori::all();
-        return view('produk.create', compact('kode_produk', 'kategori'));
+        return view('produk.create', compact('kode_produk'));
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'kode_kategori' => 'required',
-            'nama_produk' => 'required',
-            'satuan' => 'required',
-            'stokmin' => 'required|numeric|min:0', // tambahkan validasi stokmin
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'nama_produk' => 'required',
+        'satuan' => 'required',
+        'stokmin' => 'required|numeric|min:0',
+        'harga_jual' => 'nullable|numeric|min:0',
+    ]);
 
-        // Generate kode_produk otomatis
-        $last = Produk::orderBy('kode_produk', 'desc')->first();
-        if ($last) {
-            $lastNumber = intval(substr($last->kode_produk, 3));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-        $kode_produk = 'BRG' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
-
-        Produk::create([
-            'kode_produk' => $kode_produk,
-            'kode_kategori' => $request->kode_kategori,
-            'nama_produk' => $request->nama_produk,
-            'satuan' => $request->satuan,
-            'stokmin' => $request->stokmin, // simpan stokmin
-        ]);
-
-        return redirect()->route('produk.index')->with('success', 'Data produk berhasil ditambahkan.');
+    // Generate kode_produk otomatis
+    $last = Produk::orderBy('kode_produk', 'desc')->first();
+    if ($last) {
+        $lastNumber = intval(substr($last->kode_produk, 3));
+        $newNumber = $lastNumber + 1;
+    } else {
+        $newNumber = 1;
     }
+    $kode_produk = 'BRG' . str_pad($newNumber, 5, '0', STR_PAD_LEFT);
+
+    Produk::create([
+        'kode_produk' => $kode_produk,
+        'nama_produk' => $request->nama_produk,
+        'satuan' => $request->satuan,
+        'stokmin' => $request->stokmin,
+        'harga_jual' => $request->harga_jual,
+    ]);
+
+    return redirect()->route('produk.index')->with('success', 'Data produk berhasil ditambahkan.');
+}
 
     public function edit($kode_produk)
     {
         $produk = Produk::findOrFail($kode_produk);
-        $kategori = Kategori::all();
-        return view('produk.edit', compact('produk', 'kategori'));
+        return view('produk.edit', compact('produk'));
     }
 
-    public function update(Request $request, $kode_produk)
-    {
-        $request->validate([
-            'kode_kategori' => 'required',
-            'nama_produk' => 'required',
-            'satuan' => 'required',
-            'stokmin' => 'required|numeric|min:0', // tambahkan validasi stokmin
-        ]);
+public function update(Request $request, $kode_produk)
+{
+    $request->validate([
+        'nama_produk' => 'required',
+        'satuan' => 'required',
+        'stokmin' => 'required|numeric|min:0',
+        'harga_jual' => 'nullable|numeric|min:0',
+    ]);
 
-        $produk = Produk::findOrFail($kode_produk);
-        $produk->update([
-            'kode_kategori' => $request->kode_kategori,
-            'nama_produk' => $request->nama_produk,
-            'satuan' => $request->satuan,
-            'stokmin' => $request->stokmin, // update stokmin
-        ]);
+    $produk = Produk::findOrFail($kode_produk);
+    $produk->update([
+        'nama_produk' => $request->nama_produk,
+        'satuan' => $request->satuan,
+        'stokmin' => $request->stokmin,
+        'harga_jual' => $request->harga_jual,
+    ]);
 
-        return redirect()->route('produk.index')->with('success', 'Data produk berhasil diupdate.');
-    }
-
+    return redirect()->route('produk.index')->with('success', 'Data produk berhasil diupdate.');
+}
     public function destroy($kode_produk)
     {
         $produk = Produk::findOrFail($kode_produk);

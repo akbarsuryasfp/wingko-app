@@ -23,22 +23,6 @@
 
             {{-- Filter dan Search --}}
             <div class="row align-items-center mb-3">
-                <div class="col-md-6 col-12 mb-2 mb-md-0">
-                    <form method="GET" action="{{ route('produk.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-                        <label for="kode_kategori" class="mb-0">Filter Kategori:</label>
-                        <select name="kode_kategori" id="kode_kategori"
-                                class="form-select form-select-sm"
-                                style="width: 180px;"
-                                onchange="this.form.submit()">
-                            <option value="">-- Semua Kategori --</option>
-                            @foreach($kategoriList as $kategori)
-                                <option value="{{ $kategori->kode_kategori }}" {{ request('kode_kategori') == $kategori->kode_kategori ? 'selected' : '' }}>
-                                    {{ $kategori->jenis_kategori }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </form>
-                </div>
                 <div class="col-md-6 col-12">
                     <form method="GET" action="{{ route('produk.index') }}" class="d-flex justify-content-md-end justify-content-start gap-2 flex-wrap">
                         <input type="text" name="search"
@@ -59,10 +43,10 @@
                     <thead class="table-light">
                         <tr>
                             <th style="width: 100px;">Kode Produk</th>
-                            <th style="width: 130px;">Kode Kategori</th>
                             <th style="width: 220px;">Nama Produk</th>
                             <th style="width: 90px;">Satuan</th>
                             <th style="width: 90px;">Stok Minimal</th> <!-- Tambah ini -->
+                            <th style="width: 120px;">Harga Jual</th>
                             <th style="width: 100px;">Aksi</th>
                         </tr>
                     </thead>
@@ -70,11 +54,12 @@
                         @forelse($produk as $item)
                             <tr>
                                 <td>{{ $item->kode_produk }}</td>
-                                <td>{{ $item->kode_kategori }}</td>
                                 <td class="text-start">{{ $item->nama_produk }}</td>
                                 <td>{{ $item->satuan }}</td>
                                 <td>{{ $item->stokmin }}</td> <!-- Tambah ini -->
-                                <td>
+                               <td class="text-end">
+    {{ $item->harga_jual ? 'Rp ' . number_format($item->harga_jual, 0, ',', '.') : '-' }}
+</td>                                <td>
                                     <div class="d-flex justify-content-center gap-1">
                                         <a href="{{ route('produk.edit', $item->kode_produk) }}" class="btn btn-sm btn-warning" title="Edit">
                                             <i class="bi bi-pencil-square"></i>

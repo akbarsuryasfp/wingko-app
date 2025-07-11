@@ -14,10 +14,10 @@ class Produk extends Model
 
     protected $fillable = [
         'kode_produk',
-        'kode_kategori',
         'nama_produk',
         'satuan',
-        'stokmin'
+        'stokmin',
+        'harga_jual'
     ];
 
     public function resep()

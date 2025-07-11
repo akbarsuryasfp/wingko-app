@@ -10,22 +10,7 @@
             <label for="kode_produk" class="form-label mb-0" style="width:150px;">Kode Produk</label>
             <input type="text" class="form-control" id="kode_produk" name="kode_produk" value="{{ $produk->kode_produk }}" readonly style="width:300px;">
         </div>
-        <div class="mb-3 d-flex align-items-center">
-            <label for="kode_kategori" class="form-label mb-0" style="width:150px;">Kategori Produk</label>
-            <select class="form-control" id="kode_kategori" name="kode_kategori" required style="width:300px;">
-                <option value="">-- Pilih Kategori --</option>
-                @foreach($kategori as $kat)
-                    @if(Str::startsWith($kat->kode_kategori, 'P'))
-                        <option value="{{ $kat->kode_kategori }}" {{ old('kode_kategori', $produk->kode_kategori) == $kat->kode_kategori ? 'selected' : '' }}>
-                            {{ $kat->jenis_kategori }}
-                        </option>
-                    @endif
-                @endforeach
-            </select>
-            @error('kode_kategori')
-                <div class="text-danger ms-2">{{ $message }}</div>
-            @enderror
-        </div>
+    
         <div class="mb-3 d-flex align-items-center">
             <label for="nama_produk" class="form-label mb-0" style="width:150px;">Nama Produk</label>
             <input type="text" class="form-control" id="nama_produk" name="nama_produk" value="{{ old('nama_produk', $produk->nama_produk) }}" required style="width:300px;">
@@ -44,6 +29,13 @@
             <label for="stokmin" class="form-label mb-0" style="width:150px;">Stok Minimal</label>
             <input type="number" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin', $produk->stokmin) }}" required min="0" style="width:300px;">
             @error('stokmin')
+                <div class="text-danger ms-2">{{ $message }}</div>
+            @enderror
+        </div>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="harga_jual" class="form-label mb-0" style="width:150px;">Harga Jual</label>
+            <input type="number" class="form-control" id="harga_jual" name="harga_jual" value="{{ old('harga_jual', $produk->harga_jual) }}" min="0" step="0.01" style="width:300px;">
+            @error('harga_jual')
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>

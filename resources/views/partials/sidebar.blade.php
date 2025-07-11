@@ -23,7 +23,7 @@
             <ul id="submenu-transaksi" class="nav flex-column ms-3" style="display:none;">
                 <li>
                     <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-pembelian')">
-                        <i class="bi bi-cart"></i> Pembelian
+                        <i class="bi bi-cart"></i>Pembelian
                     </a>
                     <ul id="submenu-pembelian" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="{{ route('orderbeli.index') }}" class="nav-link">Order Pembelian</a></li>
@@ -40,7 +40,7 @@
                     <ul id="submenu-produksi" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="{{ route('permintaan_produksi.index') }}" class="nav-link"><i class="bi bi-clipboard-plus"></i><span>Permintaan Produksi</span></a></li>
                         <li><a href="{{ route('jadwal.index') }}" class="nav-link"><i class="bi bi-calendar-event"></i><span>Jadwal Produksi</span></a></li>
-                        <li><a href="{{ route('produksi.index') }}" class="nav-link"><i class="bi bi-goods"></i><span>Produksi</span></a></li>
+                        <li><a href="{{ route('produksi.index') }}" class="nav-link"><i class="bi bi-gear-fill"></i><span> Produksi</span></a></li>
                         <li><a href="{{ route('hpp.index') }}" class="nav-link"><i class="bi bi-calculator"></i><span>HPP</span></a></li>
                     </ul>
                 </li>
