@@ -40,8 +40,12 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pesanan-tab" data-bs-toggle="tab" data-bs-target="#pesanan" type="button" role="tab">Pesanan Penjualan</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="setor-tab" data-bs-toggle="tab" data-bs-target="#setor" type="button" role="tab">Setor Konsinyasi</button>
+                </li>
             </ul>
             <div class="tab-content mt-3">
+                <!-- Tab Permintaan -->
                 <div class="tab-pane fade show active" id="permintaan" role="tabpanel">
                     <table class="table table-bordered">
                         <thead>
@@ -69,6 +73,7 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Tab Pesanan -->
                 <div class="tab-pane fade" id="pesanan" role="tabpanel">
                     <table class="table table-bordered">
                         <thead>
@@ -88,6 +93,36 @@
                                 <td>
                                     <button type="button" class="btn btn-sm btn-primary"
                                         onclick='tambahPermintaan(@json($ps->load("details.produk")), "pesanan")' data-bs-dismiss="modal">
+                                        Pilih
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Tab Setor Konsinyasi -->
+                <div class="tab-pane fade" id="setor" role="tabpanel">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Kode Setor</th>
+                                <th>Consignee</th>
+                                <th>Produk</th>
+                                <th>Jumlah Setor</th>
+                                <th>Pilih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($setorKonsinyasi as $setor)
+                            <tr>
+                                <td>{{ $setor->kode_consignee_setor }}</td>
+                                <td>{{ $setor->nama_consignee }}</td>
+                                <td>{{ $setor->nama_produk }}</td>
+                                <td>{{ $setor->jumlah_setor }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        onclick='tambahSetorKonsinyasi(@json($setor))' data-bs-dismiss="modal">
                                         Pilih
                                     </button>
                                 </td>
@@ -152,6 +187,34 @@ function tambahPermintaan(data, type) {
         added[uniqueKey] = true;
         produkIndex++;
     });
+}
+
+function tambahSetorKonsinyasi(setor) {
+    let uniqueKey = 'setor-' + setor.kode_consignee_setor + '-' + setor.kode_produk;
+    if (added[uniqueKey]) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>
+            ${setor.nama_produk}
+            <input type="hidden" name="produk[${produkIndex}][kode_produk]" value="${setor.kode_produk}">
+        </td>
+        <td>
+            ${setor.jumlah_setor}
+            <input type="hidden" name="produk[${produkIndex}][jumlah]" value="${setor.jumlah_setor}">
+        </td>
+        <td>
+            ${setor.kode_consignee_setor}
+            <input type="hidden" name="produk[${produkIndex}][kode_sumber]" value="${setor.kode_consignee_setor}">
+            <input type="hidden" name="produk[${produkIndex}][tipe_sumber]" value="setor_konsinyasi">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '${uniqueKey}')">Hapus</button>
+        </td>
+    `;
+    document.querySelector('#produk-table tbody').appendChild(tr);
+    added[uniqueKey] = true;
+    produkIndex++;
 }
 
 function hapusBaris(el, uniqueKey) {

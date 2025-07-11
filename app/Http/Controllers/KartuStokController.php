@@ -70,7 +70,7 @@ class KartuStokController extends Controller
                 'tanggal',
                 'masuk',
                 'keluar',
-                'harga',
+                'hpp',
                 'satuan',
                 'keterangan',
                 'tanggal_exp',
@@ -95,5 +95,44 @@ class KartuStokController extends Controller
             ->havingRaw('sisa > 0')
             ->orderBy('harga')
             ->get();
+    }
+
+    public function laporanBahan()
+    {
+        $bahanList = \DB::table('t_bahan')->select('kode_bahan','nama_bahan','satuan','stokmin')->get();
+        $tanggal = date('Y-m-d');
+
+        // Ambil stok akhir per bahan dan harga dari t_kartupersbahan
+        $stokAkhirList = \DB::table('t_kartupersbahan')
+            ->select('kode_bahan', 'harga', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+            ->groupBy('kode_bahan', 'harga')
+            ->havingRaw('stok > 0')
+            ->get();
+
+        // Gabungkan stok akhir ke bahanList
+        foreach ($bahanList as $bahan) {
+            $bahan->stok_akhir = $stokAkhirList->where('kode_bahan', $bahan->kode_bahan)->values();
+        }
+
+        return view('kartustok.laporan_bahan', compact('bahanList', 'tanggal'));
+    }
+    public function laporanProduk()
+    {
+        $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();
+        $tanggal = date('Y-m-d');
+
+        // Ambil stok akhir per produk dan HPP dari t_kartupersproduk
+        $stokAkhirList = \DB::table('t_kartupersproduk')
+            ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+            ->groupBy('kode_produk', 'lokasi', 'hpp')
+            ->havingRaw('stok > 0')
+            ->get();
+
+        // Gabungkan stok akhir ke produkList
+        foreach ($produkList as $produk) {
+            $produk->stok_akhir = $stokAkhirList->where('kode_produk', $produk->kode_produk)->values();
+        }
+
+        return view('kartustok.laporan_produk', compact('produkList', 'tanggal'));
     }
 }

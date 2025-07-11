@@ -52,101 +52,54 @@
         <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
     </form>
 
-    <table class="table table-bordered text-center">
-        <thead class="table-light">
+    <table class="table table-bordered">
+        <thead>
             <tr>
                 <th>No</th>
                 <th>No Jual</th>
                 <th>Tanggal Jual</th>
                 <th>Pelanggan</th>
                 <th>Total Harga</th>
-                <th>Diskon</th>
                 <th>Total Jual</th>
-                <th>Piutang</th>
+                <th>Diskon</th>
                 <th>Metode</th>
                 <th>Status</th>
                 <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($penjualan as $no => $p)
+            @foreach($penjualan as $i => $jual)
             <tr>
-                <td>{{ $no+1 }}</td>
-                <td>{{ $p->no_jual }}</td>
-                <td>{{ $p->tanggal_jual }}</td>
-                <td>{{ $p->pelanggan->nama_pelanggan ?? '-' }}</td>
-                <td>Rp{{ number_format($p->total_harga,0,',','.') }}</td>
-                <td>
-                    @if(isset($p->tipe_diskon) && $p->tipe_diskon == 'persen')
-                        {{ $p->diskon }}%
-                    @else
-                        Rp{{ number_format($p->diskon,0,',','.') }}
-                    @endif
+                <td>{{ $i+1 }}</td>
+                <td>{{ $jual->no_jual }}</td>
+                <td>{{ $jual->tanggal_jual }}</td>
+                <td>{{ $jual->pelanggan->nama_pelanggan ?? '-' }}</td>
+                <td class="text-end">
+                    Rp {{ number_format($jual->details->sum('subtotal'), 0, ',', '.') }}
                 </td>
-                <td>Rp{{ number_format($p->total_jual,0,',','.') }}</td>
-                <td>
-                    @if($p->status_pembayaran == 'belum lunas')
-                        <span style="color:#d90429; font-weight:bold;">
-                            Rp{{ number_format($p->piutang,0,',','.') }}
-                        </span>
-                    @else
-                        Rp{{ number_format($p->piutang,0,',','.') }}
-                    @endif
+                <td class="text-end">
+                    Rp {{ number_format($jual->total, 0, ',', '.') }}
                 </td>
-                <td>{{ ucfirst($p->metode_pembayaran) }}</td>
-                <td>
-                    @if($p->status_pembayaran == 'lunas')
-                        <span class="badge bg-success">Lunas</span>
-                    @else
-                        <span class="badge bg-warning text-dark">Belum Lunas</span>
-                    @endif
+                <td class="text-end">
+                    Rp {{ number_format($jual->diskon ?? 0, 0, ',', '.') }}
                 </td>
-                <td class="d-flex flex-wrap gap-1 justify-content-center align-items-center">
-                    <!-- Detail -->
-                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $p->no_jual }}" title="Detail">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <!-- Edit (hanya jika belum lunas) -->
-                    @if($p->status_pembayaran != 'lunas')
-                        <a href="{{ route('penjualan.edit', $p->no_jual) }}" class="btn btn-warning btn-sm" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                    @endif
-                    <!-- Cetak Tagihan dan Bayar (jika belum lunas) -->
-                    @if($p->status_pembayaran == 'belum lunas')
-                        <a href="{{ route('penjualan.cetak_tagihan', $p->no_jual) }}" target="_blank" class="btn btn-dark btn-sm" title="Cetak Nota Tagihan">
-                            <i class="bi bi-receipt"></i>
-                        </a>
-                        @php
-                            $piutang = \App\Models\Piutang::where('no_jual', $p->no_jual)->first();
-                        @endphp
-                        @if($piutang)
-                            <a href="{{ route('piutang.bayar', $piutang->no_piutang) }}" class="btn btn-primary btn-sm" title="Pembayaran">
-                                <i class="bi bi-cash-coin"></i>
-                            </a>
-                        @endif
-                    @endif
-                    <!-- Cetak Nota Penjualan (hanya jika lunas) -->
-                    @if($p->status_pembayaran == 'lunas')
-                        <a href="{{ route('penjualan.cetak', $p->no_jual) }}" target="_blank" class="btn btn-success btn-sm" title="Cetak Nota Penjualan">
-                            <i class="bi bi-printer"></i>
-                        </a>
-                    @endif
-                    <!-- Hapus -->
-                    <form action="{{ route('penjualan.destroy', $p->no_jual) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                <td>{{ ucfirst($jual->metode_pembayaran) }}</td>
+                <td>
+                    <span class="badge bg-{{ $jual->status_pembayaran == 'lunas' ? 'success' : 'warning' }}">
+                        {{ ucfirst($jual->status_pembayaran) }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ route('penjualan.show', $jual->no_jual) }}" class="btn btn-info btn-sm">Lihat</a>
+                    <a href="{{ route('penjualan.edit', $jual->no_jual) }}" class="btn btn-success btn-sm">Edit</a>
+                    <form action="{{ route('penjualan.destroy', $jual->no_jual) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="return confirm('Hapus penjualan ini?')">Hapus</button>
                     </form>
                 </td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="11" class="text-center">Data tidak tersedia.</td>
-            </tr>
-            @endforelse
+            @endforeach
         </tbody>
     </table>
 

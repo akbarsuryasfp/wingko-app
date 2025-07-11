@@ -15,12 +15,13 @@
                         <input type="text" class="form-control" name="kode_pembelian" value="{{ $kode_pembelian }}" readonly required>
                     </div>
                 </div>
-                <div class="row mb-3 align-items-center">
-                    <label for="tanggal_pembelian" class="col-sm-4 col-form-label">Tanggal Pembelian</label>
-                    <div class="col-sm-8">
-                        <input type="date" class="form-control" id="tanggal_pembelian" name="tanggal_pembelian" required>
-                    </div>
-                </div>
+<div class="row mb-3 align-items-center">
+    <label for="tanggal_pembelian" class="col-sm-4 col-form-label">Tanggal Pembelian</label>
+    <div class="col-sm-8">
+        <input type="date" class="form-control" id="tanggal_pembelian" name="tanggal_pembelian" 
+               value="{{ date('Y-m-d') }}" required>
+    </div>
+</div>
                 <div class="row mb-3 align-items-center">
                     <label for="metode_bayar" class="col-sm-4 col-form-label">Jenis Pembayaran</label>
                     <div class="col-sm-8">
@@ -123,6 +124,13 @@
                 <input type="number" class="form-control" id="hutang" name="hutang" readonly>
             </div>
         </div>
+        <div class="row mb-2 align-items-center" id="row_jatuh_tempo" style="display: {{ ($pembelian->hutang ?? 0) > 0 ? 'flex' : 'none' }};">
+    <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+    <div class="col-sm-8">
+        <input type="date" class="form-control" name="jatuh_tempo" id="jatuh_tempo"
+            value="{{ old('jatuh_tempo', $pembelian->jatuh_tempo ?? '') }}">
+    </div>
+</div>
 
         <input type="hidden" name="status" id="status">
 
@@ -236,6 +244,8 @@ $jq('#uang_muka').val(uangMuka);
 
     $jq('#total_pembelian').val(totalPembelian);
     $jq('#hutang').val(kurangBayar);
+
+    toggleJatuhTempo();
 }
 
     // Trigger AJAX jika ada value awal pada select (misal dari parameter ?terima=...)
@@ -244,6 +254,20 @@ $jq('#uang_muka').val(uangMuka);
         if (awal) {
             $jq('#no_terima_bahan').trigger('change');
         }
+    });
+
+    function toggleJatuhTempo() {
+    var kurangBayar = parseFloat(document.getElementById('hutang').value) || 0;
+    var row = document.getElementById('row_jatuh_tempo');
+    row.style.display = kurangBayar > 0 ? 'flex' : 'none';
+}
+document.getElementById('total_bayar').addEventListener('input', hitungTotal);
+document.getElementById('diskon').addEventListener('input', hitungTotal);
+document.getElementById('ongkir').addEventListener('input', hitungTotal);
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateSubtotal();
+    toggleJatuhTempo();
     });
 </script>
 @endsection

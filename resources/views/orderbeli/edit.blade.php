@@ -181,7 +181,9 @@
                     <td>${index + 1}</td>
                     <td>${item.nama_bahan}</td>
                     <td>${item.satuan}</td>
-                    <td>${item.jumlah_beli}</td>
+                    <td>
+    <input type="number" class="form-control form-control-sm" value="${item.jumlah_beli}" min="1" onchange="ubahJumlahOrder(${index}, this.value)">
+</td>
                     <td>${item.harga_beli}</td>
                     <td>${item.total}</td>
                     <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})">X</button></td>
@@ -202,6 +204,12 @@
         stokMinList = @json($stokMinList);
     @endif
 
+    function ubahJumlahOrder(index, value) {
+    value = parseFloat(value) || 0;
+    daftarBahan[index].jumlah_beli = value;
+    daftarBahan[index].total = value * (parseFloat(daftarBahan[index].harga_beli) || 0);
+    updateTabel();
+}
     document.addEventListener('DOMContentLoaded', function() {
         const listStokMin = document.getElementById('listStokMin');
         if (listStokMin && stokMinList.length) {

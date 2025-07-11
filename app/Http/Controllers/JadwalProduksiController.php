@@ -27,7 +27,17 @@ class JadwalProduksiController extends Controller
             $selectedPesanan = $pesanan->where('kode_pesanan', $request->pesanan)->first();
         }
 
-        return view('jadwal.create', compact('permintaan', 'pesanan', 'selectedPermintaan', 'selectedPesanan'));
+        $setorKonsinyasi = \DB::table('t_consignee_setor')
+            ->join('t_consignee', 't_consignee.kode_consignee', '=', 't_consignee_setor.kode_consignee')
+            ->join('t_produk', 't_produk.kode_produk', '=', 't_consignee_setor.kode_produk')
+            ->select(
+                't_consignee_setor.*',
+                't_consignee.nama_consignee',
+                't_produk.nama_produk'
+            )
+            ->get();
+
+        return view('jadwal.create', compact('permintaan', 'pesanan', 'setorKonsinyasi', 'selectedPermintaan', 'selectedPesanan'));
     }
 
     public function store(Request $request)

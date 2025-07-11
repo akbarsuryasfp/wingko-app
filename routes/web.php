@@ -60,8 +60,7 @@ Route::resource('produk', ProdukController::class);
 Route::resource('orderbeli', OrderBeliController::class);
 Route::post('orderbeli/{no_order_beli}/setujui', [OrderBeliController::class, 'setujui'])->name('orderbeli.setujui');
 Route::get('/orderbeli/{no_order_beli}/cetak', [OrderBeliController::class, 'cetak'])->name('orderbeli.cetak');
-Route::post('orderbeli/{no_order_beli}/uangmuka', [OrderBeliController::class, 'simpanUangMuka'])->name('orderbeli.uangmuka');
-Route::get('orderbeli/{no_order_beli}/detail', [OrderBeliController::class, 'getDetail'])->name('orderbeli.detail');
+Route::post('orderbeli/{no_order_beli}/update-pembayaran', [OrderBeliController::class, 'updatePembayaran'])->name('orderbeli.updatePembayaran');
 
 // Route pelanggan
 Route::resource('pelanggan', PelangganController::class);
@@ -71,13 +70,17 @@ Route::resource('consignor', ConsignorController::class);
 
 // Route consignee
 Route::resource('consignee', ConsigneeController::class);
+Route::get('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 'setor'])->name('consignee.setor');
+Route::post('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 'storeSetor'])->name('consignee.storeSetor');
 
 // Route terima bahan
+Route::get('/terimabahan/laporan', [TerimabahanController::class, 'laporan'])->name('terimabahan.laporan');
 Route::resource('terimabahan', TerimabahanController::class);
 Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimabahanController::class, 'getSisaOrder']);
 Route::get('/terimabahan/{id}/edit', [TerimabahanController::class, 'edit'])->name('terimabahan.edit');
 Route::get('/terimabahan/{no_terima_bahan}/detail', [PembelianController::class, 'detailTerimaBahan']);
 Route::get('/terimabahan/{no_terima_bahan}/data', [PembelianController::class, 'getTerimaBahan']);
+
 
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
@@ -110,14 +113,17 @@ Route::get('/pembelian/{no_pembelian}/detail-json', [\App\Http\Controllers\Pembe
 Route::resource('pembelian', PembelianController::class);
 
 // Route retur pembelian
+Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
 Route::resource('returbeli', ReturBeliController::class);
 Route::get('/returbeli/create', [ReturBeliController::class, 'create'])->name('returbeli.create');
 Route::post('/returbeli/store', [ReturBeliController::class, 'store'])->name('returbeli.store');
 Route::get('/returbeli/detail-pembelian/{no_pembelian}', [ReturBeliController::class, 'getDetailPembelian']);
 Route::get('/returbeli/cetak/{no_retur_beli}', [ReturBeliController::class, 'cetak'])->name('returbeli.cetak');
+Route::get('/returbeli/terimabarang/{no_retur_beli}', [ReturBeliController::class, 'formTerimaBarang'])->name('returbeli.terimabarang');
+Route::post('/returbeli/terimabarang/{no_retur_beli}', [ReturBeliController::class, 'terimaBarang'])->name('returbeli.terimaBarang');
+Route::post('/returbeli/kasretur/{no_retur_beli}', [ReturBeliController::class, 'kasRetur'])->name('returbeli.kasretur');
 Route::get('/returbeli/laporan', [ReturBeliController::class, 'laporan'])->name('returbeli.laporan');
-Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
-   
+
 // Route permintaan produksi
 Route::get('/permintaan-produksi', [PermintaanProduksiController::class, 'index'])->name('permintaan_produksi.index');
 Route::get('/permintaan-produksi/create', [PermintaanProduksiController::class, 'create'])->name('permintaan_produksi.create');
@@ -147,6 +153,8 @@ Route::get('/hpp/input/{no_detail}', [HppController::class, 'create'])->name('hp
 Route::post('/hpp/simpan', [HppController::class, 'store'])->name('hpp.store');
 Route::get('/hpp/edit/{no_detail}', [HppController::class, 'edit'])->name('hpp.edit');
 Route::put('/hpp/update/{no_detail}', [HppController::class, 'update'])->name('hpp.update');
+Route::get('/hpp/laporan', [App\Http\Controllers\HppController::class, 'laporan'])->name('hpp.laporan');
+Route::get('/hpp/laporan/pdf', [App\Http\Controllers\HppController::class, 'laporanPdf'])->name('hpp.laporan.pdf');
 
 // Route karyawan
 Route::resource('karyawan', KaryawanController::class);
@@ -158,12 +166,16 @@ Route::post('/hutang', [HutangController::class, 'store'])->name('hutang.store')
 Route::get('/hutang/{no_utang}/detail', [HutangController::class, 'detail'])->name('hutang.detail');
 Route::get('/hutang/{no_utang}/bayar', [HutangController::class, 'bayar'])->name('hutang.bayar');
 Route::post('/hutang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('hutang.bayar.store');
+Route::get('hutang/{no_utang}/pembayaran/{no_jurnal}/edit', [HutangController::class, 'editPembayaran'])->name('hutang.editPembayaran');Route::delete('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'hapusPembayaran'])->name('hutang.hapusPembayaran');
+Route::put('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'updatePembayaran'])->name('hutang.bayar.update');
 
 // Route kartu stok
 Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kartustok.bahan');
 Route::get('/kartustok/api/{kode_bahan}', [KartuStokController::class, 'getKartuPersBahan']);
 Route::get('/kartustok/produk', [KartuStokController::class, 'produk'])->name('kartustok.produk');
 Route::get('/kartustok/api-produk/{kode_produk}', [KartuStokController::class, 'getKartuPersProduk']);
+Route::get('/kartustok/laporan-bahan', [KartuStokController::class, 'laporanBahan'])->name('kartustok.laporan_bahan');
+Route::get('/kartustok/laporan-produk', [KartuStokController::class, 'laporanProduk'])->name('kartustok.laporan_produk');
 
 // Route kas keluar
 Route::resource('kaskeluar', KaskeluarController::class);
@@ -201,8 +213,7 @@ Route::get('/stokopname/bahan', [StokOpnameController::class, 'create'])->name('
 Route::post('/stokopname/bahan', [StokOpnameController::class, 'store'])->name('stokopname.store');
 
 Route::get('/stokopname/produk', [StokOpnameController::class, 'produk'])->name('stokopname.produk');
-Route::post('/stokopname/store-produk', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
-
+Route::post('/stokopname/produk/store', [StokOpnameController::class, 'storeProduk'])->name('stokopname.storeProduk');
 // Route laporan pembelian
 Route::get('/pembelian/laporan/pdf', [PembelianController::class, 'laporanPdf'])->name('pembelian.laporan.pdf');
 
@@ -219,8 +230,13 @@ Route::post('/overhead/store', [OverheadController::class, 'store'])->name('over
 Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'create', 'store']);
 
 // Route transfer produk
+Route::resource('transferproduk', TransferProdukController::class);
 Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
 Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])->name('transferproduk.store');
+Route::get('/{no_transaksi}/edit', [TransferProdukController::class, 'edit'])->name('transferproduk.edit');
+Route::put('/{no_transaksi}', [TransferProdukController::class, 'update'])->name('transferproduk.update');
+Route::delete('/{no_transaksi}', [TransferProdukController::class, 'destroy'])->name('transferproduk.destroy');
+Route::get('/transferproduk/get-products', [TransferProdukController::class, 'getProductsByLocationAjax']);
 
 // Route transaksi penjualan produk konsinyasi masuk
 Route::resource('transaksikonsinyasimasuk', App\Http\Controllers\TransaksiKonsinyasiMasukController::class);

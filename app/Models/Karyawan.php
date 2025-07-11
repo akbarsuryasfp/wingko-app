@@ -10,6 +10,7 @@ class Karyawan extends Model
     protected $primaryKey = 'kode_karyawan';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = false; // Tambahkan baris ini
 
     protected $fillable = [
         'kode_karyawan', 'nama', 'jabatan', 'departemen', 'gaji', 'tanggal_masuk', 'alamat', 'email', 'no_telepon'

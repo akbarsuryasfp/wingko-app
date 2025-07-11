@@ -17,6 +17,7 @@
                 <th>Nama Consignee</th>
                 <th>Alamat</th>
                 <th>No. Telepon</th>
+                <th>Keterangan</th> <!-- Tambahkan kolom keterangan -->
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -27,6 +28,22 @@
                     <td>{{ $item->nama_consignee }}</td>
                     <td>{{ $item->alamat }}</td>
                     <td>{{ $item->no_telp }}</td>
+                    <td>
+    @php
+        $setorList = \DB::table('t_consignee_setor')
+            ->join('t_produk', 't_produk.kode_produk', '=', 't_consignee_setor.kode_produk')
+            ->where('t_consignee_setor.kode_consignee', $item->kode_consignee)
+            ->select('t_produk.nama_produk', 't_consignee_setor.jumlah_setor')
+            ->get();
+    @endphp
+    @if($setorList->count())
+        @foreach($setorList as $setor)
+            <div>{{ $setor->nama_produk }}: <b>{{ $setor->jumlah_setor }}</b></div>
+        @endforeach
+    @else
+        <span>-</span>
+    @endif
+</td>
                     <td>
                         <a href="{{ route('consignee.edit', $item->kode_consignee) }}" class="btn btn-warning btn-sm" title="Edit">
                             <i class="bi bi-pencil"></i>
@@ -42,7 +59,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="text-center">Data tidak tersedia.</td>
+                    <td colspan="6" class="text-center">Data tidak tersedia.</td>
                 </tr>
             @endforelse
         </tbody>
