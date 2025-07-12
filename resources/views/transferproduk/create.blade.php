@@ -59,7 +59,6 @@
                     <th style="width:22%">Produk</th>
                     <th style="width:12%">Jumlah Kirim</th>
                     <th style="width:12%">Satuan</th>
-                    <th style="width:12%">HPP</th>
                     <th style="width:18%">Tanggal Exp</th>
                     <th style="width:10%">Aksi</th>
                 </tr>
@@ -72,7 +71,6 @@
                             @foreach ($produk as $item)
                                 <option value="{{ $item->kode_produk }}"
                                     data-satuan="{{ $item->satuan }}"
-                                    data-harga="{{ $item->hpp }}"
                                     data-exp="{{ $item->tanggal_exp }}">
                                     {{ $item->nama_produk }} ({{ $item->stok }} {{ $item->satuan }})
                                 </option>
@@ -84,9 +82,6 @@
                     </td>
                     <td>
                         <input type="text" name="satuan[]" class="form-control" readonly placeholder="Satuan">
-                    </td>
-                    <td>
-                        <input type="number" name="harga[]" class="form-control" readonly placeholder="Harga">
                     </td>
                     <td>
                         <input type="date" name="tanggal_exp[]" class="form-control" placeholder="Tanggal Exp">
@@ -145,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     data.forEach(product => {
                         options += `<option value="${product.kode_produk}" 
                                    data-satuan="${product.satuan}"
-                                   data-harga="${product.hpp}"
                                    data-exp="${product.tanggal_exp}">
                                    ${product.nama_produk} (${product.stok} ${product.satuan})
                                    </option>`;
@@ -185,11 +179,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.target.classList.contains('produk-select')) {
             const selected = e.target.selectedOptions[0];
             const satuan = selected.getAttribute('data-satuan') || '';
-            const harga = selected.getAttribute('data-harga') || '';
             const exp = selected.getAttribute('data-exp') || '';
             const produkItem = e.target.closest('.produk-item');
             produkItem.querySelector('input[name="satuan[]"]').value = satuan;
-            produkItem.querySelector('input[name="harga[]"]').value = harga;
             produkItem.querySelector('input[name="tanggal_exp[]"]').value = exp;
         }
     });

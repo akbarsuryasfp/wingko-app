@@ -14,7 +14,7 @@ class HppOverhead extends Model
     protected $fillable = [
         'no_hpp_bop',
         'no_detail_produksi',
-        'kode_bop',
+        'keterangan',
         'biaya_bop',
     ];
 

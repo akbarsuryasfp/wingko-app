@@ -236,7 +236,8 @@ Route::post('/transferproduk/store', [TransferProdukController::class, 'store'])
 Route::get('/{no_transaksi}/edit', [TransferProdukController::class, 'edit'])->name('transferproduk.edit');
 Route::put('/{no_transaksi}', [TransferProdukController::class, 'update'])->name('transferproduk.update');
 Route::delete('/{no_transaksi}', [TransferProdukController::class, 'destroy'])->name('transferproduk.destroy');
-Route::get('/transferproduk/get-products', [TransferProdukController::class, 'getProductsByLocationAjax']);
+Route::get('/transferproduk/get-products', [TransferProdukController::class, 'getProductsByLocation']);
+Route::get('/transfer/fifo-hpp', [TransferProdukController::class, 'calculateFifoHpp']);
 
 // Route transaksi penjualan produk konsinyasi masuk
 Route::resource('transaksikonsinyasimasuk', App\Http\Controllers\TransaksiKonsinyasiMasukController::class);
