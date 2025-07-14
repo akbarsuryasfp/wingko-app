@@ -79,6 +79,12 @@
                         <li><a href="{{ route('returconsignee.index') }}" class="nav-link"><i class="bi bi-arrow-return-right"></i><span>Retur dari Consignee</span></a></li>
                     </ul>
                 </li>
+
+<li>
+    <a href="{{ route('kaskeluar.index') }}" class="nav-link">
+        <i class="bi bi-gear"></i><span>Pengeluaran Kas</span>
+    </a>
+</li>
             </ul>
         </li>
         <li>
