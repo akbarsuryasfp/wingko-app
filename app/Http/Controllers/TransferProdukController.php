@@ -68,11 +68,26 @@ $transfer->details = $details;
             )
             ->get();
 
-        $kode_otomatis = 'TRF-' . date('Ymd') . '-' . str_pad(rand(1,999), 3, '0', STR_PAD_LEFT);
-
-        return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal'));
+           $counterFile = storage_path('app/transfer_counter/' . date('Ymd') . '.txt');
+    
+    // Buat direktori jika belum ada
+    if (!file_exists(dirname($counterFile))) {
+        mkdir(dirname($counterFile), 0755, true);
     }
 
+    // Baca atau inisialisasi counter
+    $lastNumber = file_exists($counterFile) ? (int)file_get_contents($counterFile) : 0;
+    $nextNumber = $lastNumber + 1;
+
+    // Simpan counter baru
+    file_put_contents($counterFile, $nextNumber);
+
+    // Format kode
+    $kode_otomatis = 'TRF-' . date('Ymd') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+
+    return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal'));
+}
+     
     // Simpan transfer produk dengan FIFO
     public function store(Request $request)
     {
