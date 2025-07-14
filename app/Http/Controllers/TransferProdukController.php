@@ -9,271 +9,307 @@ class TransferProdukController extends Controller
 {
 public function index(Request $request)
 {
-    $query = DB::table('t_kartupersproduk')
+    $start = $request->input('start_date', date('Y-m-01'));
+    $end = $request->input('end_date', date('Y-m-d'));
+
+    // Ambil header transfer (group by no_transaksi)
+    $transfers = DB::table('t_kartupersproduk')
+        ->whereBetween('tanggal', [$start, $end])
+        ->where('keterangan', 'like', 'Transfer ke%')
         ->select(
             'no_transaksi',
             'tanggal',
-            'lokasi as lokasi_asal',
-            DB::raw('TRIM(SUBSTRING(keterangan, 11)) as lokasi_tujuan')
+            DB::raw('MIN(lokasi) as lokasi_asal'),
+            DB::raw('MAX(CASE WHEN keterangan LIKE "Transfer ke%" THEN REPLACE(keterangan, "Transfer ke ", "") ELSE NULL END) as lokasi_tujuan')
         )
-        ->where('keterangan', 'LIKE', 'Transfer ke %')
-        ->where('keluar', '>', 0);
-
-    // Add date filter if provided
-    if ($request->has('start_date') && $request->start_date != '') {
-        $query->whereDate('tanggal', '>=', $request->start_date);
-    }
-
-    if ($request->has('end_date') && $request->end_date != '') {
-        $query->whereDate('tanggal', '<=', $request->end_date);
-    }
-
-    $transfers = $query->groupBy('no_transaksi', 'tanggal', 'lokasi_asal', 'lokasi_tujuan')
-        ->orderBy('tanggal', 'asc')
+        ->groupBy('no_transaksi', 'tanggal')
+        ->orderByDesc('tanggal')
         ->paginate(10);
 
-    // Get details for each transfer
-    foreach ($transfers as $transfer) {
-        $transfer->details = DB::table('t_kartupersproduk')
-            ->join('t_produk', 't_kartupersproduk.kode_produk', '=', 't_produk.kode_produk')
-            ->select(
-                't_produk.nama_produk',
-                't_kartupersproduk.keluar as jumlah',
-                't_kartupersproduk.satuan',
-                't_kartupersproduk.hpp'
-            )
-            ->where('no_transaksi', $transfer->no_transaksi)
-            ->where('keluar', '>', 0)
-            ->get();
-    }
+    // Ambil detail produk per transfer
+foreach ($transfers as $transfer) {
+   $details = DB::table('t_kartupersproduk')
+    ->join('t_produk', 't_kartupersproduk.kode_produk', '=', 't_produk.kode_produk')
+    ->where('no_transaksi', $transfer->no_transaksi)
+    ->where('keterangan', 'like', 'Transfer ke%')
+    ->select(
+        't_produk.nama_produk',
+        't_produk.satuan', // ambil satuan dari t_produk
+        DB::raw('SUM(t_kartupersproduk.keluar) as jumlah')
+    )
+    ->groupBy('t_produk.nama_produk', 't_produk.satuan')
+    ->get();
+$transfer->details = $details;
+}
 
     return view('transferproduk.index', compact('transfers'));
 }
 
-
+    // Tampilkan form create
     public function create()
     {
-        // Default origin location is Gudang
         $lokasiAsal = 'Gudang';
-        
-        // Get products from Gudang by default
-        $produkList = $this->getProductsByLocation($lokasiAsal);
-
-        // Buat kode otomatis sederhana
-        $last = DB::table('t_kartupersproduk')->orderByDesc('id')->first();
-        $next = $last ? $last->id + 1 : 1;
-        $kode_otomatis = 'TRF-' . date('Ymd') . '-' . str_pad($next, 3, '0', STR_PAD_LEFT);
-
-        return view('transferproduk.create', [
-            'produk' => $produkList,
-            'kode_otomatis' => $kode_otomatis,
-            'lokasiAsal' => $lokasiAsal
-        ]);
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'no_transaksi'   => 'required',
-            'tanggal'        => 'required|date',
-            'lokasi_asal'    => 'required|in:Gudang,Toko 1,Toko 2',
-            'lokasi_tujuan'  => 'required',
-            'produk_id'      => 'required|array',
-            'jumlah'         => 'required|array',
-            'satuan'         => 'required|array',
-            'harga'          => 'required|array',
-        ]);
-
-        // Validate destination based on origin
-        if ($request->lokasi_asal === 'Gudang' && !in_array($request->lokasi_tujuan, ['Toko 1', 'Toko 2'])) {
-            return back()->withErrors(['lokasi_tujuan' => 'Lokasi tujuan harus Toko 1 atau Toko 2 ketika berasal dari Gudang']);
-        }
-
-        if (($request->lokasi_asal === 'Toko 1' || $request->lokasi_asal === 'Toko 2') && $request->lokasi_tujuan !== 'Gudang') {
-            return back()->withErrors(['lokasi_tujuan' => 'Lokasi tujuan harus Gudang ketika berasal dari Toko']);
-        }
-
-        DB::beginTransaction();
-        try {
-            foreach ($request->produk_id as $i => $produk_id) {
-                // Keluarkan stok dari lokasi asal (keluar)
-                DB::table('t_kartupersproduk')->insert([
-                    'no_transaksi' => $request->no_transaksi,
-                    'tanggal'      => $request->tanggal,
-                    'tanggal_exp'  => $request->tanggal_exp[$i] ?? null,
-                    'kode_produk'  => $produk_id,
-                    'masuk'        => 0,
-                    'keluar'       => $request->jumlah[$i],
-                    'hpp'          => $request->harga[$i],
-                    'satuan'       => $request->satuan[$i],
-                    'keterangan'   => 'Transfer ke ' . $request->lokasi_tujuan,
-                    'lokasi'       => $request->lokasi_asal,
-                ]);
-
-                // Masukkan stok ke lokasi tujuan (masuk)
-                DB::table('t_kartupersproduk')->insert([
-                    'no_transaksi' => $request->no_transaksi,
-                    'tanggal'      => $request->tanggal,
-                    'tanggal_exp'  => $request->tanggal_exp[$i] ?? null,
-                    'kode_produk'  => $produk_id,
-                    'masuk'        => $request->jumlah[$i],
-                    'keluar'       => 0,
-                    'hpp'          => $request->harga[$i],
-                    'satuan'       => $request->satuan[$i],
-                    'keterangan'   => 'Transfer dari ' . $request->lokasi_asal,
-                    'lokasi'       => $request->lokasi_tujuan,
-                ]);
-            }
-
-            DB::commit();
-            return redirect()->route('transferproduk.index')->with('success', 'Transfer produk berhasil disimpan.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
-        }
-    }
-
-    public function getProductsByLocationAjax(Request $request)
-    {
-        $location = $request->query('location', 'Gudang');
-        $products = $this->getProductsByLocation($location);
-        return response()->json($products);
-    }
-
-    private function getProductsByLocation($location)
-    {
-        // Subquery stok produk di lokasi tertentu
-        $produkLokasi = DB::table('t_kartupersproduk')
-            ->select('kode_produk', DB::raw('SUM(masuk) - SUM(keluar) as stok'))
-            ->where('lokasi', $location)
-            ->groupBy('kode_produk')
-            ->havingRaw('stok > 0');
-
-        // Subquery HPP terakhir per produk di lokasi tertentu
-        $hppTerakhir = DB::table('t_kartupersproduk as hpp')
-            ->select('hpp.kode_produk', 'hpp.hpp')
-            ->where('hpp.lokasi', $location)
-            ->whereRaw('hpp.id = (SELECT MAX(id) FROM t_kartupersproduk WHERE kode_produk = hpp.kode_produk AND lokasi = ?)', [$location]);
-
-        // Subquery tanggal_exp terakhir per produk di lokasi tertentu
-        $tglExpTerakhir = DB::table('t_kartupersproduk as exp')
-            ->select('exp.kode_produk', 'exp.tanggal_exp')
-            ->where('exp.lokasi', $location)
-            ->whereRaw('exp.id = (SELECT MAX(id) FROM t_kartupersproduk WHERE kode_produk = exp.kode_produk AND lokasi = ?)', [$location]);
-
-        // Join ke t_produk untuk ambil nama_produk, satuan, stok, hpp, dan tanggal_exp terakhir
-        return DB::table('t_produk')
-            ->joinSub($produkLokasi, 'stok_lokasi', function ($join) {
-                $join->on('t_produk.kode_produk', '=', 'stok_lokasi.kode_produk');
-            })
-            ->leftJoinSub($hppTerakhir, 'hpp_lokasi', function ($join) {
-                $join->on('t_produk.kode_produk', '=', 'hpp_lokasi.kode_produk');
-            })
-            ->leftJoinSub($tglExpTerakhir, 'exp_lokasi', function ($join) {
-                $join->on('t_produk.kode_produk', '=', 'exp_lokasi.kode_produk');
+        $produk = DB::table('t_produk')
+            ->leftJoin('t_kartupersproduk', function($q) use ($lokasiAsal) {
+                $q->on('t_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
+                  ->where('t_kartupersproduk.lokasi', '=', $lokasiAsal);
             })
             ->select(
                 't_produk.kode_produk',
                 't_produk.nama_produk',
                 't_produk.satuan',
-                'stok_lokasi.stok',
-                'hpp_lokasi.hpp',
-                'exp_lokasi.tanggal_exp'
+                DB::raw('COALESCE(SUM(t_kartupersproduk.masuk - t_kartupersproduk.keluar),0) as stok'),
+                DB::raw('MAX(t_kartupersproduk.tanggal_exp) as tanggal_exp')
+            )
+            ->groupBy(
+                't_produk.kode_produk',
+                't_produk.nama_produk',
+                't_produk.satuan'
             )
             ->get();
-    }
-        public function edit($no_transaksi)
-    {
-        $transfer = DB::table('t_kartupersproduk')
-            ->where('no_transaksi', $no_transaksi)
-            ->first();
 
-        if (!$transfer) {
-            abort(404);
-        }
+        $kode_otomatis = 'TRF-' . date('Ymd') . '-' . str_pad(rand(1,999), 3, '0', STR_PAD_LEFT);
 
-        $details = DB::table('t_kartupersproduk')
-            ->where('no_transaksi', $no_transaksi)
-            ->where('keluar', '>', 0)
-            ->get();
-
-        $produkList = $this->getProductsByLocation($transfer->lokasi);
-
-        return view('transferproduk.edit', [
-            'transfer' => $transfer,
-            'details' => $details,
-            'produk' => $produkList,
-            'lokasiAsal' => $transfer->lokasi
-        ]);
+        return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal'));
     }
 
-    public function update(Request $request, $no_transaksi)
+    // Simpan transfer produk dengan FIFO
+    public function store(Request $request)
     {
         $request->validate([
+            'no_transaksi' => 'required',
             'tanggal' => 'required|date',
+            'lokasi_asal' => 'required',
+            'lokasi_tujuan' => 'required|different:lokasi_asal',
             'produk_id' => 'required|array',
             'jumlah' => 'required|array',
-            'satuan' => 'required|array',
-            'harga' => 'required|array',
         ]);
 
         DB::beginTransaction();
         try {
-            // Delete existing transfer records
-            DB::table('t_kartupersproduk')
-                ->where('no_transaksi', $no_transaksi)
-                ->delete();
+            foreach ($request->produk_id as $idx => $kode_produk) {
+                $jumlah_pindah = $request->jumlah[$idx];
 
-            // Insert new records
-            foreach ($request->produk_id as $i => $produk_id) {
-                DB::table('t_kartupersproduk')->insert([
-                    'no_transaksi' => $no_transaksi,
-                    'tanggal' => $request->tanggal,
-                    'tanggal_exp' => $request->tanggal_exp[$i] ?? null,
-                    'kode_produk' => $produk_id,
-                    'masuk' => 0,
-                    'keluar' => $request->jumlah[$i],
-                    'hpp' => $request->harga[$i],
-                    'satuan' => $request->satuan[$i],
-                    'keterangan' => 'Transfer ke ' . $request->lokasi_tujuan,
-                    'lokasi' => $request->lokasi_asal,
-                ]);
+                // FIFO: Ambil batch stok di lokasi asal, urut tanggal_exp paling tua
+                $batches = DB::table('t_kartupersproduk')
+                    ->select(
+                        'kode_produk',
+                        'tanggal_exp',
+                        'hpp',
+                        'satuan',
+                        DB::raw('SUM(masuk) as total_masuk'),
+                        DB::raw('SUM(keluar) as total_keluar')
+                    )
+                    ->where('kode_produk', $kode_produk)
+                    ->where('lokasi', $request->lokasi_asal)
+                    ->groupBy('kode_produk', 'tanggal_exp', 'hpp', 'satuan')
+                    ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
+                    ->orderBy('tanggal_exp', 'asc')
+                    ->get();
 
-                DB::table('t_kartupersproduk')->insert([
-                    'no_transaksi' => $no_transaksi,
-                    'tanggal' => $request->tanggal,
-                    'tanggal_exp' => $request->tanggal_exp[$i] ?? null,
-                    'kode_produk' => $produk_id,
-                    'masuk' => $request->jumlah[$i],
-                    'keluar' => 0,
-                    'hpp' => $request->harga[$i],
-                    'satuan' => $request->satuan[$i],
-                    'keterangan' => 'Transfer dari ' . $request->lokasi_asal,
-                    'lokasi' => $request->lokasi_tujuan,
-                ]);
+                $sisa = $jumlah_pindah;
+                foreach ($batches as $batch) {
+                    $stok_batch = $batch->total_masuk - $batch->total_keluar;
+                    if ($stok_batch <= 0) continue;
+
+                    $ambil = min($sisa, $stok_batch);
+
+                    // Keluarkan dari lokasi asal
+                    DB::table('t_kartupersproduk')->insert([
+                        'no_transaksi' => $request->no_transaksi,
+                        'tanggal' => $request->tanggal,
+                        'kode_produk' => $kode_produk,
+                        'masuk' => 0,
+                        'keluar' => $ambil,
+                        'hpp' => $batch->hpp,
+                        'satuan' => $batch->satuan,
+                        'keterangan' => 'Transfer ke ' . $request->lokasi_tujuan,
+                        'tanggal_exp' => $batch->tanggal_exp,
+                        'lokasi' => $request->lokasi_asal,
+                    ]);
+
+                    // Masukkan ke lokasi tujuan
+                    DB::table('t_kartupersproduk')->insert([
+                        'no_transaksi' => $request->no_transaksi,
+                        'tanggal' => $request->tanggal,
+                        'kode_produk' => $kode_produk,
+                        'masuk' => $ambil,
+                        'keluar' => 0,
+                        'hpp' => $batch->hpp,
+                        'satuan' => $batch->satuan,
+                        'keterangan' => 'Transfer dari ' . $request->lokasi_asal,
+                        'tanggal_exp' => $batch->tanggal_exp,
+                        'lokasi' => $request->lokasi_tujuan,
+                    ]);
+
+                    $sisa -= $ambil;
+                    if ($sisa <= 0) break;
+                }
+
+                if ($sisa > 0) {
+                    DB::rollBack();
+                    return back()->withErrors(['Stok produk ' . $kode_produk . ' tidak cukup!']);
+                }
             }
 
             DB::commit();
-            return redirect()->route('transferproduk.index')->with('success', 'Transfer produk berhasil diperbarui.');
+            return redirect()->route('kartustok.produk')->with('success', 'Transfer produk berhasil disimpan!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal memperbarui: ' . $e->getMessage()]);
+            return back()->withErrors(['Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+    }
+
+
+public function edit($no_transaksi)
+{
+    // Ambil header transfer
+    $transfer = DB::table('t_kartupersproduk')
+        ->where('no_transaksi', $no_transaksi)
+        ->where('keterangan', 'like', 'Transfer ke%')
+        ->select(
+            'no_transaksi',
+            'tanggal',
+            'lokasi as lokasi_asal',
+            DB::raw('REPLACE(keterangan, "Transfer ke ", "") as lokasi_tujuan')
+        )
+        ->first();
+
+    // Ambil semua lokasi unik
+    $lokasiList = DB::table('t_kartupersproduk')->distinct()->pluck('lokasi');
+
+    // Ambil produk dan stok di lokasi asal
+    $produk = DB::table('t_produk')
+        ->leftJoin('t_kartupersproduk', function($q) use ($transfer) {
+            $q->on('t_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
+              ->where('t_kartupersproduk.lokasi', '=', $transfer->lokasi_asal);
+        })
+        ->select(
+            't_produk.kode_produk',
+            't_produk.nama_produk',
+            't_produk.satuan',
+            DB::raw('COALESCE(SUM(t_kartupersproduk.masuk - t_kartupersproduk.keluar),0) as stok'),
+            DB::raw('MAX(t_kartupersproduk.tanggal_exp) as tanggal_exp')
+        )
+        ->groupBy(
+            't_produk.kode_produk',
+            't_produk.nama_produk',
+            't_produk.satuan'
+        )
+        ->get();
+
+    // Ambil detail transfer
+    $details = DB::table('t_kartupersproduk')
+        ->where('no_transaksi', $no_transaksi)
+        ->where('keterangan', 'like', 'Transfer ke%')
+        ->get();
+
+        $groupedDetails = collect($details)
+    ->groupBy('kode_produk')
+    ->map(function($items) {
+        return (object)[
+            'kode_produk' => $items[0]->kode_produk,
+            'keluar' => $items->sum('keluar'),
+            'satuan' => $items[0]->satuan,
+            'tanggal_exp' => $items->max('tanggal_exp'),
+        ];
+    })
+    ->values();
+    return view('transferproduk.edit', compact('transfer', 'groupedDetails', 'produk', 'lokasiList'));}
+    public function update(Request $request, $no_transaksi)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'lokasi_asal' => 'required',
+            'lokasi_tujuan' => 'required|different:lokasi_asal',
+            'produk_id' => 'required|array',
+            'jumlah' => 'required|array',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            // Hapus data lama
+            DB::table('t_kartupersproduk')->where('no_transaksi', $no_transaksi)->delete();
+
+            // Simpan data baru (mirip store)
+            foreach ($request->produk_id as $idx => $kode_produk) {
+                $jumlah_pindah = $request->jumlah[$idx];
+                $satuan = $request->satuan[$idx] ?? '';
+                $tanggal_exp = $request->tanggal_exp[$idx] ?? null;
+
+                // FIFO: Ambil batch stok di lokasi asal, urut tanggal_exp paling tua
+                $batches = DB::table('t_kartupersproduk')
+                    ->select(
+                        'kode_produk',
+                        'tanggal_exp',
+                        'hpp',
+                        'satuan',
+                        DB::raw('SUM(masuk) as total_masuk'),
+                        DB::raw('SUM(keluar) as total_keluar')
+                    )
+                    ->where('kode_produk', $kode_produk)
+                    ->where('lokasi', $request->lokasi_asal)
+                    ->groupBy('kode_produk', 'tanggal_exp', 'hpp', 'satuan')
+                    ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
+                    ->orderBy('tanggal_exp', 'asc')
+                    ->get();
+
+                $sisa = $jumlah_pindah;
+                foreach ($batches as $batch) {
+                    $stok_batch = $batch->total_masuk - $batch->total_keluar;
+                    if ($stok_batch <= 0) continue;
+
+                    $ambil = min($sisa, $stok_batch);
+
+                    // Keluarkan dari lokasi asal
+                    DB::table('t_kartupersproduk')->insert([
+                        'no_transaksi' => $no_transaksi,
+                        'tanggal' => $request->tanggal,
+                        'kode_produk' => $kode_produk,
+                        'masuk' => 0,
+                        'keluar' => $ambil,
+                        'hpp' => $batch->hpp,
+                        'satuan' => $batch->satuan,
+                        'keterangan' => 'Transfer ke ' . $request->lokasi_tujuan,
+                        'tanggal_exp' => $batch->tanggal_exp,
+                        'lokasi' => $request->lokasi_asal,
+                    ]);
+
+                    // Masukkan ke lokasi tujuan
+                    DB::table('t_kartupersproduk')->insert([
+                        'no_transaksi' => $no_transaksi,
+                        'tanggal' => $request->tanggal,
+                        'kode_produk' => $kode_produk,
+                        'masuk' => $ambil,
+                        'keluar' => 0,
+                        'hpp' => $batch->hpp,
+                        'satuan' => $batch->satuan,
+                        'keterangan' => 'Transfer dari ' . $request->lokasi_asal,
+                        'tanggal_exp' => $batch->tanggal_exp,
+                        'lokasi' => $request->lokasi_tujuan,
+                    ]);
+
+                    $sisa -= $ambil;
+                    if ($sisa <= 0) break;
+                }
+
+                if ($sisa > 0) {
+                    DB::rollBack();
+                    return back()->withErrors(['Stok produk ' . $kode_produk . ' tidak cukup!']);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('transferproduk.index')->with('success', 'Transfer produk berhasil diupdate!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
 
     public function destroy($no_transaksi)
     {
-        DB::beginTransaction();
-        try {
-            DB::table('t_kartupersproduk')
-                ->where('no_transaksi', $no_transaksi)
-                ->delete();
-
-            DB::commit();
-            return redirect()->route('transferproduk.index')->with('success', 'Transfer produk berhasil dihapus.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withErrors(['error' => 'Gagal menghapus: ' . $e->getMessage()]);
-        }
+        DB::table('t_kartupersproduk')->where('no_transaksi', $no_transaksi)->delete();
+        return redirect()->route('transferproduk.index')->with('success', 'Transfer produk berhasil dihapus!');
     }
 }

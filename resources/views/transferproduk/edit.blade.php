@@ -26,23 +26,25 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Tanggal</label>
-                <input type="date" name="tanggal" class="form-control" 
+                <input type="date" name="tanggal" class="form-control"
                        value="{{ date('Y-m-d', strtotime($transfer->tanggal)) }}" required>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Lokasi Asal</label>
-                <input type="text" class="form-control" value="{{ $transfer->lokasi }}" readonly>
-                <input type="hidden" name="lokasi_asal" value="{{ $transfer->lokasi }}">
+                <select name="lokasi_asal" class="form-control" id="lokasi-asal" required>
+                    @foreach($lokasiList as $lokasi)
+                        <option value="{{ $lokasi }}" {{ $lokasi == $transfer->lokasi_asal ? 'selected' : '' }}>{{ $lokasi }}</option>
+                    @endforeach
+                </select>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Lokasi Tujuan</label>
-                <select name="lokasi_tujuan" class="form-control" required>
-                    @if($transfer->lokasi === 'Gudang')
-                        <option value="Toko 1" {{ str_contains($transfer->keterangan, 'Toko 1') ? 'selected' : '' }}>Toko 1</option>
-                        <option value="Toko 2" {{ str_contains($transfer->keterangan, 'Toko 2') ? 'selected' : '' }}>Toko 2</option>
-                    @else
-                        <option value="Gudang" selected>Gudang</option>
-                    @endif
+                <select name="lokasi_tujuan" class="form-control" id="lokasi-tujuan" required>
+                    @foreach($lokasiList as $lokasi)
+                        @if($lokasi != $transfer->lokasi_asal)
+                            <option value="{{ $lokasi }}" {{ $lokasi == $transfer->lokasi_tujuan ? 'selected' : '' }}>{{ $lokasi }}</option>
+                        @endif
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -56,61 +58,51 @@
                     <th style="width:22%">Produk</th>
                     <th style="width:12%">Jumlah Kirim</th>
                     <th style="width:12%">Satuan</th>
-                    <th style="width:12%">HPP</th>
                     <th style="width:18%">Tanggal Exp</th>
                     <th style="width:10%">Aksi</th>
                 </tr>
             </thead>
-            <tbody id="produk-list">
-                @foreach($details as $index => $detail)
-                @php
-                    // Calculate available stock (current stock + transfer amount)
-                    $currentStock = DB::table('t_kartupersproduk')
-                        ->where('kode_produk', $detail->kode_produk)
-                        ->where('lokasi', $transfer->lokasi)
-                        ->select(DB::raw('SUM(masuk) - SUM(keluar) as stok'))
-                        ->first()->stok + $detail->keluar;
-                @endphp
-                <tr class="produk-item">
-                    <td>
-                        <select name="produk_id[]" class="form-control produk-select" required>
-                            <option value="">-- Pilih Produk --</option>
-                            @foreach ($produk as $item)
-                                <option value="{{ $item->kode_produk }}"
-                                    data-satuan="{{ $item->satuan }}"
-                                    data-harga="{{ $item->hpp }}"
-                                    data-exp="{{ $item->tanggal_exp }}"
-                                    data-stok="{{ $item->kode_produk == $detail->kode_produk ? $currentStock : $item->stok }}"
-                                    {{ $detail->kode_produk == $item->kode_produk ? 'selected' : '' }}>
-                                    {{ $item->nama_produk }} ({{ $item->kode_produk == $detail->kode_produk ? $currentStock : $item->stok }} {{ $item->satuan }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" name="jumlah[]" class="form-control" 
-                               value="{{ $detail->keluar }}" min="1" required>
-                    </td>
-                    <td>
-                        <input type="text" name="satuan[]" class="form-control" 
-                               value="{{ $detail->satuan }}" readonly>
-                    </td>
-                    <td>
-                        <input type="number" name="harga[]" class="form-control" 
-                               value="{{ $detail->hpp }}" readonly>
-                    </td>
-                    <td>
-                        <input type="date" name="tanggal_exp[]" class="form-control" 
-                               value="{{ $detail->tanggal_exp ? date('Y-m-d', strtotime($detail->tanggal_exp)) : '' }}">
-                    </td>
-<td>
-    <button type="button" class="btn btn-danger w-30 remove-produk" title="Hapus">
-        <i class="bi bi-trash"></i>
-    </button>
-</td>
-                </tr>
+<tbody id="produk-list">
+    @foreach($groupedDetails as $index => $detail)
+    <tr class="produk-item">
+        <td>
+            <select name="produk_id[]" class="form-control produk-select" required>
+                <option value="">-- Pilih Produk --</option>
+                @foreach ($produk as $item)
+                    @php
+                        $jumlahTransfer = ($detail->kode_produk == $item->kode_produk) ? $detail->keluar : 0;
+                        $stokAwal = $item->stok + $jumlahTransfer;
+                    @endphp
+                    <option value="{{ $item->kode_produk }}"
+                        data-satuan="{{ $item->satuan }}"
+                        data-exp="{{ $item->tanggal_exp }}"
+                        data-stok="{{ $stokAwal }}"
+                        {{ $detail->kode_produk == $item->kode_produk ? 'selected' : '' }}>
+                        {{ $item->nama_produk }} ({{ $stokAwal }})
+                    </option>
                 @endforeach
-            </tbody>
+            </select>
+        </td>
+        <td>
+            <input type="number" name="jumlah[]" class="form-control"
+                   value="{{ $detail->keluar }}" min="1" required>
+        </td>
+        <td>
+            <input type="text" name="satuan[]" class="form-control"
+                   value="{{ $detail->satuan ?? '' }}" readonly>
+        </td>
+        <td>
+            <input type="date" name="tanggal_exp[]" class="form-control"
+                   value="{{ $detail->tanggal_exp ? date('Y-m-d', strtotime($detail->tanggal_exp)) : '' }}">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger w-30 remove-produk" title="Hapus">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    </tr>
+    @endforeach
+</tbody>
         </table>
         <button type="button" class="btn btn-sm btn-secondary mb-3" id="tambah-produk">+ Tambah Produk</button>
         <br>
@@ -125,7 +117,30 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const produkList = document.getElementById('produk-list');
-    const lokasiAsal = "{{ $transfer->lokasi }}";
+    const lokasiAsalSelect = document.getElementById('lokasi-asal');
+    const lokasiTujuanSelect = document.getElementById('lokasi-tujuan');
+
+        // Set satuan otomatis saat halaman pertama kali dimuat
+    document.querySelectorAll('.produk-item').forEach(function(row) {
+        const select = row.querySelector('.produk-select');
+        const satuanInput = row.querySelector('input[name="satuan[]"]');
+        if (select && satuanInput) {
+            const selected = select.selectedOptions[0];
+            if (selected) {
+                satuanInput.value = selected.getAttribute('data-satuan') || '';
+            }
+        }
+    });
+    // Update lokasi tujuan agar tidak sama dengan asal
+    lokasiAsalSelect.addEventListener('change', function() {
+        const asal = this.value;
+        Array.from(lokasiTujuanSelect.options).forEach(opt => {
+            opt.disabled = (opt.value === asal);
+            if (opt.disabled && opt.selected) {
+                lokasiTujuanSelect.selectedIndex = 0;
+            }
+        });
+    });
 
     // Tambah produk baru
     document.getElementById('tambah-produk').addEventListener('click', function () {
@@ -153,25 +168,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Update satuan, harga, dan stok saat produk dipilih
+    // Update satuan dan exp saat produk dipilih
     produkList.addEventListener('change', function (e) {
         if (e.target.classList.contains('produk-select')) {
             const selected = e.target.selectedOptions[0];
             const satuan = selected.getAttribute('data-satuan') || '';
-            const harga = selected.getAttribute('data-harga') || '';
             const exp = selected.getAttribute('data-exp') || '';
-            const stok = selected.getAttribute('data-stok') || '';
             const produkItem = e.target.closest('.produk-item');
-            
-            // Update product info
             produkItem.querySelector('input[name="satuan[]"]').value = satuan;
-            produkItem.querySelector('input[name="harga[]"]').value = harga;
-            
-            // Update stock display
-            const optionText = `${selected.textContent.split(' (')[0]} (${stok} ${satuan})`;
-            selected.textContent = optionText;
-            
-            // Update expiration date if empty
             const expInput = produkItem.querySelector('input[name="tanggal_exp[]"]');
             if (exp && !expInput.value) {
                 expInput.value = exp;

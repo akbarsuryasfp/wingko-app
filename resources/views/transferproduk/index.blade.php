@@ -48,7 +48,7 @@
                                 <td>{{ $transfer->lokasi_tujuan }}</td>
                                 <td>
                                     @foreach($transfer->details as $detail)
-                                        <div>{{ $detail->nama_produk }} {{ $detail->jumlah }}</div>
+                                        <div>{{ $detail->nama_produk }} = {{ $detail->jumlah }} {{ $detail->satuan }}</div>
                                     @endforeach
                                 </td>
                                 <td>

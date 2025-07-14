@@ -1,6 +1,17 @@
 @extends('layouts.app')
 
 @section('content')
+
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 <div class="container mt-4">
     <h4 class="mb-4">Form Input Kas Keluar</h4>
 
@@ -11,12 +22,12 @@
             <!-- Kolom Kiri -->
             <div class="col-md-6">
                 <!-- No BKK -->
-                <div class="mb-3 row">
-                    <label for="no_BKK" class="col-sm-4 col-form-label">No BKK</label>
-                    <div class="col-sm-8">
-                        <input type="text" id="no_BKK" name="no_BKK" class="form-control" value="{{ $no_BKK }}" readonly>
-                    </div>
-                </div>
+<div class="mb-3 row">
+    <label class="col-sm-4 col-form-label">No Bukti</label>
+    <div class="col-sm-8">
+        <input type="text" name="no_BKK" class="form-control" value="{{ $no_BKK }}" readonly>
+    </div>
+</div>
 
                 <!-- Tanggal -->
                 <div class="mb-3 row">
@@ -46,12 +57,16 @@
             <!-- Kolom Kanan -->
             <div class="col-md-6">
                 <!-- Kas Digunakan -->
-                <div class="mb-3 row">
-                    <label for="kas" class="col-sm-4 col-form-label">Kas</label>
-                    <div class="col-sm-8">
-                        <input type="text" id="kas" name="kas" class="form-control" value="Kas (101)" readonly>
-                    </div>
-                </div>
+<div class="mb-3 row">
+    <label class="col-sm-4 col-form-label">Kas Digunakan</label>
+    <div class="col-sm-8">
+        <select name="kas_digunakan" class="form-control" required>
+            <option value="">-- Pilih Kas --</option>
+            <option value="kas_bank" {{ old('kas_digunakan') == 'kas_bank' ? 'selected' : '' }}>Kas di Bank</option>
+            <option value="kas_kecil" {{ old('kas_digunakan') == 'kas_kecil' ? 'selected' : '' }}>Kas Kecil</option>
+        </select>
+    </div>
+</div>
 
                 <!-- Akun Lawan -->
                 <div class="mb-3 row">

@@ -54,36 +54,13 @@ class KartuStokController extends Controller
         return response()->json($dataPersediaan);
     }
 
-    // GABUNGAN: fungsi produk dari versi asli (ada riwayat)
     public function produk(Request $request)
     {
         $produkList = \DB::table('t_produk')->get();
-        $kode_produk = $request->kode_produk;
-        $lokasi = $request->lokasi;
-
-        $riwayat = [];
         $satuan = '';
-
-        if ($kode_produk) {
-            $riwayatQuery = DB::table('t_kartupersproduk')
-                ->where('kode_produk', $kode_produk);
-
-            if ($lokasi) {
-                $riwayatQuery->where('lokasi', $lokasi);
-            }
-
-            $riwayat = $riwayatQuery
-                ->orderBy('tanggal', 'asc')
-                ->orderBy('id', 'asc')
-                ->get();
-
-            $satuan = DB::table('t_produk')->where('kode_produk', $kode_produk)->value('satuan');
-        }
-
-        return view('kartustok.produk', compact('produkList', 'riwayat', 'satuan'));
+        return view('kartustok.produk', compact('produkList', 'satuan'));
     }
 
-    // GABUNGAN: getKartuPersProduk, tambahkan 'satuan' ke select
     public function getKartuPersProduk(Request $request, $kode_produk)
     {
         $lokasi = $request->get('lokasi');
@@ -94,7 +71,6 @@ class KartuStokController extends Controller
                 'masuk',
                 'keluar',
                 'hpp',
-                'satuan', // pastikan field satuan tetap ada
                 'keterangan',
                 'tanggal_exp',
                 'lokasi'
@@ -139,7 +115,6 @@ class KartuStokController extends Controller
 
         return view('kartustok.laporan_bahan', compact('bahanList', 'tanggal'));
     }
-
     public function laporanProduk()
     {
         $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();

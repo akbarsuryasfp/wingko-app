@@ -142,7 +142,7 @@ class HppController extends Controller
             HppOverhead::create([
                 'no_hpp_bop' => $no_hpp_bop,
                 'no_detail_produksi' => $no_detail,
-                'kode_bop' => $ov['kode_bop'],
+                'keterangan' => $ov['kode_bop'],
                 'biaya_bop' => $ov['biaya'],
             ]);
         }

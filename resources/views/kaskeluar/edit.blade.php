@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h4 class="mb-4">Edit Kas Keluar</h4>
 
-    <form action="{{ route('kaskeluar.update', $kas->id_jurnal) }}" method="POST">
+    <form action="{{ route('kaskeluar.update', $kas->no_jurnal) }}" method="POST">
         @csrf
         @method('PUT')
 
@@ -47,35 +47,42 @@
             <!-- Kolom Kanan -->
             <div class="col-md-6">
                 <!-- Kas Digunakan -->
-                <div class="mb-3 row">
-                    <label class="col-sm-4 col-form-label">Kas</label>
-                    <div class="col-sm-8">
-                        <input type="text" class="form-control" value="Kas (101)" readonly>
-                    </div>
-                </div>
-
+<div class="mb-3 row">
+    <label class="col-sm-4 col-form-label">Kas Digunakan</label>
+    <div class="col-sm-8">
+        <select name="kas_digunakan" class="form-control" required>
+            <option value="">-- Pilih Kas --</option>
+            <option value="kas_bank" {{ (old('kas_digunakan', $kas->kas_digunakan ?? '') == 'kas_bank') ? 'selected' : '' }}>Kas di Bank</option>
+            <option value="kas_kecil" {{ (old('kas_digunakan', $kas->kas_digunakan ?? '') == 'kas_kecil') ? 'selected' : '' }}>Kas Kecil</option>
+        </select>
+    </div>
+</div>
                 <!-- Akun Lawan -->
                 <div class="mb-3 row">
                     <label for="kode_akun" class="col-sm-4 col-form-label">Akun Lawan</label>
                     <div class="col-sm-8">
-                        <select id="kode_akun" name="kode_akun" class="form-select" required>
-                            <option value="">-- Pilih Akun --</option>
-                            @foreach($akun as $a)
-                                <option value="{{ $a->kode_akun }}" {{ $kas->kode_akun == $a->kode_akun ? 'selected' : '' }}>
-                                    [{{ $a->kode_akun }}] {{ $a->nama_akun }}
-                                </option>
-                            @endforeach
-                        </select>
+                <select id="kode_akun" name="kode_akun" class="form-select" required>
+    <option value="">-- Pilih Akun --</option>
+    @foreach($akun as $a)
+        <option value="{{ $a->kode_akun }}" {{ $kas->kode_akun == $a->kode_akun ? 'selected' : '' }}>
+            [{{ $a->kode_akun }}] {{ $a->nama_akun }}
+        </option>
+    @endforeach
+</select>
                     </div>
                 </div>
 
                 <!-- Jumlah -->
-                <div class="mb-3 row">
-                    <label for="jumlah" class="col-sm-4 col-form-label">Jumlah</label>
-                    <div class="col-sm-8">
-                        <input type="number" id="jumlah" name="jumlah" class="form-control" value="{{ $kas->jumlah }}" required>
-                    </div>
-                </div>
+<div class="mb-3 row">
+    <label for="jumlah" class="col-sm-4 col-form-label">Jumlah</label>
+    <div class="col-sm-8">
+        <div class="input-group">
+            <span class="input-group-text">Rp</span>
+            <input type="text" id="jumlah" name="jumlah" class="form-control currency-input" 
+                   value="{{ isset($kas) ? number_format($kas->jumlah, 0, ',', '.') : '' }}" required>
+        </div>
+    </div>
+</div>
 
                 <!-- Keterangan -->
                 <div class="mb-3 row">
@@ -97,3 +104,35 @@
     </form>
 </div>
 @endsection
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Format currency input
+    const currencyInput = document.querySelector('.currency-input');
+    
+    if (currencyInput) {
+        // Format saat input
+        currencyInput.addEventListener('input', function(e) {
+            let value = e.target.value;
+            value = value.replace(/[^0-9]/g, '');
+            
+            if (value.length > 0) {
+                value = parseInt(value, 10);
+                e.target.value = value.toLocaleString('id-ID');
+            } else {
+                e.target.value = '';
+            }
+        });
+
+        // Format saat form submit
+        const form = currencyInput.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                let value = currencyInput.value;
+                value = value.replace(/\./g, '');
+                currencyInput.value = value;
+            });
+        }
+    }
+});
+</script>

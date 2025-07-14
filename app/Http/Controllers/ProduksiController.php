@@ -47,6 +47,14 @@ class ProduksiController extends Controller
                 $tanggal_expired = $produk['tanggal_expired'];
                 $harga_per_unit = $produk['harga_per_unit']; // Ambil harga dari input
 
+            $produkData = DB::table('t_produk')
+                ->where('kode_produk', $kode_produk)
+                ->first();
+
+            if (!$produkData) {
+                throw new \Exception("Produk dengan kode {$kode_produk} tidak ditemukan");
+            }
+
                 DB::table('t_produksi_detail')->insert([
                     'no_detail_produksi' => $no_detail_produksi,
                     'no_produksi' => $kode,
@@ -64,7 +72,7 @@ class ProduksiController extends Controller
                     'masuk' => $jumlah_unit,
                     'keluar' => 0,
                     'hpp' => null,
-                    'satuan' => null,
+                    'satuan' => $produkData->satuan,
                     'keterangan' => 'Hasil produksi',
                     'tanggal_exp' => $tanggal_expired,
                     'lokasi' => 'Gudang',

@@ -256,6 +256,8 @@ public function setujui(Request $request, $no_order_beli)
     $order->status = 'Disetujui';
     $order->uang_muka = $request->uang_muka ?? 0;
     $order->metode_bayar = $request->metode_bayar ?? null;
+    $keterangan = ($request->no_referensi ?? '') . ' | ' . ($request->keterangan ?? '') . ' | ' . $request->penerima;
+
     $order->save();
 
     // === JURNAL UMUM & DETAIL ===
