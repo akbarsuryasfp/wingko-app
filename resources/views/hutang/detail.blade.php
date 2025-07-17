@@ -22,6 +22,12 @@
             </td>
         </tr>
         <tr>
+    <th>Jatuh Tempo</th>
+    <td>
+        {{ $hutang->jatuh_tempo ? \Carbon\Carbon::parse($hutang->jatuh_tempo)->format('d-m-Y') : '-' }}
+    </td>
+</tr>
+        <tr>
             <th>Total Tagihan</th>
             <td>Rp{{ number_format($hutang->total_tagihan, 0, ',', '.') }}</td>
         </tr>
@@ -52,7 +58,7 @@
                 <th>No BKK</th>
                 <th>Tanggal</th>
                 <th>Nominal</th>
-                <th>Keterangan</th>
+                <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -60,12 +66,12 @@
                 $pembayaran = \DB::table('t_jurnal_umum as ju')
                     ->join('t_jurnal_detail as jd', function($join) {
                         $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
-                             ->where('jd.kode_akun', '201') // kode akun utang
+                             ->where('jd.kode_akun', '2000') // kode akun utang usaha
                              ->where('jd.debit', '>', 0);
                     })
                     ->where('ju.keterangan', 'like', $hutang->no_utang . ' |%')
                     ->orderBy('ju.tanggal', 'asc')
-                    ->select('ju.nomor_bukti', 'ju.tanggal', 'jd.debit as jumlah', 'ju.keterangan')
+                    ->select('ju.nomor_bukti', 'ju.tanggal', 'jd.debit as jumlah', 'ju.no_jurnal')
                     ->get();
             @endphp
             @forelse($pembayaran as $key => $bayar)
@@ -75,11 +81,12 @@
                     <td>{{ $bayar->tanggal }}</td>
                     <td class="text-end">Rp{{ number_format($bayar->jumlah, 0, ',', '.') }}</td>
                     <td>
-                        @php
-                            $parts = explode(' | ', $bayar->keterangan);
-                            echo trim(($parts[1] ?? '') . ' ' . ($parts[2] ?? ''));
-                        @endphp
-                        
+                        <a href="{{ route('hutang.editPembayaran', ['no_utang' => $hutang->no_utang, 'no_jurnal' => $bayar->no_jurnal]) }}" class="btn btn-sm btn-warning">Edit</a>
+                        <form action="{{ route('hutang.hapusPembayaran', ['no_utang' => $hutang->no_utang, 'no_jurnal' => $bayar->no_jurnal]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus pembayaran ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm btn-danger">Hapus</button>
+                        </form>
                     </td>
                 </tr>
             @empty

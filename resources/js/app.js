@@ -89,17 +89,25 @@ window.toggleSidebar = function() {
 };
 
 window.toggleSubMenu = function(id) {
-    var sidebar = document.getElementById('sidebar');
-    if (sidebar.classList.contains('collapsed')) return; // Tidak bisa buka submenu jika collapsed
-    // Tutup semua submenu
-    document.querySelectorAll('ul[id^="submenu-"]').forEach(function(ul) {
-        if (ul.id !== id) ul.style.display = 'none';
+    var clickedUl = document.getElementById(id);
+    if (!clickedUl) return;
+
+    // Cari parent <li> dari submenu yang diklik
+    var parentLi = clickedUl.parentElement;
+    // Cari parent <ul> dari parent <li>
+    var parentUl = parentLi ? parentLi.parentElement : null;
+    if (!parentUl) return;
+
+    // Tutup semua submenu yang satu level di dalam parent UL,
+    // tapi JANGAN tutup parentUl itu sendiri!
+    parentUl.querySelectorAll(':scope > li > ul[id^="submenu-"]').forEach(function(ul) {
+        if (ul !== clickedUl) ul.style.display = 'none';
     });
+
     // Toggle submenu yang diklik
-    var el = document.getElementById(id);
-    if (el.style.display === 'none' || el.style.display === '') {
-        el.style.display = 'block';
+    if (clickedUl.style.display === 'none' || clickedUl.style.display === '') {
+        clickedUl.style.display = 'block';
     } else {
-        el.style.display = 'none';
+        clickedUl.style.display = 'none';
     }
 };

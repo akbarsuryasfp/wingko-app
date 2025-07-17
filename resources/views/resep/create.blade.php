@@ -78,7 +78,7 @@
                     @endforeach
                 </select>
             </td>
-            <td><input type="number" name="bahan[${index}][jumlah_kebutuhan]" class="form-control" step="0.01" required></td>
+            <td><input type="number" name="bahan[${index}][jumlah_kebutuhan]" class="form-control" step="any" required></td>
             <td><input type="text" name="bahan[${index}][satuan]" class="form-control" required></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">Hapus</button></td>
         </tr>

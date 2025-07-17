@@ -1,9 +1,9 @@
-
 @extends('layouts.app')
 
 @section('content')
 <div class="container mt-4">
     <h4>Detail Penerimaan Bahan</h4>
+    @if($terima)
     <table class="table">
         <tr>
             <th>No Terima Bahan</th>
@@ -51,5 +51,8 @@
         </tbody>
     </table>
     <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary">Kembali</a>
+    @else
+    <div class="alert alert-danger">Data tidak ditemukan.</div>
+    @endif
 </div>
 @endsection

@@ -57,6 +57,20 @@
     </div>
     <table class="table table-bordered text-center">
         <thead class="table-light">
+    <!-- Filter Periode Tanggal -->
+    <form method="GET" class="d-flex align-items-center gap-2 mb-2">
+        @foreach(request()->except(['tanggal_awal','tanggal_akhir','page']) as $key => $val)
+            <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+        @endforeach
+        <span class="fw-semibold">Periode:</span>
+        <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+        <span class="mx-1">s/d</span>
+        <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+        <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
+    </form>
+
+    <table class="table table-bordered">
+        <thead>
             <tr>
                 <th>No</th>
                 <th>No Jual</th>
@@ -68,33 +82,33 @@
                 <th>Piutang</th>
                 <th>Metode Pembayaran</th>
                 <th>Status Pembayaran</th>
+                <th>Diskon</th>
+                <th>Metode</th>
+                <th>Status</th>
                 <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($penjualan as $no => $p)
+            @foreach($penjualan as $i => $jual)
             <tr>
-                <td>{{ $no+1 }}</td>
-                <td>{{ $p->no_jual }}</td>
-                <td>{{ $p->tanggal_jual }}</td>
-                <td>{{ $p->pelanggan->nama_pelanggan ?? '-' }}</td>
-                <td>Rp{{ number_format($p->total_harga,0,',','.') }}</td>
-                <td>
-                    @if(isset($p->tipe_diskon) && $p->tipe_diskon == 'persen')
-                        {{ $p->diskon }}%
-                    @else
-                        Rp{{ number_format($p->diskon,0,',','.') }}
-                    @endif
+                <td>{{ $i+1 }}</td>
+                <td>{{ $jual->no_jual }}</td>
+                <td>{{ $jual->tanggal_jual }}</td>
+                <td>{{ $jual->pelanggan->nama_pelanggan ?? '-' }}</td>
+                <td class="text-end">
+                    Rp {{ number_format($jual->details->sum('subtotal'), 0, ',', '.') }}
                 </td>
-                <td>Rp{{ number_format($p->total_jual,0,',','.') }}</td>
+                <td class="text-end">
+                    Rp {{ number_format($jual->total, 0, ',', '.') }}
+                </td>
+                <td class="text-end">
+                    Rp {{ number_format($jual->diskon ?? 0, 0, ',', '.') }}
+                </td>
+                <td>{{ ucfirst($jual->metode_pembayaran) }}</td>
                 <td>
-                    @if($p->status_pembayaran == 'belum lunas')
-                        <span style="color:#d90429; font-weight:bold;">
-                            Rp{{ number_format($p->piutang,0,',','.') }}
-                        </span>
-                    @else
-                        Rp{{ number_format($p->piutang,0,',','.') }}
-                    @endif
+                    <span class="badge bg-{{ $jual->status_pembayaran == 'lunas' ? 'success' : 'warning' }}">
+                        {{ ucfirst($jual->status_pembayaran) }}
+                    </span>
                 </td>
                 <td>{{ ucfirst($p->metode_pembayaran) }}</td>
                 <td>
@@ -137,19 +151,17 @@
                     @endif
                     <!-- Hapus -->
                     <form action="{{ route('penjualan.destroy', $p->no_jual) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                <td>
+                    <a href="{{ route('penjualan.show', $jual->no_jual) }}" class="btn btn-info btn-sm">Lihat</a>
+                    <a href="{{ route('penjualan.edit', $jual->no_jual) }}" class="btn btn-success btn-sm">Edit</a>
+                    <form action="{{ route('penjualan.destroy', $jual->no_jual) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="return confirm('Hapus penjualan ini?')">Hapus</button>
                     </form>
                 </td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="11" class="text-center">Data tidak tersedia.</td>
-            </tr>
-            @endforelse
+            @endforeach
         </tbody>
     </table>
 

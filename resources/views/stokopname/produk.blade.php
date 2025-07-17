@@ -1,18 +1,10 @@
+
 @extends('layouts.app')
 
 @section('content')
 <div class="container mt-4">
     <h4 class="mb-4">Stok Opname Produk</h4>
 
-    <!-- Tabs kategori produk -->
-    <ul class="nav nav-tabs mb-3" id="kategoriTabProduk" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="utama-tab" data-bs-toggle="tab" data-bs-target="#produk-utama" type="button" role="tab">Produk Utama</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="konsinyasi-tab" data-bs-toggle="tab" data-bs-target="#produk-konsinyasi" type="button" role="tab">Produk Konsinyasi</button>
-        </li>
-    </ul>
 
     <form action="{{ route('stokopname.storeProduk') }}" method="POST">
         @csrf
@@ -34,110 +26,48 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php $no = 1; @endphp
-                            @foreach ($produkList->where('kode_kategori', 'PU') as $produk)
-                            <tr>
-                                <td>{{ $no++ }}</td>
-                                <td>{{ $produk->kode_produk }}</td>
-                                <td>{{ $produk->nama_produk }}</td>
-                                <td>{{ $produk->satuan }}</td>
-                                <td>
-                                    <input type="number"
-                                           name="stok_sistem[{{ $produk->kode_produk }}]"
-                                           class="form-control text-end"
-                                           value="{{ $produk->stok }}"
-                                           readonly
-                                           data-id="{{ $produk->kode_produk }}"
-                                           data-kategori="PU">
-                                </td>
-                                <td>
-                                    <input type="number"
-                                           name="stok_fisik[{{ $produk->kode_produk }}]"
-                                           class="form-control text-end stok-fisik-input"
-                                           data-id="{{ $produk->kode_produk }}"
-                                           data-kategori="PU">
-                                </td>
-                                <td>
-                                    <input type="text"
-                                           id="selisih_{{ $produk->kode_produk }}_PU"
-                                           class="form-control text-end bg-light"
-                                           readonly>
-                                </td>
-                                <td>
-                                    <input type="text" name="keterangan[{{ $produk->kode_produk }}]" class="form-control">
-                                </td>
-                            </tr>
-                            @endforeach
-                            @if ($produkList->where('kode_kategori', 'PU')->count() == 0)
-                            <tr>
-                                <td colspan="8" class="text-center">Tidak ada data produk utama.</td>
-                            </tr>
-                            @endif
-                        </tbody>
+    @php $no = 1; @endphp
+    @foreach ($produkList as $produk)
+    <tr>
+        <td>{{ $no++ }}</td>
+        <td>{{ $produk->kode_produk }}</td>
+        <td>{{ $produk->nama_produk }}</td>
+        <td>{{ $produk->satuan }}</td>
+        <td>
+            <input type="number"
+                   name="stok_sistem[{{ $produk->kode_produk }}]"
+                   class="form-control text-end"
+                   value="{{ $produk->stok_sistem ?? 0 }}"
+                   readonly
+                   data-id="{{ $produk->kode_produk }}">
+        </td>
+        <td>
+            <input type="number"
+                   name="stok_fisik[{{ $produk->kode_produk }}]"
+                   class="form-control text-end stok-fisik-input"
+                   data-id="{{ $produk->kode_produk }}">
+        </td>
+        <td>
+            <input type="text"
+                   id="selisih_{{ $produk->kode_produk }}"
+                   class="form-control text-end bg-light"
+                   readonly>
+        </td>
+        <td>
+            <input type="text" name="keterangan[{{ $produk->kode_produk }}]" class="form-control">
+        </td>
+    </tr>
+    @endforeach
+    @if ($produkList->count() == 0)
+    <tr>
+        <td colspan="9" class="text-center">Tidak ada data produk.</td>
+    </tr>
+    @endif
+</tbody>
                     </table>
                 </div>
             </div>
-            <!-- Tab Produk Konsinyasi -->
-            <div class="tab-pane fade" id="produk-konsinyasi" role="tabpanel">
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Kode Produk</th>
-                                <th>Nama Produk</th>
-                                <th>Satuan</th>
-                                <th>Stok Sistem</th>
-                                <th>Stok Fisik</th>
-                                <th>Selisih</th>
-                                <th>Keterangan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php $no = 1; @endphp
-                            @foreach ($produkList->where('kode_kategori', 'PK') as $produk)
-                            <tr>
-                                <td>{{ $no++ }}</td>
-                                <td>{{ $produk->kode_produk }}</td>
-                                <td>{{ $produk->nama_produk }}</td>
-                                <td>{{ $produk->satuan }}</td>
-                                <td>
-                                    <input type="number"
-                                           name="stok_sistem[{{ $produk->kode_produk }}]"
-                                           class="form-control text-end"
-                                           value="{{ $produk->stok }}"
-                                           readonly
-                                           data-id="{{ $produk->kode_produk }}"
-                                           data-kategori="PK">
-                                </td>
-                                <td>
-                                    <input type="number"
-                                           name="stok_fisik[{{ $produk->kode_produk }}]"
-                                           class="form-control text-end stok-fisik-input"
-                                           data-id="{{ $produk->kode_produk }}"
-                                           data-kategori="PK">
-                                </td>
-                                <td>
-                                    <input type="text"
-                                           id="selisih_{{ $produk->kode_produk }}_PK"
-                                           class="form-control text-end bg-light"
-                                           readonly>
-                                </td>
-                                <td>
-                                    <input type="text" name="keterangan[{{ $produk->kode_produk }}]" class="form-control">
-                                </td>
-                            </tr>
-                            @endforeach
-                            @if ($produkList->where('kode_kategori', 'PK')->count() == 0)
-                            <tr>
-                                <td colspan="8" class="text-center">Tidak ada data produk konsinyasi.</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+            
 
         <div class="row mt-4">
             <div class="col-md-4">
@@ -194,21 +124,6 @@ window.addEventListener('DOMContentLoaded', function() {
         input.dispatchEvent(new Event('input'));
     });
 });
-function setTabInputState() {
-    document.querySelectorAll('.tab-pane').forEach(function(tab) {
-        const isActive = tab.classList.contains('active') && tab.classList.contains('show');
-        tab.querySelectorAll('input, select, textarea').forEach(function(input) {
-            if (!isActive) {
-                input.setAttribute('disabled', 'disabled');
-            } else {
-                input.removeAttribute('disabled');
-            }
-        });
-    });
-}
-document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(function(btn) {
-    btn.addEventListener('shown.bs.tab', setTabInputState);
-});
-window.addEventListener('DOMContentLoaded', setTabInputState);
+
 </script>
 @endsection

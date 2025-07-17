@@ -17,7 +17,9 @@ class BahanController extends Controller
         if ($request->filled('kode_kategori')) {
             $query->where('kode_kategori', $request->kode_kategori);
         }
-
+        if ($request->filled('search')) {
+        $query->where('nama_bahan', 'like', '%' . $request->search . '%');
+    }
         // Ambil hanya kategori dengan kode depan B
         $kategoriList = \App\Models\Kategori::where('kode_kategori', 'like', 'B%')->get();
 

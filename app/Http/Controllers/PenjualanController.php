@@ -82,26 +82,31 @@ class PenjualanController extends Controller
     public function store(Request $request)
     {
         \Log::info('PenjualanController@store - request data', $request->all());
+
+        // Mapping agar field 'total' selalu ada
+        $input = $request->all();
+        if (empty($input['total']) && !empty($input['total_jual'])) {
+            $input['total'] = $input['total_jual'];
+        } elseif (empty($input['total']) && !empty($input['total_harga'])) {
+            $input['total'] = $input['total_harga'];
+        }
+        // Setelah mapping input
+        if (empty($input['status_pembayaran'])) {
+            $input['status_pembayaran'] = (!empty($input['piutang']) && $input['piutang'] > 0) ? 'belum lunas' : 'lunas';
+        }
+        $request->replace($input);
+
         try {
             $rules = [
                 'no_jual' => 'required|unique:t_penjualan,no_jual',
                 'tanggal_jual' => 'required|date',
                 'kode_pelanggan' => 'required',
-                'total_harga' => 'required|numeric',
-                'diskon' => 'required|numeric',
-                'total_jual' => 'required|numeric',
-                'total_bayar' => 'required|numeric',
-                'kembalian' => 'required|numeric',
-                'piutang' => 'required|numeric',
-                'metode_pembayaran' => 'required|in:tunai,non tunai',
-                'keterangan' => 'nullable|string|max:255',
+                'total' => 'required|numeric',
+                'metode_pembayaran' => 'required|in:tunai,kredit,non tunai',
+                'status_pembayaran' => 'required|in:lunas,belum lunas',
+                'keterangan' => 'nullable|string|max:100',
                 'detail_json' => 'required|json',
-                'jenis_penjualan' => 'required',
             ];
-            // no_pesanan hanya required jika jenis_penjualan == 'pesanan'
-            if ($request->jenis_penjualan === 'pesanan') {
-                $rules['no_pesanan'] = 'required';
-            }
             $request->validate($rules);
             \Log::info('PenjualanController@store - validasi sukses');
 
@@ -114,18 +119,12 @@ class PenjualanController extends Controller
                     'no_jual' => $request->no_jual,
                     'tanggal_jual' => $request->tanggal_jual,
                     'kode_pelanggan' => $request->kode_pelanggan,
-                    'total_harga' => $request->total_harga,
-                    'diskon' => $request->diskon,
-                    'total_jual' => $request->total_jual,
-                    'total_bayar' => $request->total_bayar,
-                    'kembalian' => $request->kembalian,
-                    'piutang' => $request->piutang,
                     'metode_pembayaran' => $request->metode_pembayaran,
-                    'status_pembayaran' => $status_pembayaran,
+                    'total' => $request->total,
+                    'diskon' => $request->diskon ?? 0,
+                    'piutang' => $request->piutang ?? 0,
+                    'status_pembayaran' => $request->status_pembayaran, // sudah otomatis benar
                     'keterangan' => $request->keterangan,
-                    'jenis_penjualan' => $request->jenis_penjualan,
-                    'no_pesanan' => $request->no_pesanan,
-                    'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo ?? null,
                 ]);
 
                 // Insert ke t_penjualan_detail dan catat ke t_kartuperskonsinyasi jika produk konsinyasi
@@ -221,14 +220,13 @@ class PenjualanController extends Controller
                     }
                     $no_piutang = 'PI' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
                     DB::table('t_piutang')->insert([
-                        'no_piutang'         => $no_piutang,
-                        'no_jual'            => $request->no_jual,
-                        'kode_pelanggan'     => $request->kode_pelanggan,
-                        'total_tagihan'      => $request->total_jual,
-                        'sisa_piutang'       => $request->piutang,
-                        'total_bayar'        => $request->total_bayar,
-                        'status_piutang'     => $status_pembayaran,
-                        'tanggal_jatuh_tempo'=> $request->tanggal_jatuh_tempo ?? null,
+                        'no_piutang' => 'PTG' . $request->no_jual,
+                        'no_jual' => $request->no_jual,
+                        'total_tagihan' => $request->total,
+                        'total_bayar' => $request->total_bayar ?? 0,
+                        'sisa_piutang' => $request->piutang ?? ($request->total ?? 0),
+                        'status_piutang' => ($request->piutang ?? 0) > 0 ? 'belum lunas' : 'lunas',
+                        'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo ?? null,
                     ]);
                 }
             });
@@ -306,7 +304,6 @@ class PenjualanController extends Controller
             DB::table('t_penjualan')->where('no_jual', $no_jual)->update([
                 'tanggal_jual' => $request->tanggal_jual,
                 'kode_pelanggan' => $request->kode_pelanggan,
-                'total_harga' => $request->total_harga,
                 'diskon' => $request->diskon,
                 'total_jual' => $request->total_jual,
                 'total_bayar' => $request->total_bayar,
@@ -368,11 +365,24 @@ class PenjualanController extends Controller
                 $total_bayar = $request->total_bayar;
                 $status_piutang = ($sisa_piutang <= 0) ? 'lunas' : 'belum lunas';
                 DB::table('t_piutang')->where('no_jual', $no_jual)->update([
-                    'total_tagihan' => $request->total_jual,
-                    'sisa_piutang' => $sisa_piutang,
-                    'total_bayar' => $total_bayar,
-                    'status_piutang' => $status_piutang,
-                    'kode_pelanggan' => $request->kode_pelanggan,
+                    'total_tagihan'      => $request->total_jual, // pastikan ini sesuai dengan field di form
+                    'sisa_piutang'       => $sisa_piutang,
+                    'total_bayar'        => $total_bayar,
+                    'status_piutang'     => $status_piutang,
+                    'kode_pelanggan'     => $request->kode_pelanggan,
+                    'tanggal_jatuh_tempo'=> $request->tanggal_jatuh_tempo ?? null,
+                ]);
+            } else if (($request->piutang ?? 0) > 0) {
+                // Jika belum ada, insert baru
+                DB::table('t_piutang')->insert([
+                    'no_piutang'         => 'PTG' . $no_jual,
+                    'no_jual'            => $no_jual,
+                    'total_tagihan'      => $request->total_jual,
+                    'total_bayar'        => $request->total_bayar ?? 0,
+                    'sisa_piutang'       => $request->piutang ?? 0,
+                    'status_piutang'     => ($request->piutang ?? 0) > 0 ? 'belum lunas' : 'lunas',
+                    'kode_pelanggan'     => $request->kode_pelanggan,
+                    'tanggal_jatuh_tempo'=> $request->tanggal_jatuh_tempo ?? null,
                 ]);
             }
         });

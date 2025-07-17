@@ -27,6 +27,6 @@ class HppTenagaKerja extends Model
 
     public function produksiDetail()
     {
-        return $this->belongsTo(ProduksiDetail::class, 'no_detail_produksi', 'no_produksi_detail');
+        return $this->belongsTo(ProduksiDetail::class, 'no_detail_produksi', 'no_detail_produksi');
     }
 }

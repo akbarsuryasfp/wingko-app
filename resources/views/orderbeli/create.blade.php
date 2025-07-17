@@ -13,10 +13,11 @@
                     <label class="me-2" style="width: 160px;">Kode Order Pembelian</label>
                     <input type="text" name="no_order_beli" class="form-control" value="{{ $no_order_beli }}" readonly>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 160px;">Tanggal Order</label>
-                    <input type="date" name="tanggal_order" class="form-control" required>
-                </div>
+<div class="mb-3 d-flex align-items-center">
+    <label class="me-2" style="width: 160px;">Tanggal Order</label>
+    <input type="date" name="tanggal_order" class="form-control" 
+           value="{{ date('Y-m-d') }}" required>
+</div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 160px;">Nama Supplier</label>
                     <select name="kode_supplier" class="form-control" required>

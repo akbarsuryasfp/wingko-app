@@ -5,8 +5,11 @@
     <h4 class="mb-4">KARTU PERSEDIAAN PRODUK</h4>
 
         <div class="mb-3">
-        <a href="{{ route('transferproduk.create') }}" class="btn btn-primary">
+        <a href="{{ route('transferproduk.index') }}" class="btn btn-primary">
             <i class="bi bi-truck"></i> Transfer/Pengiriman Produk
+        </a>
+        <a href="{{ route('kartustok.laporan_produk') }}" class="btn btn-primary">
+            Laporan Stok Akhir Produk
         </a>
     </div>
     
@@ -46,18 +49,35 @@
                 <tr>
                     <th>No</th>
                     <th>No Transaksi</th>
+                    <th>Keterangan</th>
                     <th>Tanggal</th>
-                    <th>Harga</th>
+                    <th>HPP</th> <!-- Kolom HPP setelah tanggal -->
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
                     <th>Sisa (Qty)</th>
-                    <th>HPP</th>
+                    <th>Lokasi</th> <!-- Kolom Lokasi setelah Sisa -->
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
-                </tr>
+                @php
+                    $saldo = 0;
+                @endphp
+                @foreach($riwayat as $index => $row)
+                    @php
+                        $saldo += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                    @endphp
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $row->no_transaksi }}</td>
+                        <td>{{ $row->keterangan }}</td>
+                        <td>{{ tanggal_indo($row->tanggal) }}</td>
+                        <td>{{ 'Rp' . number_format($row->hpp, 0, ',', '.') }}</td>
+                        <td>{{ $row->masuk }}</td>
+                        <td>{{ $row->keluar }}</td>
+                        <td>{{ $saldo }}</td> <!-- Sisa per baris -->
+                        <td>{{ $row->lokasi }}</td>
+                    </tr>
+                @endforeach
             </tbody>
         </table>
     </div>
@@ -98,8 +118,8 @@ function setSatuanProdukOtomatis() {
                     data.forEach(function(row, idx) {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
-                        let harga = parseFloat(row.hpp) || 0; // harga = hpp
-                        let hpp = parseFloat(row.hpp) || 0;
+                        let harga = parseFloat(row.hpp) || 0; // perbaiki di sini
+                        let hpp = parseFloat(row.hpp) || 0;   // perbaiki di sini
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
@@ -110,17 +130,18 @@ function setSatuanProdukOtomatis() {
                         saldoPerRow.push(saldoQty);
 
                         tbody += `
-                            <tr>
-                                <td>${idx + 1}</td>
-                                <td>${row.no_transaksi}</td>
-                                <td>${formatTanggal(row.tanggal)}</td>
-                                <td>Rp${harga.toLocaleString('id-ID')}</td>
-                                <td>${masuk}</td>
-                                <td>${keluar}</td>
-                                <td>${saldoQty}</td>
-                                <td>Rp${hpp.toLocaleString('id-ID')}</td>
-                            </tr>
-                        `;
+    <tr>
+        <td>${idx + 1}</td>
+        <td>${row.no_transaksi}</td>
+        <td>${row.keterangan || '-'}</td>
+        <td>${formatTanggal(row.tanggal)}</td>
+        <td>Rp${hpp.toLocaleString('id-ID')}</td> <!-- HPP setelah tanggal -->
+        <td>${masuk}</td>
+        <td>${keluar}</td>
+        <td>${saldoQty}</td>
+        <td>${row.lokasi || '-'}</td> <!-- Lokasi setelah Sisa -->
+    </tr>
+`;
                     });
                 }
 

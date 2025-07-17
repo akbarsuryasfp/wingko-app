@@ -123,6 +123,13 @@
                 <input type="number" class="form-control" name="hutang" id="hutang" value="{{ $pembelian->hutang }}" readonly>
             </div>
         </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+            <div class="col-sm-8">
+                <input type="date" class="form-control" name="jatuh_tempo"
+                    value="{{ old('jatuh_tempo', $jatuh_tempo ?? '') }}">
+            </div>
+        </div>
 
         <div class="d-flex justify-content-between">
             <a href="{{ route('pembelian.index') }}" class="btn btn-secondary">Kembali</a>
