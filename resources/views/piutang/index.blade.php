@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5" style="max-width:900px;">
+<div class="container mt-5" style="max-width:1300px;">
     <h4 class="mb-4">DAFTAR PELUNASAN PIUTANG</h4>
     <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap">
         <!-- Filter Periode Tanggal Jatuh Tempo + Urutkan -->
@@ -33,10 +33,10 @@
                 <th>No Jual</th>
                 <th>Pelanggan</th>
                 <th>Total Tagihan</th>
-                <th>Sisa Piutang</th>
                 <th>Total Bayar</th>
+                <th>Sisa Piutang</th>
                 <th>Jatuh Tempo</th>
-                <th>Status</th>
+                <th>Status Pembayaran</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -48,15 +48,12 @@
                 <td>{{ $p->no_jual }}</td>
                 <td>{{ $p->kode_pelanggan }}</td>
                 <td>Rp{{ number_format($p->total_tagihan,0,',','.') }}</td>
-                <td>
-                    @php $sisa = isset($p->sisa_piutang_penjualan) ? $p->sisa_piutang_penjualan : $p->sisa_piutang; @endphp
-                    @if($sisa == 0)
-                        <span class="text-dark">Rp{{ number_format($sisa,0,',','.') }}</span>
-                    @else
-                        <span class="text-danger fw-bold">Rp{{ number_format($sisa,0,',','.') }}</span>
-                    @endif
-                </td>
                 <td>Rp{{ number_format($p->total_bayar,0,',','.') }}</td>
+                <td>
+                    <span class="{{ $p->sisa_piutang == 0 ? 'text-dark' : 'text-danger fw-bold' }}">
+                        Rp{{ number_format($p->sisa_piutang,0,',','.') }}
+                    </span>
+                </td>
                 <td>{{ $p->tanggal_jatuh_tempo ? \Carbon\Carbon::parse($p->tanggal_jatuh_tempo)->format('d-m-Y') : '-' }}</td>
                 <td>
                     @if($p->status_piutang == 'lunas')

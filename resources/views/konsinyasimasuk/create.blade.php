@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">TAMBAH KONSINYASI MASUK</h3>
+    <h3 class="mb-4">INPUT KONSINYASI MASUK</h3>
     @if ($errors->any())
         <div class="alert alert-danger">
             <ul>
@@ -26,7 +26,7 @@
                     <input type="text" name="no_surat_titip_jual" class="form-control" value="{{ old('no_surat_titip_jual') }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Nama Consignor</label>
+                    <label class="me-2" style="width: 180px;">Nama Consignor (Pemilik Barang)</label>
                     <select name="kode_consignor" class="form-control" required>
                         <option value="">---Pilih Consignor---</option>
                         @foreach($consignor as $c)
@@ -58,7 +58,7 @@
                     <input type="number" id="jumlah_stok" class="form-control">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga Titip Jual</label>
+                    <label class="me-2" style="width: 120px;">Harga Titip/Produk</label>
                     <input type="number" id="harga_titip" class="form-control">
                 </div>
                 <div class="mb-3">
@@ -69,14 +69,14 @@
 
         <hr>
 
-        <h4 class="text-center">DAFTAR PENERIMAAN PRODUK</h4>
+        <h4 class="text-center">DAFTAR PRODUK KONSINYASI MASUK</h4>
         <table class="table table-bordered text-center align-middle" id="daftar-produk-titip">
             <thead>
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
                     <th>Jumlah Stok</th>
-                    <th>Harga Titip Jual</th>
+                    <th>Harga Titip/Produk</th>
                     <th>Subtotal</th>
                     <th>Aksi</th>
                 </tr>
@@ -90,7 +90,7 @@
                 <button type="reset" class="btn btn-warning">Reset</button>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Titip Jual</label>
+                <label class="mb-0">Total Titip</label>
                 <input type="text" id="total_titip_view" readonly class="form-control" style="width: 160px;">
                 <input type="hidden" id="total_titip" name="total_titip">
                 <button type="submit" class="btn btn-success">Submit</button>

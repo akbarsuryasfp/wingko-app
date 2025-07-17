@@ -52,11 +52,10 @@
                 <i class="bi bi-box-arrow-in-down"></i><span>Konsinyasi Masuk</span>
             </a>
             <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
-                <li><a href="{{ route('konsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk Konsinyasi Masuk</span></a></li>
+                <li><a href="{{ route('konsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk & Komisi Konsinyasi Masuk</span></a></li>
                 <li><a href="{{ route('jualkonsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-arrow-left-right"></i><span>Penjualan Produk Konsinyasi Masuk</span></a></li>
-                <li><a href="{{ route('bayarconsignor.index') }}" class="nav-link"><i class="bi bi-credit-card-2-back"></i><span>Pembayaran ke Consignor</span></a></li>
-                <li><a href="{{ route('komisijual.index') }}" class="nav-link"><i class="bi bi-percent"></i><span>Komisi Penjualan Konsinyasi</span></a></li>
-                <li><a href="{{ route('returconsignor.index') }}" class="nav-link"><i class="bi bi-arrow-return-left"></i><span>Retur ke Consignor</span></a></li>
+                <li><a href="{{ route('bayarconsignor.index') }}" class="nav-link"><i class="bi bi-credit-card-2-back"></i><span>Pembayaran ke Consignor (Pemilik Barang)</span></a></li>
+                <li><a href="{{ route('returconsignor.index') }}" class="nav-link"><i class="bi bi-arrow-return-left"></i><span>Retur ke Consignor (Pemilik Barang)</span></a></li> 
             </ul>
         </li>
 
@@ -66,8 +65,8 @@
             </a>
             <ul id="submenu-konsinyasikeluar" class="nav flex-column ms-3" style="display:none;">
                 <li><a href="{{ route('konsinyasikeluar.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk Konsinyasi Keluar</span></a></li>
-                <li><a href="{{ route('penerimaankonsinyasi.index') }}" class="nav-link"><i class="bi bi-cash-coin"></i><span>Penerimaan Hasil Penjualan Produk Konsinyasi</span></a></li>
-                <li><a href="{{ route('returconsignee.index') }}" class="nav-link"><i class="bi bi-arrow-return-right"></i><span>Retur dari Consignee</span></a></li>
+                <li><a href="{{ route('penerimaankonsinyasi.index') }}" class="nav-link"><i class="bi bi-cash-coin"></i><span>Penerimaan Hasil Penjualan Produk Konsinyasi Keluar</span></a></li>
+                <li><a href="{{ route('returconsignee.index') }}" class="nav-link"><i class="bi bi-arrow-return-right"></i><span>Retur dari Consignee (Mitra)</span></a></li>
             </ul>
         </li>
 

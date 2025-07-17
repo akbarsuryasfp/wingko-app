@@ -29,20 +29,18 @@
 <body>
 <div class="nota-container">
     <div class="nota-header">
-        <div class="nota-logo">
-            Logo
-        </div>
-        <div class="nota-title">
-            <h2>WINGKO BABAT PRATAMA</h2>
-            <div class="sub">Nota Retur Penjualan</div>
+        <div class="nota-title" style="margin-left:0;">
+            <h2 style="margin-bottom:12px;">WINGKO BABAT PRATAMA</h2>
+            <div class="sub fw-bold" style="margin-bottom:8px;">Nota Retur Penjualan</div>
             <div class="sub">Tanggal Retur: {{ $returjual->tanggal_returjual }}</div>
-            <div class="sub">No Penjualan: {{ $returjual->no_jual }}</div>
-            <div class="sub">Nama Pelanggan: {{ $returjual->nama_pelanggan ?? '-' }}</div>
+            <div class="sub">Nama Pelanggan: {{ $returjual->pelanggan->nama_pelanggan ?? $returjual->nama_pelanggan ?? '-' }}</div>
         </div>
         <div class="nota-print no-print">
             <button onclick="window.print()" style="padding:4px 12px;">Print</button>
         </div>
     </div>
+    <div class="nota-info">Nomor Retur Penjualan: {{ $returjual->no_returjual }}</div>
+    <div class="nota-info">Nomor Penjualan: {{ $returjual->no_jual }}</div>
 
     <table class="nota-table" style="margin-top: 18px;">
         <thead>
@@ -74,6 +72,11 @@
             <td class="fw-bold" style="width:170px;">Total Nilai Retur</td>
             <td style="width:10px;">:</td>
             <td>Rp{{ number_format($returjual->total_nilai_retur, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Jenis Retur</td>
+            <td>:</td>
+            <td>{{ $returjual->jenis_retur ?? '-' }}</td>
         </tr>
         <tr>
             <td class="fw-bold" style="vertical-align: top;">Keterangan</td>

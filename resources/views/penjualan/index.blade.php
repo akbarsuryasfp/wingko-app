@@ -21,37 +21,40 @@
                     <option value="belum lunas" {{ request('status_pembayaran') == 'belum lunas' ? 'selected' : '' }}>Belum Lunas</option>
                 </select>
             </form>
+        </div>
+    </div>
+    <!-- Filter Periode Tanggal + Button Urutkan + Button Penjualan -->
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <form method="GET" class="d-flex align-items-center gap-2 mb-0">
+                @foreach(request()->except(['tanggal_awal','tanggal_akhir','page']) as $key => $val)
+                    <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                @endforeach
+                <span class="fw-semibold">Periode:</span>
+                <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+                <span class="mx-1">s/d</span>
+                <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
+            </form>
             @php
                 $sort = request('sort', 'asc');
                 $nextSort = $sort === 'asc' ? 'desc' : 'asc';
                 $icon = $sort === 'asc' ? '▲' : '▼';
             @endphp
             <a href="{{ route('penjualan.index', array_merge(request()->except('page'), ['sort' => $nextSort])) }}"
-               class="btn btn-outline-secondary btn-sm ms-2">
+               class="btn btn-outline-secondary btn-sm">
                 Urutkan No Jual {{ $icon }}
             </a>
         </div>
-        <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <a href="{{ route('penjualan.create', ['jenis_penjualan' => 'langsung']) }}" class="btn btn-primary btn-sm" title="Penjualan Langsung">
                 Penjualan Langsung
             </a>
-            <a href="{{ route('penjualan.createPesanan', ['jenis_penjualan' => 'pesanan']) }}" class="btn btn-primary btn-sm ms-2" title="Pesanan Penjualan">
+            <a href="{{ route('penjualan.createPesanan', ['jenis_penjualan' => 'pesanan']) }}" class="btn btn-primary btn-sm" title="Pesanan Penjualan">
                 Pesanan Penjualan
             </a>
         </div>
     </div>
-    <!-- Filter Periode Tanggal -->
-    <form method="GET" class="d-flex align-items-center gap-2 mb-2">
-        @foreach(request()->except(['tanggal_awal','tanggal_akhir','page']) as $key => $val)
-            <input type="hidden" name="{{ $key }}" value="{{ $val }}">
-        @endforeach
-        <span class="fw-semibold">Periode:</span>
-        <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
-        <span class="mx-1">s/d</span>
-        <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
-        <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
-    </form>
-
     <table class="table table-bordered text-center">
         <thead class="table-light">
             <tr>
@@ -60,11 +63,11 @@
                 <th>Tanggal Jual</th>
                 <th>Pelanggan</th>
                 <th>Total Harga</th>
-                <th>Diskon</th>
+                <th>Diskon (Rp)</th>
                 <th>Total Jual</th>
                 <th>Piutang</th>
-                <th>Metode</th>
-                <th>Status</th>
+                <th>Metode Pembayaran</th>
+                <th>Status Pembayaran</th>
                 <th>Aksi</th>
             </tr>
         </thead>
@@ -103,9 +106,9 @@
                 </td>
                 <td class="d-flex flex-wrap gap-1 justify-content-center align-items-center">
                     <!-- Detail -->
-                    <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal{{ $p->no_jual }}" title="Detail">
+                    <a href="{{ route('penjualan.show', $p->no_jual) }}" class="btn btn-info btn-sm" title="Detail">
                         <i class="bi bi-eye"></i>
-                    </button>
+                    </a>
                     <!-- Edit (hanya jika belum lunas) -->
                     @if($p->status_pembayaran != 'lunas')
                         <a href="{{ route('penjualan.edit', $p->no_jual) }}" class="btn btn-warning btn-sm" title="Edit">
@@ -152,48 +155,3 @@
 
 </div>
 @endsection
-
-@foreach ($penjualan as $p)
-<!-- Modal Detail Penjualan -->
-<div class="modal fade" id="detailModal{{ $p->no_jual }}" tabindex="-1" aria-labelledby="detailModalLabel{{ $p->no_jual }}" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="detailModalLabel{{ $p->no_jual }}">Detail Penjualan: {{ $p->no_jual }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-bordered text-center">
-            <thead class="table-light">
-                <tr>
-                    <th>No</th>
-                    <th>Produk</th>
-                    <th>Jumlah</th>
-                    <th>Harga Satuan</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($p->details as $i => $detail)
-                <tr>
-                    <td>{{ $i+1 }}</td>
-                    <td>{{ $detail->nama_produk ?? ($detail->produk->nama_produk ?? '-') }}</td>
-                    <td>{{ $detail->jumlah }}</td>
-                    <td>{{ number_format($detail->harga_satuan,0,',','.') }}</td>
-                    <td>{{ number_format($detail->subtotal,0,',','.') }}</td>
-                </tr>
-                @endforeach
-                @php
-                    $grandTotal = $p->details->sum('subtotal');
-                @endphp
-                <tr>
-                    <td colspan="4" class="text-end fw-bold">Grand Total</td>
-                    <td class="fw-bold">{{ number_format($grandTotal,0,',','.') }}</td>
-                </tr>
-            </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
-@endforeach

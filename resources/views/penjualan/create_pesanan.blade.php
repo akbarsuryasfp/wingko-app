@@ -168,14 +168,48 @@
 
     document.getElementById('no_pesanan').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
-        document.getElementById('tanggal_pesanan').value = selected.getAttribute('data-tanggal') || '';
-        document.getElementById('nama_pelanggan').value = selected.getAttribute('data-pelanggan') || '';
-        document.getElementById('kode_pelanggan').value = selected.getAttribute('data-kodepelanggan') || '';
+        // Cek jika option valid (bukan placeholder)
+        if (!selected || !selected.value) {
+            document.getElementById('tanggal_pesanan').value = '';
+            document.getElementById('nama_pelanggan').value = '';
+            document.getElementById('kode_pelanggan').value = '';
+            daftarProduk = [];
+            updateTabel();
+            return;
+        }
+        // Ambil data dari attribute option
+        const tanggal = selected.getAttribute('data-tanggal') || '';
+        const pelanggan = selected.getAttribute('data-pelanggan') || '';
+        const kodePelanggan = selected.getAttribute('data-kodepelanggan') || '';
+        // Format tanggal pesanan ke dd-mm-yyyy jika ada
+        if (tanggal) {
+            const tglObj = new Date(tanggal);
+            if (!isNaN(tglObj)) {
+                const dd = String(tglObj.getDate()).padStart(2, '0');
+                const mm = String(tglObj.getMonth() + 1).padStart(2, '0');
+                const yyyy = tglObj.getFullYear();
+                document.getElementById('tanggal_pesanan').value = `${dd}-${mm}-${yyyy}`;
+            } else {
+                document.getElementById('tanggal_pesanan').value = tanggal;
+            }
+        } else {
+            document.getElementById('tanggal_pesanan').value = '';
+        }
+        document.getElementById('nama_pelanggan').value = pelanggan;
+        document.getElementById('kode_pelanggan').value = kodePelanggan;
 
         // Ambil detail produk dari pesananDetails
-        const noPesanan = this.value;
+        const noPesanan = selected.value;
         daftarProduk = pesananDetails[noPesanan] || [];
         updateTabel();
+    });
+
+    // Trigger otomatis jika hanya ada satu pesanan (atau sudah terpilih)
+    window.addEventListener('DOMContentLoaded', function() {
+        var select = document.getElementById('no_pesanan');
+        if(select.value) {
+            select.dispatchEvent(new Event('change'));
+        }
     });
 
     function formatRupiah(angka) {

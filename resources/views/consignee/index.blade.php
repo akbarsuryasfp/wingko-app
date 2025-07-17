@@ -8,7 +8,27 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <a href="{{ route('consignee.create') }}" class="btn btn-primary mb-3">Tambah Consignee</a>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <input type="text" id="searchConsignee" class="form-control me-2" placeholder="Cari consignee..." style="max-width:300px;">
+        <a href="{{ route('consignee.create') }}" class="btn btn-primary">Tambah Consignee</a>
+    </div>
+<script>
+// Fitur search/filter baris tabel consignee
+document.getElementById('searchConsignee').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        // Gabungkan semua kolom jadi satu string
+        const text = row.innerText.toLowerCase();
+        if (q === '' || text.includes(q)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
 
     <table class="table table-bordered">
         <thead>

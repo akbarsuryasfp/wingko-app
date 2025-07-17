@@ -32,8 +32,7 @@ class Penjualan extends Model
         return $this->belongsTo(Pelanggan::class, 'kode_pelanggan', 'kode_pelanggan');
     }
 
-    public function details()
-    {
+    public function details() {
         return $this->hasMany(PenjualanDetail::class, 'no_jual', 'no_jual');
     }
 }
@@ -61,8 +60,7 @@ class PenjualanDetail extends Model
         return $this->belongsTo(Penjualan::class, 'no_jual', 'no_jual');
     }
 
-    public function produk()
-    {
+    public function produk() {
         return $this->belongsTo(Produk::class, 'kode_produk', 'kode_produk');
     }
 }

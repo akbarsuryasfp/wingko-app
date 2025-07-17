@@ -23,7 +23,7 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
-                    <select name="no_konsinyasikeluar" id="no_konsinyasikeluar" class="form-control" required>
+                    <select name="no_konsinyasikeluar" id="no_konsinyasikeluar" class="form-control" required disabled>
                         <option value="">---Pilih No Konsinyasi Keluar---</option>
                         @foreach($konsinyasikeluar as $k)
                             <option value="{{ $k->no_konsinyasikeluar }}" data-consignee="{{ $k->consignee->kode_consignee ?? '' }}" data-nama="{{ $k->consignee->nama_consignee ?? '' }}">
@@ -38,7 +38,7 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Nama Consignee (Mitra)</label>
-                    <input type="text" name="nama_consignee" id="nama_consignee" class="form-control" value="" readonly>
+                    <input type="text" name="nama_consignee" id="nama_consignee" class="form-control" value="" readonly disabled>
                     <input type="hidden" name="kode_consignee" id="kode_consignee" value="">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
@@ -62,7 +62,7 @@
                     <th>No</th>
                     <th>Nama Produk</th>
                     <th>Jumlah Retur</th>
-                    <th>Harga/Satuan</th>
+                    <th>Harga Satuan</th>
                     <th>Alasan</th>
                     <th>Subtotal</th>
                     <th>Aksi</th>
@@ -74,7 +74,7 @@
         <div class="d-flex justify-content-between mt-4">
             <div>
                 <a href="{{ route('returconsignee.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning">Reset</button>
+                <button type="button" class="btn btn-warning" onclick="resetTanggalKeterangan()">Reset</button>
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Retur</label>
@@ -89,17 +89,12 @@
 </div>
 
 <script>
-    // Reset tanggal dan keterangan ke kosong
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('form');
-        form.addEventListener('reset', function(e) {
-            setTimeout(function() {
-                document.getElementById('tanggal_returconsignee').value = '';
-                const ket = form.querySelector('input[name="keterangan"]');
-                if (ket) ket.value = '';
-            }, 10);
-        });
-    });
+    // Reset hanya tanggal dan keterangan saja
+    function resetTanggalKeterangan() {
+        document.getElementById('tanggal_returconsignee').value = '';
+        const ket = document.querySelector('input[name="keterangan"]');
+        if (ket) ket.value = '';
+    }
     // Prefill from penerimaankonsinyasi if prefill_retur param exists
     document.addEventListener('DOMContentLoaded', async function() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -282,5 +277,32 @@
                 updateTabelRetur();
             });
     });
+
+
+// ...existing code...
+document.addEventListener('DOMContentLoaded', function() {
+    @if($prefillRetur && $urlNoKonsinyasi && count($produk_konsinyasi))
+        daftarProdukRetur = [];
+        maxJumlahPerProduk = {};
+        @foreach($produk_konsinyasi as $item)
+{
+    let selisih = Math.max(({{ $item->jumlah_setor ?? 0 }}) - ({{ $item->jumlah_terjual ?? 0 }}), 0);
+    if (selisih > 0) {
+        maxJumlahPerProduk["{{ $item->kode_produk }}"] = selisih;
+        daftarProdukRetur.push({
+            kode_produk: "{{ $item->kode_produk }}",
+            nama_produk: "{{ $item->nama_produk }}",
+            jumlah_retur: selisih,
+            harga_satuan: {{ $item->harga_setor }},
+            alasan: '',
+            subtotal: selisih * {{ $item->harga_setor }}
+        });
+    }
+}
+@endforeach
+        updateTabelRetur();
+    @endif
+});
+// ...existing code...
 </script>
 @endsection

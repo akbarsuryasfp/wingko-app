@@ -46,6 +46,14 @@
                     </select>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Jenis Retur</label>
+                    <select name="jenis_retur" class="form-control" required>
+                        <option value="">---Pilih Jenis Retur---</option>
+                        <option value="Barang">Barang</option>
+                        <option value="Uang">Uang</option>
+                    </select>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control">
                 </div>
@@ -57,7 +65,7 @@
         <hr>
 
         <!-- Judul di atas tabel, tengah -->
-        <h4 class="text-center mb-3">DAFTAR RETUR PENJUALAN</h4>
+        <h4 class="text-center mb-3">DAFTAR PRODUK RETUR PENJUALAN</h4>
 
         <!-- Tabel Produk Retur -->
         <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
@@ -209,4 +217,10 @@
     });
 </script>
 @endsection
+
+@php
+    if (!isset($jenisList)) {
+        $jenisList = ['Penjualan', 'Pengembalian'];
+    }
+@endphp
 

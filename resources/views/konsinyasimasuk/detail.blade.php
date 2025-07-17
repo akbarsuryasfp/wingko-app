@@ -17,11 +17,11 @@
             <td>{{ $konsinyasi->tanggal_masuk }}</td>
         </tr>
         <tr>
-            <th>Nama Consignor</th>
+            <th>Nama Consignor (Pemilik Barang)</th>
             <td>{{ $konsinyasi->consignor->nama_consignor ?? '-' }}</td>
         </tr>
         <tr>
-            <th>Total Titip Jual</th>
+            <th>Total Titip</th>
             <td>Rp{{ number_format($konsinyasi->total_titip,0,',','.') }}</td>
         </tr>
         <tr>
@@ -37,8 +37,9 @@
                 <th>No</th>
                 <th>Nama Produk</th>
                 <th>Jumlah Stok</th>
-                <th>Harga Titip Jual</th>
-                <th>Subtotal</th>
+                <th>Harga Titip/Produk</th>
+                <th>Harga Jual/Produk</th>
+                <th>Subtotal Titip</th>
             </tr>
         </thead>
         <tbody>
@@ -48,9 +49,14 @@
                 <td>{{ $d->nama_produk ?? '-' }}</td>
                 <td>{{ $d->jumlah_stok }}</td>
                 <td>Rp{{ number_format($d->harga_titip,0,',','.') }}</td>
+                <td>Rp{{ number_format($d->harga_jual,0,',','.') }}</td>
                 <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
             @endforeach
+            <tr>
+                <td colspan="5" class="text-end fw-bold">Total Titip</td>
+                <td class="fw-bold">Rp{{ number_format($konsinyasi->total_titip,0,',','.') }}</td>
+            </tr>
         </tbody>
     </table>
     <a href="{{ route('konsinyasimasuk.index') }}" class="btn btn-secondary">Back</a>
