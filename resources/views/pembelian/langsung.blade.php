@@ -74,6 +74,13 @@
 
         <div class="mb-3">
             <button type="button" class="btn btn-sm btn-success" id="tambah_bahan">Tambah Bahan</button>
+        
+    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekuranganLangsung">
+        Kekurangan Bahan
+    </button>
+    <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalPrediksiLangsung">
+        Kebutuhan Produksi
+    </button>
         </div>
 
         <div class="row mb-2">
@@ -129,9 +136,60 @@
     </form>
 </div>
 
+<!-- Modal Kekurangan Bahan -->
+<div class="modal fade" id="modalKekuranganLangsung" tabindex="-1" aria-labelledby="modalKekuranganLangsungLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalKekuranganLangsungLabel">Daftar Bahan Kurang</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="listKekuranganLangsung">
+          <!-- Akan diisi via JS -->
+          @foreach($bahanKurangLangsung as $item)
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                  <strong>{{ $item->nama_bahan }}</strong> ({{ $item->satuan }})<br>
+                  <small>Kurang: {{ $item->jumlah_beli }}</small>
+              </span>
+              <button class="btn btn-sm btn-primary" onclick="isiInputBahan('{{ $item->kode_bahan }}', '{{ $item->nama_bahan }}', '{{ $item->satuan }}', {{ $item->jumlah_beli }})" data-bs-dismiss="modal">Pilih</button>
+          </li>
+          @endforeach
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Prediksi Kebutuhan Harian -->
+<div class="modal fade" id="modalPrediksiLangsung" tabindex="-1" aria-labelledby="modalPrediksiLangsungLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPrediksiLangsungLabel">Prediksi Kebutuhan Bahan (Harian)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-group" id="listPrediksiLangsung">
+          <!-- Akan diisi via JS -->
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 let bahanOptions = @json($bahan);
+let bahanKurangLangsung = [];
+let bahansPrediksiHarian = [];
+@if(isset($bahanKurangLangsung))
+    bahanKurangLangsung = @json($bahanKurangLangsung);
+@endif
+@if(isset($bahansPrediksiHarian))
+    bahansPrediksiHarian = @json($bahansPrediksiHarian);
+@endif
 
 var $jq = jQuery.noConflict();
 
@@ -202,6 +260,75 @@ document.getElementById('ongkir').addEventListener('input', hitungTotal);
 document.addEventListener('DOMContentLoaded', function() {
     updateSubtotal();
     toggleJatuhTempo();
-    });
+
+    // Kekurangan Bahan
+    const listKekuranganLangsung = document.getElementById('listKekuranganLangsung');
+    if (listKekuranganLangsung && bahanKurangLangsung.length) {
+        listKekuranganLangsung.innerHTML = '';
+        bahanKurangLangsung.forEach((item, idx) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `
+                <span>
+                    <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
+                    <small>Kurang: ${item.jumlah_beli}</small>
+                </span>
+                <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', ${item.jumlah_beli})" data-bs-dismiss="modal">Pilih</button>
+            `;
+            listKekuranganLangsung.appendChild(li);
+        });
+    }
+
+    // Prediksi Kebutuhan Harian
+    const listPrediksiLangsung = document.getElementById('listPrediksiLangsung');
+    if (listPrediksiLangsung && bahansPrediksiHarian.length) {
+        listPrediksiLangsung.innerHTML = '';
+        bahansPrediksiHarian.forEach((item, idx) => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `
+                <span>
+                    <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
+                    <small>Jumlah/Order: ${item.jumlah_per_order ?? '-'}</small>
+                </span>
+                <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', ${item.jumlah_per_order ?? 1})" data-bs-dismiss="modal">Pilih</button>
+            `;
+            listPrediksiLangsung.appendChild(li);
+        });
+    }
+});
+
+function isiInputBahan(kode, nama, satuan, jumlah) {
+    // Cek apakah bahan sudah ada di tabel
+    if (document.getElementById('row-' + kode)) return;
+
+    // Cari tbody dari tabel utama
+    const tbody = document.querySelector('#bahan_table tbody');
+    // Buat select bahan (readonly)
+    let selectHtml = `<select name="bahan[]" class="form-control" readonly>
+        <option value="${kode}">${nama} (${satuan})</option>
+    </select>`;
+
+    // Buat baris baru
+    const row = document.createElement('tr');
+    row.id = 'row-' + kode;
+    row.innerHTML = `
+        <td>${selectHtml}</td>
+        <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah}" min="0" step="0.01"></td>
+        <td><input type="number" name="harga[]" class="form-control harga" value="0"></td>
+        <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
+        <td class="subtotal">0</td>
+        <td><button type="button" class="btn btn-danger btn-sm remove" onclick="hapusBahan('${kode}')">X</button></td>
+    `;
+    tbody.appendChild(row);
+
+    updateSubtotal();
+}
+
+function hapusBahan(kode) {
+    const row = document.getElementById('row-' + kode);
+    if (row) row.remove();
+    updateSubtotal();
+}
 </script>
 @endsection

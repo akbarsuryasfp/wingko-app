@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use App\Models\JadwalProduksi;
+use Carbon\Carbon;
 
 class OrderBeliController extends Controller
 {
@@ -102,7 +103,7 @@ public function index()
         $no_order_beli = 'OB' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
 
         $suppliers = \App\Models\Supplier::all();
-        $bahans = \App\Models\Bahan::all();
+        $bahans = $this->bahanPerluDibeli(); // gunakan hasil filter
 
 // Ambil semua jadwal produksi beserta detail, resep, dan bahan
 $jadwalList = \App\Models\JadwalProduksi::with('details.produk.resep.details.bahan')->get();
@@ -206,7 +207,50 @@ $stokMinList = DB::table('t_bahan')
     ->havingRaw('stok < t_bahan.stokmin')
     ->get()
     ->toArray();
-        return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans', 'bahanKurang', 'stokMinList'));
+    
+     // Ambil semua bahan
+    $bahans = $this->bahanPerluDibeli(); // gunakan hasil filter
+
+// Ambil daftar order terakhir untuk setiap bahan
+$lastOrders = DB::table('t_order_detail')
+    ->join('t_order_beli', 't_order_detail.no_order_beli', '=', 't_order_beli.no_order_beli')
+    ->select('t_order_detail.kode_bahan', DB::raw('MAX(t_order_beli.tanggal_order) as last_order'))
+    ->groupBy('t_order_detail.kode_bahan')
+    ->pluck('last_order', 'kode_bahan');
+
+$bahansPrediksi = \App\Models\Bahan::whereIn('frekuensi_pembelian', [
+    'Mingguan', 'Dua Mingguan', 'Bulanan', 'Tiga Bulanan'
+])->get();
+
+// Filter bahan prediksi agar tidak tampil jika sudah diorder dalam interval
+$bahansPrediksi = collect($bahansPrediksi)->filter(function($bahan) {
+    // Samakan logika dengan bahanPerluDibeli
+    $now = \Carbon\Carbon::now();
+    $frekuensi = strtolower(trim($bahan->frekuensi_pembelian ?? ''));
+    $interval = intval($bahan->interval ?? 1);
+
+     switch ($frekuensi) {
+        case 'minggu':
+        case 'mingguan':
+            $batas = $now->copy()->subWeeks(1);
+            break;
+        case 'bulan':
+        case 'bulanan':
+            $batas = $now->copy()->subMonths(1);
+            break;
+        default:
+            $batas = $now->copy()->subDays(1);
+    }
+
+    $jumlah_dibeli = \DB::table('t_order_detail')
+        ->join('t_order_beli', 't_order_detail.no_order_beli', '=', 't_order_beli.no_order_beli')
+        ->where('t_order_detail.kode_bahan', $bahan->kode_bahan)
+        ->where('t_order_beli.tanggal_order', '>=', $batas)
+        ->count();
+
+    return $jumlah_dibeli < $interval;
+})->values();
+        return view('orderbeli.create', compact('no_order_beli', 'suppliers', 'bahans', 'bahanKurang', 'stokMinList', 'bahansPrediksi'));
     }
 
     public function store(Request $request)
@@ -400,7 +444,6 @@ public function edit($no_order_beli)
     $suppliers = \App\Models\Supplier::all();
     $bahans = \App\Models\Bahan::all();
 
-    // Ambil detail order dengan query builder, bukan relasi
     $details = \DB::table('t_order_detail')
         ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')
         ->where('t_order_detail.no_order_beli', $no_order_beli)
@@ -414,20 +457,62 @@ public function edit($no_order_beli)
         )
         ->get();
 
-$stokMinList = DB::table('t_bahan')
-    ->leftJoin('t_kartupersbahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
-    ->select(
-        't_bahan.kode_bahan',
-        't_bahan.nama_bahan',
-        't_bahan.satuan',
-        't_bahan.stokmin',
-        DB::raw('COALESCE(SUM(t_kartupersbahan.masuk),0) - COALESCE(SUM(t_kartupersbahan.keluar),0) as stok')
-    )
-    ->groupBy('t_bahan.kode_bahan', 't_bahan.nama_bahan', 't_bahan.satuan', 't_bahan.stokmin')
-    ->havingRaw('stok < t_bahan.stokmin')
-    ->get()
-    ->toArray();
-return view('orderbeli.edit', compact('order', 'suppliers', 'bahans', 'details', 'stokMinList'));
+    $stokMinList = DB::table('t_bahan')
+        ->leftJoin('t_kartupersbahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
+        ->select(
+            't_bahan.kode_bahan',
+            't_bahan.nama_bahan',
+            't_bahan.satuan',
+            't_bahan.stokmin',
+            DB::raw('COALESCE(SUM(t_kartupersbahan.masuk),0) - COALESCE(SUM(t_kartupersbahan.keluar),0) as stok')
+        )
+        ->groupBy('t_bahan.kode_bahan', 't_bahan.nama_bahan', 't_bahan.satuan', 't_bahan.stokmin')
+        ->havingRaw('stok < t_bahan.stokmin')
+        ->get()
+        ->toArray();
+
+        $bahans = $this->bahanPerluDibeli(); 
+    // Tambahkan ini:
+$lastOrders = DB::table('t_order_detail')
+    ->join('t_order_beli', 't_order_detail.no_order_beli', '=', 't_order_beli.no_order_beli')
+    ->select('t_order_detail.kode_bahan', DB::raw('MAX(t_order_beli.tanggal_order) as last_order'))
+    ->groupBy('t_order_detail.kode_bahan')
+    ->pluck('last_order', 'kode_bahan');
+
+$bahansPrediksi = \App\Models\Bahan::whereIn('frekuensi_pembelian', [
+    'Mingguan', 'Dua Mingguan', 'Bulanan', 'Tiga Bulanan'
+])->get();
+
+// Filter bahan prediksi agar tidak tampil jika sudah diorder dalam interval
+$bahansPrediksi = collect($bahansPrediksi)->filter(function($bahan) {
+    // Samakan logika dengan bahanPerluDibeli
+    $now = \Carbon\Carbon::now();
+    $frekuensi = strtolower(trim($bahan->frekuensi_pembelian ?? ''));
+    $interval = intval($bahan->interval ?? 1);
+
+     switch ($frekuensi) {
+        case 'minggu':
+        case 'mingguan':
+            $batas = $now->copy()->subWeeks(1);
+            break;
+        case 'bulan':
+        case 'bulanan':
+            $batas = $now->copy()->subMonths(1);
+            break;
+        default:
+            $batas = $now->copy()->subDays(1);
+    }
+
+    $jumlah_dibeli = \DB::table('t_order_detail')
+        ->join('t_order_beli', 't_order_detail.no_order_beli', '=', 't_order_beli.no_order_beli')
+        ->where('t_order_detail.kode_bahan', $bahan->kode_bahan)
+        ->where('t_order_beli.tanggal_order', '>=', $batas)
+        ->count();
+
+    return $jumlah_dibeli < $interval;
+})->values();
+
+    return view('orderbeli.edit', compact('order', 'suppliers', 'bahans', 'details', 'stokMinList', 'bahansPrediksi'));
 }
 
 public function update(Request $request, $no_order_beli)
@@ -491,4 +576,44 @@ public function destroy($no_order_beli)
     $order->delete();
 
     return redirect()->route('orderbeli.index')->with('success', 'Order pembelian berhasil dihapus.');
-}}
+}
+
+// Fungsi untuk ambil bahan yang perlu dibeli (belum dibeli dalam interval)
+private function bahanPerluDibeli()
+{
+    $now = Carbon::now();
+    $bahans = DB::table('t_bahan')->get();
+    $result = [];
+
+    foreach ($bahans as $bahan) {
+        $frekuensi = strtolower(trim($bahan->frekuensi_pembelian ?? '')); // satuan waktu
+        $interval = intval($bahan->interval ?? 1); // berapa kali boleh dibeli dalam satu frekuensi
+
+        // Tentukan tanggal batas berdasarkan frekuensi
+        switch ($frekuensi) {
+            case 'minggu':
+                $batas = $now->copy()->subWeeks(1);
+                break;
+            case 'bulan':
+                $batas = $now->copy()->subMonths(1);
+                break;
+            default:
+                $batas = $now->copy()->subDays(1);
+        }
+
+        // Hitung jumlah pembelian bahan dalam periode frekuensi
+        $jumlah_dibeli = DB::table('t_order_detail')
+            ->join('t_order_beli', 't_order_detail.no_order_beli', '=', 't_order_beli.no_order_beli')
+            ->where('t_order_detail.kode_bahan', $bahan->kode_bahan)
+            ->where('t_order_beli.tanggal_order', '>=', $batas)
+            ->count();
+
+        // Jika jumlah pembelian < interval atau stok < stokmin, tambahkan ke list
+        if ($jumlah_dibeli < $interval || ($bahan->stok < $bahan->stokmin)) {
+            $result[] = $bahan;
+        }
+    }
+
+    return $result;
+}
+}
