@@ -12,10 +12,14 @@ use App\Helpers\JurnalHelper;
 
 class PenyesuaianBarangController extends Controller
 {
-    public function index()
+    public function index($tipe = null)
     {
-        $today = \Carbon\Carbon::today()->toDateString();
+    $today = \Carbon\Carbon::today()->toDateString();
 
+    $bahanKadaluarsa = collect();
+    $produkKadaluarsa = collect();
+
+     if ($tipe === 'bahan' || $tipe === null) {
         $bahanKadaluarsa = DB::table('t_kartupersbahan')
             ->select(
                 't_kartupersbahan.kode_bahan',
@@ -41,7 +45,9 @@ class PenyesuaianBarangController extends Controller
                 $item->stok = $item->total_masuk - $item->total_keluar;
                 return $item;
             });
+        }
 
+        if ($tipe === 'produk' || $tipe === null) {
         $produkKadaluarsa = DB::table('t_kartupersproduk')
             ->select(
                 't_kartupersproduk.kode_produk',
@@ -69,7 +75,8 @@ class PenyesuaianBarangController extends Controller
                 return $item;
             });
 
-        return view('penyesuaianbarang.exp', compact('bahanKadaluarsa', 'produkKadaluarsa'));
+        }
+        return view('penyesuaianbarang.exp', compact('bahanKadaluarsa', 'produkKadaluarsa', 'tipe'));
     }
 
     public function store(Request $request)

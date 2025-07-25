@@ -50,11 +50,31 @@
 
                     <div class="mb-3 d-flex align-items-center">
                         <label for="stokmin" class="form-label mb-0" style="width:150px;">Stok Minimal</label>
-                        <input type="number" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" required style="width:300px;">
+                        <input type="number" step="0.01" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" style="width:300px;">
                         @error('stok_minimal')
                             <div class="text-danger ms-2">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    <div class="mb-3 d-flex align-items-center">
+    <label for="frekuensi_pembelian" class="form-label mb-0" style="width:150px;">Frekuensi Order</label>
+    <select class="form-control" id="frekuensi_pembelian" name="frekuensi_pembelian" style="width:300px;">
+        <option value="">-- Pilih Frekuensi --</option>
+        <option value="Harian" {{ old('frekuensi_pembelian') == 'Harian' ? 'selected' : '' }}>Harian</option>
+        <option value="Mingguan" {{ old('frekuensi_pembelian') == 'Mingguan' ? 'selected' : '' }}>Mingguan</option>
+        <option value="Dua Mingguan" {{ old('frekuensi_pembelian') == 'Dua Mingguan' ? 'selected' : '' }}>Dua Mingguan</option>
+        <option value="Bulanan" {{ old('frekuensi_pembelian') == 'Bulanan' ? 'selected' : '' }}>Bulanan</option>
+        <option value="Tiga Bulanan" {{ old('frekuensi_pembelian') == 'Tiga Bulanan' ? 'selected' : '' }}>Tiga Bulanan</option>
+    </select>
+</div>
+<div class="mb-3 d-flex align-items-center">
+    <label for="interval" class="form-label mb-0" style="width:150px;">Interval</label>
+    <input type="number" class="form-control" id="interval" name="interval" value="{{ old('interval') }}" style="width:300px;">
+</div>
+<div class="mb-3 d-flex align-items-center">
+    <label for="jumlah_per_order" class="form-label mb-0" style="width:150px;">Jumlah per Order</label>
+    <input type="number" class="form-control" id="jumlah_per_order" name="jumlah_per_order" value="{{ old('jumlah_per_order') }}" style="width:300px;">
+</div>
 
 <div class="d-flex gap-2 justify-content-start mt-3" style="margin-left:150px;">
     <a href="{{ route('bahan.index') }}" class="btn btn-secondary">Back</a>

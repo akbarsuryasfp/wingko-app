@@ -40,23 +40,45 @@ class PembelianController extends Controller
         return view('pembelian.create', compact('kode_pembelian', 'suppliers', 'bahan', 'terimabahan'));
     }
 
-    // Untuk pembelian langsung (tanpa order), gunakan view langsung.blade.php
-    public function createLangsung()
-    {
-        // Ambil kode pembelian terakhir
-        $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
-        if ($last && preg_match('/PBL(\d+)/', $last->no_pembelian, $match)) {
-            $nextNumber = (int)$match[1] + 1;
-        } else {
-            $nextNumber = 1;
-        }
-        $kode_pembelian = 'PBL' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
-
-        $supplier = DB::table('t_supplier')->get();
-        $bahan = DB::table('t_bahan')->get();
-
-        return view('pembelian.langsung', compact('kode_pembelian', 'supplier', 'bahan'));
+public function createLangsung()
+{
+    // Ambil kode pembelian terakhir
+    $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
+    if ($last && preg_match('/PBL(\d+)/', $last->no_pembelian, $match)) {
+        $nextNumber = (int)$match[1] + 1;
+    } else {
+        $nextNumber = 1;
     }
+    $kode_pembelian = 'PBL' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
+
+    $supplier = DB::table('t_supplier')->get();
+    $bahan = DB::table('t_bahan')->get();
+
+    // Hitung kekurangan bahan
+    $bahanKurangLangsung = DB::table('t_bahan')
+        ->whereColumn('stok', '<', 'stokmin')
+        ->select(
+            'kode_bahan',
+            'nama_bahan',
+            'satuan',
+            DB::raw('(stokmin - stok) as jumlah_beli')
+        )
+        ->get();
+
+$today = date('Y-m-d');
+$bahansPrediksiHarian = DB::table('t_bahan')
+    ->where('frekuensi_pembelian', 'Harian')
+    ->whereNotIn('kode_bahan', function($q) use ($today) {
+        $q->select('kode_bahan')
+          ->from('t_terimab_detail')
+          ->join('t_terimabahan', 't_terimab_detail.no_terima_bahan', '=', 't_terimabahan.no_terima_bahan')
+          ->join('t_pembelian', 't_terimabahan.no_terima_bahan', '=', 't_pembelian.no_terima_bahan')
+          ->whereDate('t_pembelian.tanggal_pembelian', $today);
+    })
+    ->get();
+
+    return view('pembelian.langsung', compact('kode_pembelian', 'supplier', 'bahan', 'bahanKurangLangsung', 'bahansPrediksiHarian'));
+}
 
     // Simpan data untuk pembelian berdasarkan order (create.blade.php)
     public function store(Request $request)
@@ -501,6 +523,7 @@ if ($sisa_hutang > 0) {
                     't_bahan.satuan',
                     't_terimab_detail.bahan_masuk',
                     't_terimab_detail.harga_beli',
+                    't_terimab_detail.tanggal_exp',
                     DB::raw('t_terimab_detail.bahan_masuk * t_terimab_detail.harga_beli as subtotal')
                 )
                 ->get();
@@ -638,21 +661,86 @@ if ($sisa_hutang > 0) {
         return view('pembelian.edit', compact('pembelian', 'suppliers', 'bahan', 'details', 'nama_supplier', 'jatuh_tempo'));
     }
 
-    public function update(Request $request, $no_pembelian)
-    {
-        $request->validate([
-            'tanggal_pembelian'  => 'required|date',
-            'metode_bayar'       => 'required|string',
-            'diskon'             => 'required|numeric|min:0',
-            'ongkir'             => 'required|numeric|min:0',
-            'total_bayar'        => 'required|numeric|min:0',
-            'no_nota'            => 'nullable|string',
-            'jatuh_tempo' => 'nullable|date',
-            // tambahkan validasi lain sesuai kebutuhan
-        ]);
+public function update(Request $request, $no_pembelian)
+{
+    $request->validate([
+        'tanggal_pembelian'  => 'required|date',
+        'metode_bayar'       => 'required|string',
+        'diskon'             => 'required|numeric|min:0',
+        'ongkir'             => 'required|numeric|min:0',
+        'total_bayar'        => 'required|numeric|min:0',
+        'no_nota'            => 'nullable|string',
+        'jatuh_tempo'        => 'nullable|date',
+        // validasi detail bahan hanya untuk pembelian langsung
+        'bahan'              => 'sometimes|array',
+        'jumlah'             => 'sometimes|array',
+        'harga'              => 'sometimes|array',
+        'tanggal_exp'        => 'sometimes|array',
+    ]);
 
-        // Ambil data lama
-        $pembelian = DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->first();
+    $pembelian = DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->first();
+
+    // --- Update detail bahan jika pembelian langsung ---
+    if ($pembelian->jenis_pembelian == 'pembelian langsung' && $request->has('bahan')) {
+        $no_terima_bahan = $pembelian->no_terima_bahan;
+
+        // Hapus detail lama
+        DB::table('t_terimab_detail')->where('no_terima_bahan', $no_terima_bahan)->delete();
+        DB::table('t_kartupersbahan')->where('no_transaksi', $no_terima_bahan)->where('keterangan', 'Pembelian Langsung')->delete();
+
+        $total_harga = 0;
+        foreach ($request->bahan as $i => $kode_bahan) {
+            $jumlah = $request->jumlah[$i];
+            $harga  = $request->harga[$i];
+            $tanggal_exp = $request->tanggal_exp[$i] ?? null;
+
+            $no_terimab_detail = 'TD' . date('ymdHis') . rand(100,999);
+
+            DB::table('t_terimab_detail')->insert([
+                'no_terimab_detail' => $no_terimab_detail,
+                'no_terima_bahan'   => $no_terima_bahan,
+                'kode_bahan'        => $kode_bahan,
+                'bahan_masuk'       => $jumlah,
+                'harga_beli'        => $harga,
+                'total'             => $jumlah * $harga,
+                'tanggal_exp'       => $tanggal_exp,
+            ]);
+
+            DB::table('t_kartupersbahan')->insert([
+                'no_transaksi' => $no_terima_bahan,
+                'tanggal'      => $request->tanggal_pembelian,
+                'kode_bahan'   => $kode_bahan,
+                'masuk'        => $jumlah,
+                'keluar'       => 0,
+                'harga'        => $harga,
+                'satuan'       => DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->value('satuan'),
+                'keterangan'   => 'Pembelian Langsung',
+                'tanggal_exp'  => $tanggal_exp,
+            ]);
+
+            // Update stok
+            $saldo = DB::table('t_kartupersbahan')
+                ->where('kode_bahan', $kode_bahan)
+                ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as saldo')
+                ->value('saldo');
+            DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->update(['stok' => $saldo]);
+
+            $total_harga += $jumlah * $harga;
+        }
+    } else {
+        // Jika bukan pembelian langsung, ambil total_harga lama
+        $total_harga = $pembelian->total_harga;
+    }
+
+    // --- Hitung total pembelian dan pembayaran ---
+    $total_pembelian = $total_harga - $request->diskon + $request->ongkir;
+    if ($total_pembelian < 0) $total_pembelian = 0;
+
+    $uang_muka_dipakai = ($pembelian->jenis_pembelian == 'pembelian langsung') ? 0 : ($pembelian->uang_muka ?? 0);
+    $kurang_bayar = $total_pembelian - $uang_muka_dipakai - $request->total_bayar;
+    if ($kurang_bayar < 0) $kurang_bayar = 0;
+    $status = $kurang_bayar > 0 ? 'Hutang' : 'Lunas';
+
 
         // Ambil uang muka awal dan sisa uang muka (jika pembelian berdasarkan order)
         $uang_muka_awal = 0;

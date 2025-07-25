@@ -48,9 +48,9 @@ $reminder = DB::table('t_kartupersbahan')
                 </button>
                 <div id="kadaluarsaTable" class="mt-3 d-none">
                     <div class="d-flex justify-content-end mb-2">
-                        <a href="{{ route('penyesuaian.exp') }}" class="btn btn-danger btn-sm">
-                            Penyesuaian
-                        </a>
+<a href="{{ route('penyesuaian.exp', ['tipe' => 'bahan']) }}" class="btn btn-danger btn-sm">
+    Penyesuaian
+</a>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle">
@@ -175,9 +175,9 @@ $groupedProduk = $kadaluarsaProduk->groupBy('nama_produk');
                 
                 <div id="kadaluarsaProdukTable" class="mt-3 d-none">
                     <div class="d-flex justify-content-end mb-2">
-                        <a href="{{ route('penyesuaian.exp') }}" class="btn btn-danger btn-sm">
-                            Penyesuaian
-                        </a>
+<a href="{{ route('penyesuaian.exp', ['tipe' => 'produk']) }}" class="btn btn-danger btn-sm">
+    Penyesuaian
+</a>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle">

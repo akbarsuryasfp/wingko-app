@@ -51,30 +51,36 @@
                     <th>Harga</th>
                     <th>Tanggal Expired</th>
                     <th>Subtotal</th>
-                    <th></th>
+                    <th>Aksi</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach($details as $d)
-                <tr>
-                    <td>
-                        <select name="bahan[]" class="form-control">
-                            @foreach($bahan as $b)
-                                <option value="{{ $b->kode_bahan }}" data-satuan="{{ $b->satuan }}"
-                                    {{ $d->kode_bahan == $b->kode_bahan ? 'selected' : '' }}>
-                                    {{ $b->nama_bahan }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </td>
-                    <td><input type="number" name="jumlah[]" class="form-control jumlah" value="{{ $d->bahan_masuk }}"></td>
-                    <td><input type="number" name="harga[]" class="form-control harga" value="{{ $d->harga_beli }}"></td>
-                    <td><input type="date" name="tanggal_exp[]" class="form-control" value="{{ $d->tanggal_exp }}"></td>
-                    <td class="subtotal">{{ $d->bahan_masuk * $d->harga_beli }}</td>
-                    <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
-                </tr>
+<tbody>
+    @foreach($details as $d)
+    <tr>
+        <td>
+            <select name="bahan[]" class="form-control">
+                @foreach($bahan as $b)
+                    <option value="{{ $b->kode_bahan }}" data-satuan="{{ $b->satuan }}"
+                        {{ $d->kode_bahan == $b->kode_bahan ? 'selected' : '' }}>
+                        {{ $b->nama_bahan }}
+                    </option>
                 @endforeach
-            </tbody>
+            </select>
+        </td>
+        <td>
+            <input type="number" name="jumlah[]" class="form-control jumlah" value="{{ $d->bahan_masuk }}" min="0" step="0.01">
+        </td>
+        <td>
+            <input type="number" name="harga[]" class="form-control harga" value="{{ $d->harga_beli }}" min="0" step="0.01">
+        </td>
+        <td>
+            <input type="date" name="tanggal_exp[]" class="form-control" value="{{ $d->tanggal_exp }}">
+        </td>
+        <td class="subtotal">{{ $d->bahan_masuk * $d->harga_beli }}</td>
+        <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
+    </tr>
+    @endforeach
+</tbody>
         </table>
 
         <div class="mb-3">

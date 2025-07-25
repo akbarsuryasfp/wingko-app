@@ -17,6 +17,9 @@ class Bahan extends Model
     'kode_bahan',
     'nama_bahan',
     'satuan',
-    'stokmin'
+    'stokmin',
+    'frekuensi_pembelian',
+    'interval',
+    'jumlah_per_order'
     ];
 }
