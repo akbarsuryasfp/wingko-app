@@ -3,7 +3,19 @@
 @section('content')
 <div class="container">
     <h3 class="mb-4">INPUT PERMINTAAN PEMBELIAN</h3>
-    
+    <style>
+    .table th {
+        text-align: center;
+        vertical-align: middle !important;
+    }
+
+    .col-nama-bahan {
+        width: 250px;
+    }
+    .col-jumlah-order {
+        width: 180px;
+    }
+</style>
     <form action="{{ route('orderbeli.store') }}" method="POST">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -30,10 +42,7 @@
                 <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
                 Kekurangan Bahan
                 </button>
-                <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalStokMin">
-                Stok Minimal
-                </button>
-    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#prediksiModal">
+    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#prediksiModal">
         Kebutuhan Produksi
     </button>
 
@@ -119,22 +128,7 @@
     </div>
   </div>
 </div>
-<!-- Modal Stok Minimal -->
-<div class="modal fade" id="modalStokMin" tabindex="-1" aria-labelledby="modalStokMinLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalStokMinLabel">Daftar Bahan Stok di Bawah Minimal</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <ul class="list-group" id="listStokMin">
-          <!-- Akan diisi via JS -->
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
+
 <!-- Modal Prediksi Kebutuhan -->
 <div class="modal fade" id="prediksiModal" tabindex="-1" aria-labelledby="prediksiModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -144,13 +138,8 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <!-- Tabs -->
-        <ul class="nav nav-tabs" id="prediksiTab" role="tablist">
-          <!-- Akan diisi via JS -->
-        </ul>
-        <div class="tab-content" id="prediksiTabContent">
-          <!-- Akan diisi via JS -->
-        </div>
+        <ul class="nav nav-tabs" id="prediksiTab" role="tablist"></ul>
+        <div class="tab-content" id="prediksiTabContent"></div>
       </div>
     </div>
   </div>
@@ -291,13 +280,11 @@ let bahansPrediksi = [];
     bahansPrediksi = @json($bahansPrediksi);
 @endif
 
-// Kelompokkan bahan berdasarkan frekuensi pembelian
 function groupByFrekuensi(bahans) {
     const group = {};
     bahans.forEach(b => {
         const freq = b.frekuensi_pembelian || 'Lainnya';
         if (!group[freq]) group[freq] = [];
-        
         group[freq].push(b);
     });
     return group;
@@ -307,12 +294,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal Prediksi
     const prediksiTab = document.getElementById('prediksiTab');
     const prediksiTabContent = document.getElementById('prediksiTabContent');
-    if (prediksiTab && prediksiTabContent && bahansPrediksi.length) {
+    if (prediksiTab && prediksiTabContent) {
         const grouped = groupByFrekuensi(bahansPrediksi);
+
+        // Daftar frekuensi tetap
+        const freqs = ['Mingguan', 'Dua Mingguan', 'Bulanan', 'Tiga Bulanan'];
+        let first = true;
         prediksiTab.innerHTML = '';
         prediksiTabContent.innerHTML = '';
-        let first = true;
-        Object.keys(grouped).forEach((freq, idx) => {
+
+        freqs.forEach((freq, idx) => {
+            const bahanList = grouped[freq] || [];
             // Tab header
             prediksiTab.innerHTML += `
                 <li class="nav-item" role="presentation">
@@ -321,40 +313,59 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             // Tab content
             let rows = '';
-            grouped[freq].forEach((bahan, i) => {
-                rows += `
-                    <tr>
-                        <td>${i+1}</td>
-                        <td>${bahan.nama_bahan}</td>
-                        <td>${bahan.interval ?? '-'}</td>
-                        <td>${bahan.jumlah_per_order ?? '-'}</td>
-                        <td>${bahan.satuan}</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})" data-bs-dismiss='modal'>Pilih</button>
-                        </td>
-                    </tr>
-                `;
-            });
-            prediksiTabContent.innerHTML += `
-                <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
-                    <table class="table table-bordered mt-3">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Bahan</th>
-                                <th>Interval</th>
-                                <th>Jumlah/Order</th>
-                                <th>Satuan</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            first = false;
+if (bahanList.length) {
+    bahanList.forEach((bahan, i) => {
+        const isStokKurang = parseFloat(bahan.stok ?? 0) < parseFloat(bahan.stokmin ?? 0);
+        rows += `
+            <tr style="background-color: ${isStokKurang ? '#fff3cd' : 'inherit'}">
+                <td class="text-center">${i + 1}</td>
+                <td>${bahan.nama_bahan}</td>
+                <td class="text-center">${bahan.interval ? bahan.interval + 'x' : '-'}</td>
+                <td class="text-center">${bahan.jumlah_per_order ?? '-'}</td>
+                <td class="text-center" style="color:${isStokKurang ? 'red' : 'inherit'}; font-weight:${isStokKurang ? 'bold' : 'normal'}">
+                    ${(bahan.stokmin != null) ? parseFloat(bahan.stokmin).toFixed(2) : '-'}
+                </td>
+                <td class="text-center">
+                    ${(bahan.stok != null) ? parseFloat(bahan.stok).toFixed(2) : '-'}
+                </td>
+                <td class="text-center">${bahan.satuan}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-primary"
+                            onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})"
+                            data-bs-dismiss="modal">
+                        Pilih
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+} else {
+    rows = `<tr><td colspan="8" class="text-center text-muted">Tidak ada bahan untuk periode ini</td></tr>`;
+}
+
+prediksiTabContent.innerHTML += `
+    <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
+        <table class="table table-bordered mt-3">
+            <thead class="table-light">
+                <tr class="text-center">
+                    <th>No</th>
+                    <th class="col-nama-bahan">Nama Bahan</th>
+                    <th>Frekuensi Pembelian</th>
+                    <th class="col-jumlah-order">Jumlah Dibeli per Periode</th>
+                    <th>Stok Minimum</th>
+                    <th>Stok Tersedia</th>
+                    <th>Satuan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+            </tbody>
+        </table>
+    </div>
+`;
+first = false;
+
         });
     }
 });

@@ -3,6 +3,18 @@
 @section('content')
 <div class="container">
     <h3 class="mb-4">EDIT PERMINTAAN PEMBELIAN</h3>
+    <style>
+    .table th {
+        text-align: center;
+        vertical-align: middle !important;
+    }
+    .col-nama-bahan {
+        width: 250px;
+    }
+    .col-jumlah-order {
+        width: 180px;
+    }
+    </style>
     <form action="{{ route('orderbeli.update', $order->no_order_beli) }}" method="POST">
         @csrf
         @method('PUT')
@@ -29,11 +41,8 @@
                 <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
                     Kekurangan Bahan
                 </button>
-                <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalStokMin">
-                    Stok Minimal
-                </button>
-                <button type="button" class="btn btn-info ms-2" data-bs-toggle="modal" data-bs-target="#prediksiModal">
-                    Prediksi Kebutuhan
+                <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#prediksiModal">
+                    Kebutuhan Produksi
                 </button>
             </div>
 
@@ -44,7 +53,9 @@
                     <select id="kode_bahan" class="form-control">
                         <option value="">---Pilih Bahan---</option>
                         @foreach($bahans as $bahan)
-                            <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">{{ $bahan->nama_bahan }}</option>
+                            <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">
+                                {{ $bahan->nama_bahan }} ({{ $bahan->satuan }})
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -99,6 +110,8 @@
         <input type="hidden" name="detail_json" id="detail_json">
     </form>
 </div>
+
+<!-- Modal Kekurangan Bahan -->
 <div class="modal fade" id="modalKekurangan" tabindex="-1" aria-labelledby="modalKekuranganLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -108,22 +121,6 @@
       </div>
       <div class="modal-body">
         <ul class="list-group" id="listKekurangan">
-          <!-- Akan diisi via JS -->
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Modal Stok Minimal -->
-<div class="modal fade" id="modalStokMin" tabindex="-1" aria-labelledby="modalStokMinLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalStokMinLabel">Daftar Bahan Stok di Bawah Minimal</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <ul class="list-group" id="listStokMin">
           <!-- Akan diisi via JS -->
         </ul>
       </div>
@@ -140,22 +137,17 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <!-- Tabs -->
-        <ul class="nav nav-tabs" id="prediksiTab" role="tablist">
-          <!-- Akan diisi via JS -->
-        </ul>
-        <div class="tab-content" id="prediksiTabContent">
-          <!-- Akan diisi via JS -->
-        </div>
+        <ul class="nav nav-tabs" id="prediksiTab" role="tablist"></ul>
+        <div class="tab-content" id="prediksiTabContent"></div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-    // Ambil data detail dari backend (array of detail order)
-
     let daftarBahan = @json($details);
+    let bahanKurangList = @json($bahanKurang ?? []);
+    let bahansPrediksi = @json($bahansPrediksi ?? []);
 
     function tambahBahan() {
         const bahanSelect = document.getElementById('kode_bahan');
@@ -210,14 +202,14 @@
                     <td>
                         <input type="number" class="form-control form-control-sm" value="${item.harga_beli}" min="0" onchange="ubahHargaOrder(${index}, this.value)">
                     </td>
-                    <td>${item.total}</td>
+                    <td>${item.total.toLocaleString()}</td>
                     <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})">X</button></td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
         });
 
-        document.getElementById('total_order').value = totalOrder;
+        document.getElementById('total_order').value = totalOrder.toLocaleString();
         document.getElementById('detail_json').value = JSON.stringify(daftarBahan);
     }
 
@@ -238,91 +230,101 @@
     // Inisialisasi tabel saat halaman dibuka
     updateTabel();
 
-    let stokMinList = [];
-    @if(isset($stokMinList) && count($stokMinList))
-        stokMinList = @json($stokMinList);
-    @endif
-
+    // Tampilkan daftar bahan kurang di modal
     document.addEventListener('DOMContentLoaded', function() {
-        const listStokMin = document.getElementById('listStokMin');
-        if (listStokMin && stokMinList.length) {
-            listStokMin.innerHTML = '';
-            stokMinList.forEach((item, idx) => {
+        const listKekurangan = document.getElementById('listKekurangan');
+        if (listKekurangan && bahanKurangList.length) {
+            listKekurangan.innerHTML = '';
+            bahanKurangList.forEach((item, idx) => {
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center';
                 li.style.cursor = 'pointer';
                 li.innerHTML = `
                     <span>
                         <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
-                        <small>Stok Saat Ini: ${item.stok}</small>
+                        <small>Kurang: ${item.jumlah_beli}</small>
                     </span>
-                    <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', 1)" data-bs-dismiss="modal">Pilih</button>
+                    <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', ${item.jumlah_beli})" data-bs-dismiss="modal">Pilih</button>
                 `;
-                listStokMin.appendChild(li);
+                listKekurangan.appendChild(li);
             });
-        } else if(listStokMin) {
-            listStokMin.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan di bawah stok minimal</li>';
+        } else if(listKekurangan) {
+            listKekurangan.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan yang kurang</li>';
         }
     });
-
-    // Data prediksi dari controller
-    let bahansPrediksi = [];
-    @if(isset($bahansPrediksi) && count($bahansPrediksi))
-        bahansPrediksi = @json($bahansPrediksi);
-    @endif
 
     // Kelompokkan bahan berdasarkan frekuensi pembelian
     function groupByFrekuensi(bahans) {
         const group = {};
         bahans.forEach(b => {
-            const freq = b.frekuensi_pembelian || 'Lainnya';
+            const freq = b.frekuensi_pembelian || 'Stok Minimal';
             if (!group[freq]) group[freq] = [];
             group[freq].push(b);
         });
         return group;
     }
 
+    // Tampilkan modal prediksi kebutuhan
     document.addEventListener('DOMContentLoaded', function() {
-        // Modal Prediksi
         const prediksiTab = document.getElementById('prediksiTab');
         const prediksiTabContent = document.getElementById('prediksiTabContent');
         if (prediksiTab && prediksiTabContent && bahansPrediksi.length) {
             const grouped = groupByFrekuensi(bahansPrediksi);
             prediksiTab.innerHTML = '';
             prediksiTabContent.innerHTML = '';
-            let first = true;
-            Object.keys(grouped).forEach((freq, idx) => {
+            
+            // Urutan tab yang diinginkan
+            const tabOrder = ['Mingguan', 'Dua Mingguan', 'Bulanan', 'Tiga Bulanan', 'Stok Minimal'];
+            
+            tabOrder.forEach((freq, idx) => {
+                if (!grouped[freq]) return;
+                
                 // Tab header
                 prediksiTab.innerHTML += `
                     <li class="nav-item" role="presentation">
-                      <button class="nav-link ${first ? 'active' : ''}" id="tab-${idx}" data-bs-toggle="tab" data-bs-target="#tab-content-${idx}" type="button" role="tab">${freq}</button>
+                      <button class="nav-link ${idx === 0 ? 'active' : ''}" id="tab-${idx}" data-bs-toggle="tab" data-bs-target="#tab-content-${idx}" type="button" role="tab">${freq}</button>
                     </li>
                 `;
+                
                 // Tab content
                 let rows = '';
                 grouped[freq].forEach((bahan, i) => {
+                    const isStokKurang = parseFloat(bahan.stok ?? 0) < parseFloat(bahan.stokmin ?? 0);
                     rows += `
-                        <tr>
-                            <td>${i+1}</td>
+                        <tr style="background-color: ${isStokKurang ? '#fff3cd' : 'inherit'}">
+                            <td class="text-center">${i + 1}</td>
                             <td>${bahan.nama_bahan}</td>
-                            <td>${bahan.interval ?? '-'}</td>
-                            <td>${bahan.jumlah_per_order ?? '-'}</td>
-                            <td>${bahan.satuan}</td>
-                            <td>
-                                <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})" data-bs-dismiss='modal'>Pilih</button>
+                            <td class="text-center">${bahan.interval ? bahan.interval + 'x' : '-'}</td>
+                            <td class="text-center">${bahan.jumlah_per_order ?? '-'}</td>
+                            <td class="text-center" style="color:${isStokKurang ? 'red' : 'inherit'}; font-weight:${isStokKurang ? 'bold' : 'normal'}">
+                                ${(bahan.stokmin != null) ? parseFloat(bahan.stokmin).toFixed(2) : '-'}
+                            </td>
+                            <td class="text-center">
+                                ${(bahan.stok != null) ? parseFloat(bahan.stok).toFixed(2) : '-'}
+                            </td>
+                            <td class="text-center">${bahan.satuan}</td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-primary"
+                                        onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})"
+                                        data-bs-dismiss="modal">
+                                    Pilih
+                                </button>
                             </td>
                         </tr>
                     `;
                 });
+                
                 prediksiTabContent.innerHTML += `
-                    <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
+                    <div class="tab-pane fade ${idx === 0 ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
                         <table class="table table-bordered mt-3">
-                            <thead>
-                                <tr>
+                            <thead class="table-light">
+                                <tr class="text-center">
                                     <th>No</th>
-                                    <th>Nama Bahan</th>
-                                    <th>Interval</th>
-                                    <th>Jumlah/Order</th>
+                                    <th class="col-nama-bahan">Nama Bahan</th>
+                                    <th>Frekuensi Pembelian</th>
+                                    <th class="col-jumlah-order">Jumlah Dibeli per Periode</th>
+                                    <th>Stok Minimum</th>
+                                    <th>Stok Tersedia</th>
                                     <th>Satuan</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -333,11 +335,8 @@
                         </table>
                     </div>
                 `;
-                first = false;
             });
         }
-
-        
     });
 
     function isiInputBahan(kode, nama, satuan, jumlah) {
@@ -351,11 +350,21 @@
                 nama_bahan: nama,
                 satuan: satuan,
                 jumlah_beli: jumlah,
-                harga_beli: 0, // default 0, bisa diinput di tabel
+                harga_beli: 0,
                 total: 0
             });
         }
         updateTabel();
+        
+        // Auto-fill the form
+        const bahanSelect = document.getElementById('kode_bahan');
+        for (let i = 0; i < bahanSelect.options.length; i++) {
+            if (bahanSelect.options[i].value == kode) {
+                bahanSelect.selectedIndex = i;
+                break;
+            }
+        }
+        document.getElementById('jumlah_beli').value = jumlah;
     }
 </script>
 @endsection

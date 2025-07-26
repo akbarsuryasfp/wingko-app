@@ -3,83 +3,112 @@
 @section('content')
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
 
-            {{-- Kotak putih dengan padding dan bayangan --}}
             <div class="bg-white p-4 rounded shadow">
-                <h4 class="mb-4">Input Data Bahan</h4>
+                <h4 class="mb-4">📋 Formulir Data Bahan</h4>
+
                 <form action="{{ route('bahan.store') }}" method="POST">
                     @csrf
-                    <div class="mb-3 d-flex align-items-center">
-                        <label for="kode_bahan" class="form-label mb-0" style="width:150px;">Kode Bahan</label>
-                        <input type="text" class="form-control" id="kode_bahan" name="kode_bahan" value="{{ $kode_bahan }}" readonly style="width:300px;">
+
+                    {{-- Grouped form using row and col --}}
+                    <div class="row mb-3">
+                        <label for="kode_bahan" class="col-sm-3 col-form-label">ID Bahan (Otomatis)</label>
+                        <div class="col-sm-6">
+                            <input type="text" readonly class="form-control" id="kode_bahan" name="kode_bahan" value="{{ $kode_bahan }}">
+                        </div>
                     </div>
 
-                    <div class="mb-3 d-flex align-items-center">
-                        <label for="kode_kategori" class="form-label mb-0" style="width:150px;">Kategori</label>
-                        <select class="form-control" id="kode_kategori" name="kode_kategori" required style="width:300px;">
-                            <option value="">-- Pilih Kategori --</option>
-                            @foreach($kategori as $kat)
-                                @if(Str::startsWith($kat->kode_kategori, 'B'))
-                                    <option value="{{ $kat->kode_kategori }}" {{ old('kode_kategori') == $kat->kode_kategori ? 'selected' : '' }}>
-                                        {{ $kat->jenis_kategori }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </select>
-                        @error('kode_kategori')
-                            <div class="text-danger ms-2">{{ $message }}</div>
-                        @enderror
+                    <div class="row mb-3">
+                        <label for="kode_kategori" class="col-sm-3 col-form-label">Kategori Bahan</label>
+                        <div class="col-sm-6">
+                            <select class="form-select" id="kode_kategori" name="kode_kategori" required>
+                                <option value="">-- Pilih Kategori --</option>
+                                @foreach($kategori as $kat)
+                                    @if(Str::startsWith($kat->kode_kategori, 'B'))
+                                        <option value="{{ $kat->kode_kategori }}" {{ old('kode_kategori') == $kat->kode_kategori ? 'selected' : '' }}>
+                                            {{ $kat->jenis_kategori }}
+                                        </option>
+                                    @endif
+                                @endforeach
+                            </select>
+                            @error('kode_kategori')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
-                    <div class="mb-3 d-flex align-items-center">
-                        <label for="nama_bahan" class="form-label mb-0" style="width:150px;">Nama Bahan</label>
-                        <input type="text" class="form-control" id="nama_bahan" name="nama_bahan" value="{{ old('nama_bahan') }}" required style="width:300px;">
-                        @error('nama_bahan')
-                            <div class="text-danger ms-2">{{ $message }}</div>
-                        @enderror
+                    <div class="row mb-3">
+                        <label for="nama_bahan" class="col-sm-3 col-form-label">Nama Bahan</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="nama_bahan" name="nama_bahan" placeholder="Contoh: Tepung Terigu" value="{{ old('nama_bahan') }}" required>
+                            @error('nama_bahan')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
-                    <div class="mb-3 d-flex align-items-center">
-                        <label for="satuan" class="form-label mb-0" style="width:150px;">Satuan</label>
-                        <input type="text" class="form-control" id="satuan" name="satuan" value="{{ old('satuan') }}" required style="width:300px;">
-                        @error('satuan')
-                            <div class="text-danger ms-2">{{ $message }}</div>
-                        @enderror
+                    <div class="row mb-3">
+                        <label for="satuan" class="col-sm-3 col-form-label">Satuan (misal: kg, liter)</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="satuan" name="satuan" value="{{ old('satuan') }}" required>
+                            @error('satuan')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
-                    <div class="mb-3 d-flex align-items-center">
-                        <label for="stokmin" class="form-label mb-0" style="width:150px;">Stok Minimal</label>
-                        <input type="number" step="0.01" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" style="width:300px;">
-                        @error('stok_minimal')
-                            <div class="text-danger ms-2">{{ $message }}</div>
-                        @enderror
+                    <div class="row mb-3">
+                        <label for="stokmin" class="col-sm-3 col-form-label">Stok Minimum</label>
+                        <div class="col-sm-6">
+                            <input type="number" step="0.01" class="form-control" id="stokmin" name="stokmin" value="{{ old('stokmin') }}" placeholder="Minimum agar tidak kehabisan">
+                            @error('stok_minimal')
+                                <div class="text-danger">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
 
-                    <div class="mb-3 d-flex align-items-center">
-    <label for="frekuensi_pembelian" class="form-label mb-0" style="width:150px;">Frekuensi Order</label>
-    <select class="form-control" id="frekuensi_pembelian" name="frekuensi_pembelian" style="width:300px;">
-        <option value="">-- Pilih Frekuensi --</option>
-        <option value="Harian" {{ old('frekuensi_pembelian') == 'Harian' ? 'selected' : '' }}>Harian</option>
-        <option value="Mingguan" {{ old('frekuensi_pembelian') == 'Mingguan' ? 'selected' : '' }}>Mingguan</option>
-        <option value="Dua Mingguan" {{ old('frekuensi_pembelian') == 'Dua Mingguan' ? 'selected' : '' }}>Dua Mingguan</option>
-        <option value="Bulanan" {{ old('frekuensi_pembelian') == 'Bulanan' ? 'selected' : '' }}>Bulanan</option>
-        <option value="Tiga Bulanan" {{ old('frekuensi_pembelian') == 'Tiga Bulanan' ? 'selected' : '' }}>Tiga Bulanan</option>
-    </select>
+                    <div class="form-group row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label">Frekuensi Order</label>
+    
+    <div class="col-sm-1">
+        <input 
+            type="number" 
+            class="form-control" 
+            name="interval" 
+            placeholder="1" 
+            min="1" 
+            value="{{ old('interval') }}">
+    </div>
+
+    <label class="col-form-label col-sm-auto text-center">x     per</label>
+
+    <div class="col-sm-4">
+        <select class="form-control" name="frekuensi_order">
+            <option value="">-- Pilih Frekuensi --</option>
+            <option value="Harian" {{ old('frekuensi_order') == 'Harian' ? 'selected' : '' }}>Harian</option>
+            <option value="Mingguan" {{ old('frekuensi_order') == 'Mingguan' ? 'selected' : '' }}>Mingguan</option>
+            <option value="Dua Mingguan" {{ old('frekuensi_order') == 'Dua Mingguan' ? 'selected' : '' }}>Dua Mingguan</option>
+            <option value="Bulanan" {{ old('frekuensi_order') == 'Bulanan' ? 'selected' : '' }}>Bulanan</option>
+            <option value="Tiga Bulanan" {{ old('frekuensi_order') == 'Tiga Bulanan' ? 'selected' : '' }}>Tiga Bulanan</option>
+        </select>
+    </div>
 </div>
-<div class="mb-3 d-flex align-items-center">
-    <label for="interval" class="form-label mb-0" style="width:150px;">Interval</label>
-    <input type="number" class="form-control" id="interval" name="interval" value="{{ old('interval') }}" style="width:300px;">
-</div>
-<div class="mb-3 d-flex align-items-center">
-    <label for="jumlah_per_order" class="form-label mb-0" style="width:150px;">Jumlah per Order</label>
-    <input type="number" class="form-control" id="jumlah_per_order" name="jumlah_per_order" value="{{ old('jumlah_per_order') }}" style="width:300px;">
-</div>
 
-<div class="d-flex gap-2 justify-content-start mt-3" style="margin-left:150px;">
-    <a href="{{ route('bahan.index') }}" class="btn btn-secondary">Back</a>
-    <button type="reset" class="btn btn-warning">Reset</button>
-    <button type="submit" class="btn btn-success">Submit</button>
+                    <div class="row mb-3">
+                        <label for="jumlah_per_order" class="col-sm-3 col-form-label">Jumlah Sekali Order</label>
+                        <div class="col-sm-6">
+                            <input type="number" class="form-control" id="jumlah_per_order" name="jumlah_per_order" value="{{ old('jumlah_per_order') }}" placeholder="Misal: 20">
+                        </div>
+                    </div>
+
+                    {{-- Tombol Aksi --}}
+                    <div class="row mt-4">
+    <div class="offset-sm-3 col-sm-6 d-flex justify-content-between">
+        <a href="{{ route('bahan.index') }}" class="btn btn-secondary">← Kembali</a>
+        <button type="reset" class="btn btn-warning">Reset</button>
+        <button type="submit" class="btn btn-success">Simpan</button>
+    </div>
 </div>
 
                 </form>

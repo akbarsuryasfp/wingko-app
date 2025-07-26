@@ -55,17 +55,20 @@ class PenyesuaianBarangController extends Controller
                 't_kartupersproduk.tanggal_exp',
                 't_kartupersproduk.hpp', // GANTI 'harga' MENJADI 'hpp'
                 't_produk.satuan',
+                't_kartupersproduk.lokasi',
                 DB::raw('SUM(masuk) as total_masuk'),
                 DB::raw('SUM(keluar) as total_keluar')
             )
             ->join('t_produk', 't_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
             ->where('t_kartupersproduk.tanggal_exp', '<=', $today)
+            ->where('t_kartupersproduk.lokasi', 'gudang')
             ->groupBy(
                 't_kartupersproduk.kode_produk',
                 't_kartupersproduk.tanggal_exp',
                 't_kartupersproduk.hpp', // GANTI 'harga' MENJADI 'hpp'
                 't_produk.nama_produk',
-                't_produk.satuan'
+                't_produk.satuan',
+                't_kartupersproduk.lokasi'
             )
             ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
             ->get()
@@ -100,7 +103,7 @@ class PenyesuaianBarangController extends Controller
             PenyesuaianBarang::create([
                 'no_penyesuaian' => $no_penyesuaian,
                 'tanggal' => $request->tanggal,
-                'keterangan' => $request->keterangan,
+                'keterangan' => !empty($request->keterangan) ? $request->keterangan : 'kadaluarsa',
             ]);
 
             // Variabel akumulasi nilai
@@ -152,6 +155,7 @@ class PenyesuaianBarangController extends Controller
                         'keluar' => $item['jumlah'],
                         'hpp' => $item['harga_satuan'], // GANTI 'harga' MENJADI 'hpp'
                         'satuan' => $item['satuan'] ?? null,
+                        'lokasi' => $item['lokasi'] ?? null,
                         'keterangan' => $item['alasan'] ?? 'Penyesuaian Exp',
                     ]);
                 }
