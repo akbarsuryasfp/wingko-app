@@ -19,6 +19,18 @@
             <label for="no_telp" class="form-label">No. Telepon</label>
             <input type="text" name="no_telp" class="form-control" value="{{ old('no_telp', $consignee->no_telp) }}" required>
         </div>
+        <div class="mb-3 d-flex align-items-center">
+            <label for="no_telp" class="form-label mb-0" style="width:150px;">No. Telepon</label>
+            <input type="text" class="form-control" id="no_telp" name="no_telp" value="{{ old('no_telp', $consignee->no_telp) }}" required style="width:300px;">
+            @error('no_telp')
+                <div class="text-danger ms-2">{{ $message }}</div>
+            @enderror
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('consignee.index') }}" class="btn btn-secondary">Back</a>
+            <button type="submit" class="btn btn-success">Update</button>
+        </div>
+
         <!-- Data Setor Banyak Produk -->
         <hr>
         <h5>Setor Produk</h5>

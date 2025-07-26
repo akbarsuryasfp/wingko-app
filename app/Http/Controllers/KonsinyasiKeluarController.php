@@ -11,10 +11,27 @@ use Illuminate\Support\Facades\DB;
 
 class KonsinyasiKeluarController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $konsinyasiKeluarList = KonsinyasiKeluar::with('consignee')->orderByDesc('tanggal_setor')->get();
-        return view('konsinyasikeluar.index', compact('konsinyasiKeluarList'));
+        $query = KonsinyasiKeluar::with('consignee');
+        // Filter tanggal setor
+        if ($request->filled('tanggal_awal')) {
+            $query->whereDate('tanggal_setor', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->whereDate('tanggal_setor', '<=', $request->tanggal_akhir);
+        }
+        // Filter no konsinyasi keluar
+        if ($request->filled('no_konsinyasikeluar')) {
+            $query->where('no_konsinyasikeluar', $request->no_konsinyasikeluar);
+        }
+        // Sorting
+        $sort = $request->get('sort', 'asc');
+        $query->orderBy('no_konsinyasikeluar', $sort);
+        $konsinyasiKeluarList = $query->get();
+        // Untuk dropdown filter
+        $allNoKonsinyasi = KonsinyasiKeluar::orderBy('no_konsinyasikeluar')->pluck('no_konsinyasikeluar');
+        return view('konsinyasikeluar.index', compact('konsinyasiKeluarList', 'allNoKonsinyasi'));
     }
 
     public function create()
@@ -31,7 +48,8 @@ class KonsinyasiKeluarController extends Controller
         } else {
             $kodeOtomatis = 'KK000001';
         }
-        $noSuratOtomatis = $kodeOtomatis; // Atur sesuai kebutuhan
+        // Nomor surat default: akan diubah via JS di form sesuai tanggal setor
+        $noSuratOtomatis = '';
 
         return view('konsinyasikeluar.create', compact('consignees', 'produkList', 'kodeOtomatis', 'noSuratOtomatis'));
     }
@@ -49,8 +67,16 @@ class KonsinyasiKeluarController extends Controller
         ]);
         DB::beginTransaction();
         try {
+            // Ambil data produk dari detail_json jika field produk tidak ada
+            $produk = $request->produk;
+            if ((!$produk || !is_array($produk) || count($produk) == 0) && $request->detail_json) {
+                $produk = json_decode($request->detail_json, true);
+            }
+            if (!is_array($produk) || count($produk) == 0) {
+                throw new \Exception('Data produk tidak valid atau kosong');
+            }
             $total = 0;
-            foreach ($request->produk as $prod) {
+            foreach ($produk as $prod) {
                 $total += $prod['jumlah_setor'] * $prod['harga_setor'];
             }
             // Simpan header ke t_konsinyasikeluar
@@ -58,10 +84,12 @@ class KonsinyasiKeluarController extends Controller
                 'no_konsinyasikeluar' => $request->kode_setor,
                 'kode_consignee' => $request->kode_consignee,
                 'tanggal_setor' => $request->tanggal_setor,
-                'total_setor' => $total
+                'total_setor' => $total,
+                'no_suratpengiriman' => $request->no_suratpengiriman,
+                'keterangan' => $request->keterangan,
             ]);
             // Simpan detail ke t_konsinyasikeluar_detail
-            foreach ($request->produk as $i => $prod) {
+            foreach ($produk as $i => $prod) {
                 $no_detail = $request->kode_setor . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT);
                 DB::table('t_konsinyasikeluar_detail')->insert([
                     'no_detailkonsinyasikeluar' => $no_detail,
@@ -83,48 +111,59 @@ class KonsinyasiKeluarController extends Controller
 
     public function show($id)
     {
-        $header = KonsinyasiKeluar::with(['consignee', 'details.produk'])->findOrFail($id);
+        $header = KonsinyasiKeluar::with(['consignee', 'details.produk'])->where('no_konsinyasikeluar', $id)->firstOrFail();
         return view('konsinyasikeluar.detail', compact('header'));
     }
 
     public function edit($id)
     {
-        $header = KonsinyasiKeluar::with(['details'])->findOrFail($id);
+        $header = KonsinyasiKeluar::with(['details'])->where('no_konsinyasikeluar', $id)->firstOrFail();
         $consignees = Consignee::all();
-        $produkList = ProdukKonsinyasi::all();
+        $produkList = \DB::table('t_produk')->get();
         return view('konsinyasikeluar.edit', compact('header', 'consignees', 'produkList'));
     }
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'kode_setor' => 'required',
+            'no_konsinyasikeluar' => 'required',
             'tanggal_setor' => 'required|date',
             'kode_consignee' => 'required',
-            'produk.*.kode_produk' => 'required',
-            'produk.*.jumlah_setor' => 'required|numeric|min:1',
-            'produk.*.satuan' => 'required',
-            'produk.*.harga_setor' => 'required|numeric|min:0',
+            'keterangan' => 'nullable|string',
+            'no_suratpengiriman' => 'nullable|string',
+            // validasi produk bisa kosong, karena bisa dari detail_json
         ]);
         DB::beginTransaction();
         try {
-            $header = KonsinyasiKeluar::findOrFail($id);
+            // Ambil data produk dari detail_json jika field produk tidak ada
+            $produk = $request->produk;
+            if ((!$produk || !is_array($produk) || count($produk) == 0) && $request->detail_json) {
+                $produk = json_decode($request->detail_json, true);
+            }
+            if (!is_array($produk) || count($produk) == 0) {
+                throw new \Exception('Data produk tidak valid atau kosong');
+            }
+            $header = KonsinyasiKeluar::where('no_konsinyasikeluar', $id)->firstOrFail();
             $total = 0;
-            foreach ($request->produk as $prod) {
+            foreach ($produk as $prod) {
                 $total += $prod['jumlah_setor'] * $prod['harga_setor'];
             }
             $header->update([
-                'kode_setor' => $request->kode_setor,
+                'no_konsinyasikeluar' => $request->no_konsinyasikeluar,
                 'tanggal_setor' => $request->tanggal_setor,
                 'kode_consignee' => $request->kode_consignee,
-                'total_setor' => $total
+                'total_setor' => $total,
+                'no_suratpengiriman' => $request->no_suratpengiriman,
+                'keterangan' => $request->keterangan,
             ]);
             // Hapus detail lama
-            KonsinyasiKeluarDetail::where('konsinyasikeluar_id', $header->id)->delete();
+            \DB::table('t_konsinyasikeluar_detail')->where('no_konsinyasikeluar', $header->no_konsinyasikeluar)->delete();
             // Simpan detail baru
-            foreach ($request->produk as $prod) {
-                KonsinyasiKeluarDetail::create([
-                    'konsinyasikeluar_id' => $header->id,
+            foreach ($produk as $i => $prod) {
+                $no_detail = $header->no_konsinyasikeluar . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT);
+                \DB::table('t_konsinyasikeluar_detail')->insert([
+                    'no_detailkonsinyasikeluar' => $no_detail,
+                    'no_konsinyasikeluar' => $header->no_konsinyasikeluar,
                     'kode_produk' => $prod['kode_produk'],
                     'jumlah_setor' => $prod['jumlah_setor'],
                     'satuan' => $prod['satuan'],
@@ -140,11 +179,17 @@ class KonsinyasiKeluarController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy($no_konsinyasikeluar)
     {
-        $header = KonsinyasiKeluar::findOrFail($id);
+        $header = KonsinyasiKeluar::where('no_konsinyasikeluar', $no_konsinyasikeluar)->firstOrFail();
         $header->details()->delete();
         $header->delete();
         return redirect()->route('konsinyasikeluar.index')->with('success', 'Data berhasil dihapus');
+    }
+
+    public function cetak($id)
+    {
+        $header = KonsinyasiKeluar::with(['consignee', 'details.produk'])->where('no_konsinyasikeluar', $id)->firstOrFail();
+        return view('konsinyasikeluar.cetak', compact('header'));
     }
 }

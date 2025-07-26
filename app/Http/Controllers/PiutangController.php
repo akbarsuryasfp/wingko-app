@@ -211,6 +211,7 @@ class PiutangController extends Controller
             ]);
         }
 
-        return redirect()->route('piutang.detail', $no_piutang)->with('success', 'Pembayaran piutang & jurnal berhasil disimpan.');
+        // Redirect ke index piutang agar user langsung melihat update
+        return redirect()->route('piutang.index')->with('success', 'Pembayaran piutang & jurnal berhasil disimpan.');
     }
 }

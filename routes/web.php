@@ -30,6 +30,11 @@ use App\Http\Controllers\PenyesuaianBarangController;
 use App\Http\Controllers\TransferProdukController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BarcodeBatchController;
+use App\Http\Controllers\KonsinyasiKeluarController;
+use App\Http\Controllers\BayarConsignorController;
+use App\Http\Controllers\PenerimaanKonsinyasiController;
+use App\Http\Controllers\ReturConsigneeController;
+use App\Http\Controllers\KonsinyasiMasukController;
 use App\Http\Controllers\JurnalController;
 
 Route::get('/', function () {
@@ -112,6 +117,10 @@ Route::get('/pembelian/{no_pembelian}/detail-json', [\App\Http\Controllers\Pembe
 
 Route::resource('pembelian', PembelianController::class);
 
+// Route bayar consignor
+Route::resource('bayarconsignor', App\Http\Controllers\BayarConsignorController::class);
+Route::get('/bayarconsignor/{no_bayarconsignor}/cetak', [App\Http\Controllers\BayarConsignorController::class, 'cetak'])->name('bayarconsignor.cetak');
+
 // Route retur pembelian
 Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
 Route::resource('returbeli', ReturBeliController::class);
@@ -188,10 +197,19 @@ Route::get('/piutang/{no_piutang}/detail', [PiutangController::class, 'show'])->
 // Route resource piutang
 Route::resource('piutang', PiutangController::class);
 
-// Route konsinyasi masuk
+// Route index dan cetak
 Route::get('/konsinyasimasuk', [App\Http\Controllers\KonsinyasiMasukController::class, 'index'])->name('konsinyasimasuk.index');
-Route::resource('konsinyasimasuk', \App\Http\Controllers\KonsinyasiMasukController::class);
 Route::get('/konsinyasimasuk/{no_konsinyasimasuk}/cetak', [App\Http\Controllers\KonsinyasiMasukController::class, 'cetak'])->name('konsinyasimasuk.cetak');
+
+// Konsinyasi Masuk: harga jual produk (AJAX)
+Route::get('konsinyasimasuk/{no_konsinyasimasuk}/detail-json', [KonsinyasiMasukController::class, 'detailJson'])
+     ->name('konsinyasimasuk.detail-json')
+     ->middleware('auth');
+Route::post('konsinyasimasuk/update-harga-jual', [KonsinyasiMasukController::class, 'updateHargaJual'])
+    ->name('konsinyasimasuk.update-harga-jual');
+
+// **Resource route HARUS PALING BAWAH**
+Route::resource('konsinyasimasuk', \App\Http\Controllers\KonsinyasiMasukController::class);Route::resource('konsinyasimasuk', \App\Http\Controllers\KonsinyasiMasukController::class);
 
 // Route pembayaran ke consignor (untuk sidebar konsinyasi)
 Route::get('/bayarconsignor', [App\Http\Controllers\BayarConsignorController::class, 'index'])->name('bayarconsignor.index');
@@ -201,9 +219,9 @@ Route::get('/komisijual', [App\Http\Controllers\KomisiJualController::class, 'in
 
 // Route retur konsinyasi ke consignor
 Route::get('/returconsignor', [App\Http\Controllers\ReturConsignorController::class, 'index'])->name('returconsignor.index');
+Route::get('/returconsignor/create', [App\Http\Controllers\ReturConsignorController::class, 'create'])->name('returconsignor.create');
 
 // Route produk konsinyasi
-Route::get('/produk-konsinyasi/create', [\App\Http\Controllers\ProdukKonsinyasiController::class, 'create'])->name('produk-konsinyasi.create');
 Route::resource('produk-konsinyasi', \App\Http\Controllers\ProdukKonsinyasiController::class);
 Route::get('/produk-konsinyasi/by-consignor/{kode_consignor}', [ProdukKonsinyasiController::class, 'getByConsignor']);
 Route::get('/produk-konsinyasi/{kode_consignor}', [KonsinyasiMasukController::class, 'getProdukByConsignor']);
@@ -248,11 +266,19 @@ Route::get('/jualkonsinyasimasuk/{no_jualkonsinyasimasuk}/cetak', [\App\Http\Con
 
 // Route konsinyasi keluar
 Route::resource('konsinyasikeluar', KonsinyasiKeluarController::class);
+Route::get('/konsinyasikeluar/{no_konsinyasikeluar}/cetak', [KonsinyasiKeluarController::class, 'cetak'])->name('konsinyasikeluar.cetak');
+Route::get('/konsinyasikeluar/{id}/cetak', [App\Http\Controllers\KonsinyasiKeluarController::class, 'cetak'])->name('konsinyasikeluar.cetak');
 
 // Route penerimaan konsinyasi
 Route::resource('penerimaankonsinyasi', App\Http\Controllers\PenerimaanKonsinyasiController::class);
 
+// Route AJAX produk konsinyasi keluar untuk returconsignee (HARUS DI ATAS resource)
+Route::get('/returconsignee/produk-keluar', [App\Http\Controllers\ReturConsigneeController::class, 'getProdukKonsinyasiKeluar'])->name('returconsignee.produk_keluar');
 // Route retur consignee
+Route::get('returconsignee/get-produk', [ReturConsigneeController::class, 'getProduk'])->name('returconsignee.getProduk');
+Route::get('returconsignee/create', [ReturConsigneeController::class, 'create'])->name('returconsignee.create');
+Route::post('returconsignee/store', [ReturConsigneeController::class, 'store'])->name('returconsignee.store');
+Route::get('returconsignee/create-returterima', [App\Http\Controllers\ReturConsigneeController::class, 'createReturTerima'])->name('returconsignee.createReturTerima');
 Route::resource('returconsignee', App\Http\Controllers\ReturConsigneeController::class);
 
 // Route kartu persediaan produk konsinyasi masuk
@@ -271,3 +297,25 @@ Route::get('/barcode-batch/barcode-image', [BarcodeBatchController::class, 'barc
 // Kartu Persediaan Produk Konsinyasi
 Route::get('/kartuperskonsinyasi', [App\Http\Controllers\KartuPersKonsinyasiController::class, 'produkKonsinyasi'])->name('kartuperskonsinyasi.index');
 Route::get('/kartuperskonsinyasi/api-produk/{kode_produk}', [App\Http\Controllers\KartuPersKonsinyasiController::class, 'getKartuPersProdukKonsinyasi']);
+
+// Route custom BayarConsignor (letakkan sebelum resource agar tidak tertimpa)
+Route::get('bayarconsignor/create', [App\Http\Controllers\BayarConsignorController::class, 'create'])->name('bayarconsignor.create');
+Route::get('bayarconsignor/produk/{kode_consignor}', [App\Http\Controllers\BayarConsignorController::class, 'produkByConsignor']);
+Route::resource('bayarconsignor', BayarConsignorController::class);
+
+// Route khusus create retur dari penerimaan konsinyasi
+Route::get('returconsignee/create-returterima', [App\Http\Controllers\ReturConsigneeController::class, 'createReturTerima'])->name('returconsignee.createReturTerima');
+
+Route::post('/returconsignor', [App\Http\Controllers\ReturConsignorController::class, 'store'])->name('returconsignor.store');
+
+// Route API
+Route::get('/api/konsinyasikeluar/by-consignee/{kode_consignee}', [App\Http\Controllers\PenerimaanKonsinyasiController::class, 'apiKonsinyasiKeluarByConsignee']);
+// API untuk ambil detail konsinyasi keluar (AJAX form penerimaan konsinyasi)
+Route::get('/api/konsinyasikeluar/detail/{no_konsinyasikeluar}', [App\Http\Controllers\PenerimaanKonsinyasiController::class, 'apiKonsinyasiKeluarDetail']);
+Route::get('/bayarconsignor/produk-penjualan/{kode_consignor}', [BayarConsignorController::class, 'getProdukPenjualanConsignor']);
+Route::get('/returconsignor/produk-masuk', [App\Http\Controllers\ReturConsignorController::class, 'getProdukKonsinyasiMasuk']);
+Route::get('/api/harga-jual-konsinyasi/{kode_produk}', [App\Http\Controllers\KonsinyasiMasukController::class, 'getHargaJualKonsinyasi']);
+Route::get('returconsignor/{no_returconsignor}', [App\Http\Controllers\ReturConsignorController::class, 'show'])->name('returconsignor.show');
+Route::get('returconsignor/{no_returconsignor}/edit', [App\Http\Controllers\ReturConsignorController::class, 'edit'])->name('returconsignor.edit');
+Route::put('returconsignor/{no_returconsignor}', [App\Http\Controllers\ReturConsignorController::class, 'update'])->name('returconsignor.update');
+Route::resource('returconsignor', App\Http\Controllers\ReturConsignorController::class);

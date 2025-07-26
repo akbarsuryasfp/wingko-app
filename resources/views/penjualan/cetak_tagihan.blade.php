@@ -30,8 +30,8 @@
 <div class="nota-container">
     <div class="nota-header">
         <div class="nota-title">
-            <h2>WINGKO BABAT PRATAMA</h2>
-            <div class="sub">Nota Tagihan</div>
+            <h2 style="margin-bottom:12px;">WINGKO BABAT PRATAMA</h2>
+            <div class="sub fw-bold" style="margin-bottom:8px;">Nota Tagihan</div>
             <div class="sub">Tanggal Tagihan: {{ $penjualan->tanggal_jual }}</div>
             <div class="sub">Nama Pelanggan: {{ $penjualan->nama_pelanggan ?? ($penjualan->pelanggan->nama_pelanggan ?? '-') }}</div>
         </div>

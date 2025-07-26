@@ -39,31 +39,32 @@
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>No</th>
-                <th>No Pesanan</th>
-                <th>Tanggal Pesanan</th>
-                <th>Tanggal Pengiriman</th>
-                <th>Pelanggan</th>
-                <th>Total Pesanan</th>
-                <th>Keterangan</th>
-                <th>Aksi</th>
+                <th class="text-center align-middle">No</th>
+                <th class="text-center align-middle">No Pesanan</th>
+                <th class="text-center align-middle">Tanggal Pesanan</th>
+                <th class="text-center align-middle">Tanggal Pengiriman</th>
+                <th class="text-center align-middle">Pelanggan</th>
+                <th class="text-center align-middle">Total Pesanan</th>
+                
+                <th class="text-center align-middle">Aksi</th>
             </tr>
         </thead>
         <tbody>
             @forelse($pesanan as $psn)
                 <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>{{ $psn->no_pesanan }}</td>
-                    <td>{{ $psn->tanggal_pesanan }}</td>
-                    <td>{{ $psn->tanggal_pengiriman ?? '-' }}</td>
-                    <td>{{ $psn->nama_pelanggan ?? '-' }}</td>
-                    <td>Rp {{ number_format($psn->total_pesanan, 0, ',', '.') }}</td>
-                    <td>{{ $psn->keterangan ?? '-' }}</td>
-                    <td>
-                        <div class="d-flex gap-1 flex-wrap align-items-center">
+                    <td class="text-center align-middle">{{ $loop->iteration }}</td>
+                    <td class="text-center align-middle">{{ $psn->no_pesanan }}</td>
+                    <td class="text-center align-middle">{{ $psn->tanggal_pesanan }}</td>
+                    <td class="text-center align-middle">{{ $psn->tanggal_pengiriman ?? '-' }}</td>
+                    <td class="text-center align-middle">{{ $psn->nama_pelanggan ?? '-' }}</td>
+                    <td class="text-center align-middle">Rp {{ number_format($psn->total_pesanan, 0, ',', '.') }}</td>
+                    
+                    <td class="text-center align-middle">
+                        <div class="d-flex gap-1 flex-wrap align-items-center justify-content-center">
                             <a href="{{ route('pesananpenjualan.show', $psn->no_pesanan) }}" class="btn btn-info btn-sm" title="Detail">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            @if(empty($psn->sudah_terjual) || !$psn->sudah_terjual)
                             <a href="{{ route('pesananpenjualan.edit', $psn->no_pesanan) }}" class="btn btn-warning btn-sm" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -74,12 +75,13 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @endif
                         </div>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center">Data tidak tersedia.</td>
+                    <td colspan="7" class="text-center">Data tidak tersedia.</td>
                 </tr>
             @endforelse
         </tbody>

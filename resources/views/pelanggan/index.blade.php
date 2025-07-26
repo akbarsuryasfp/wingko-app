@@ -8,7 +8,27 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <a href="{{ route('pelanggan.create') }}" class="btn btn-primary mb-3">Tambah Pelanggan</a>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <input type="text" id="searchPelanggan" class="form-control me-2" placeholder="Cari pelanggan..." style="max-width:300px;">
+        <a href="{{ route('pelanggan.create') }}" class="btn btn-primary">Tambah Pelanggan</a>
+    </div>
+<script>
+// Fitur search/filter baris tabel pelanggan
+document.getElementById('searchPelanggan').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        // Gabungkan semua kolom jadi satu string
+        const text = row.innerText.toLowerCase();
+        if (q === '' || text.includes(q)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
 
     <table class="table table-bordered">
         <thead>

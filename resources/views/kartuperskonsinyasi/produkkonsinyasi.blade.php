@@ -45,7 +45,7 @@
                     <th>Masuk (Qty)</th>
                     <th>Keluar (Qty)</th>
                     <th>Sisa (Qty)</th>
-                    <th>HPP</th>
+                    
                 </tr>
             </thead>
             <tbody>
@@ -93,7 +93,7 @@ function setSatuanProdukKonsinyasiOtomatis() {
                         let masuk = parseFloat(row.masuk) || 0;
                         let keluar = parseFloat(row.keluar) || 0;
                         let harga = parseFloat(row.harga_konsinyasi) || 0; // harga = harga_konsinyasi
-                        let hpp = harga;
+                        
 
                         // Akumulasi stok akhir per harga
                         if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
@@ -103,16 +103,17 @@ function setSatuanProdukKonsinyasiOtomatis() {
                         saldoQty += masuk - keluar;
                         saldoPerRow.push(saldoQty);
 
+                        // Coba beberapa kemungkinan nama field untuk No Transaksi
+                        let noTransaksi = row.no_transaksi ||'-';
                         tbody += `
                             <tr>
                                 <td>${idx + 1}</td>
-                                <td>${row.no_transaksi}</td>
+                                <td>${noTransaksi}</td>
                                 <td>${formatTanggal(row.tanggal)}</td>
                                 <td>Rp${harga.toLocaleString('id-ID')}</td>
                                 <td>${masuk}</td>
                                 <td>${keluar}</td>
                                 <td>${saldoQty}</td>
-                                <td>Rp${hpp.toLocaleString('id-ID')}</td>
                             </tr>
                         `;
                     });

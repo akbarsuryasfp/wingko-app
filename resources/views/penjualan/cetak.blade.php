@@ -33,8 +33,8 @@
             Logo
         </div>
         <div class="nota-title">
-            <h2>WINGKO BABAT PRATAMA</h2>
-            <div class="sub">Nota Penjualan</div>
+            <h2 style="margin-bottom:12px;">WINGKO BABAT PRATAMA</h2>
+            <div class="sub fw-bold" style="margin-bottom:8px;">Nota Penjualan</div>
             <div class="sub">Tanggal Penjualan: {{ $penjualan->tanggal_jual }}</div>
             <div class="sub">Nama Pelanggan: {{ $penjualan->nama_pelanggan ?? '-' }}</div>
         </div>

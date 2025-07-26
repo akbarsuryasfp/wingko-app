@@ -8,7 +8,27 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <a href="{{ route('consignor.create') }}" class="btn btn-primary mb-3">Tambah Consignor</a>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <input type="text" id="searchConsignor" class="form-control me-2" placeholder="Cari consignor..." style="max-width:300px;">
+        <a href="{{ route('consignor.create') }}" class="btn btn-primary">Tambah Consignor</a>
+    </div>
+<script>
+// Fitur search/filter baris tabel consignor
+document.getElementById('searchConsignor').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        // Gabungkan semua kolom jadi satu string
+        const text = row.innerText.toLowerCase();
+        if (q === '' || text.includes(q)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
 
     <table class="table table-bordered">
         <thead>

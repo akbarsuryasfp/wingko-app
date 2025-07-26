@@ -29,16 +29,6 @@ class JualKonsinyasiMasukController extends Controller
         return view('jualkonsinyasimasuk.index', compact('penjualanKonsinyasi'));
     }
 
-    public function create()
-    {
-        $last = DB::table('t_jualkonsinyasimasuk')->orderByDesc('no_jualkonsinyasi')->first();
-        $newNum = $last ? ((int)preg_replace('/\D/', '', $last->no_jualkonsinyasi)) + 1 : 1;
-        $no_jualkonsinyasi = 'JK' . str_pad($newNum, 5, '0', STR_PAD_LEFT);
-        $consignor = Consignor::all();
-        $produkKonsinyasi = ProdukKonsinyasi::all();
-        return view('jualkonsinyasimasuk.create', compact('no_jualkonsinyasi', 'consignor', 'produkKonsinyasi'));
-    }
-
     public function store(Request $request)
     {
         $request->validate([

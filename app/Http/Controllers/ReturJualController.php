@@ -7,33 +7,59 @@ use Illuminate\Support\Facades\DB;
 
 class ReturJualController extends Controller
 {
-    public function index(Request $request)
-    {
-        $sort = $request->get('sort', 'asc');
-        $query = DB::table('t_returjual')
-            ->leftJoin('t_pelanggan', 't_returjual.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
-            ->leftJoin(DB::raw('(
-                SELECT 
-                    t_returjual_detail.no_returjual, 
-                    GROUP_CONCAT(CONCAT(t_returjual_detail.jumlah_retur, "x ", t_produk.nama_produk) SEPARATOR ", ") as produk_jumlah
-                FROM t_returjual_detail
-                JOIN t_produk ON t_returjual_detail.kode_produk = t_produk.kode_produk
-                GROUP BY t_returjual_detail.no_returjual
-            ) as produk'), 't_returjual.no_returjual', '=', 'produk.no_returjual')
-            ->select('t_returjual.*', 't_pelanggan.nama_pelanggan', 'produk.produk_jumlah');
+public function index(Request $request)
+{
+    $sort = $request->get('sort', 'asc');
 
-        // Filter periode tanggal retur
-        if ($request->filled('tanggal_awal')) {
-            $query->whereDate('t_returjual.tanggal_returjual', '>=', $request->tanggal_awal);
-        }
-        if ($request->filled('tanggal_akhir')) {
-            $query->whereDate('t_returjual.tanggal_returjual', '<=', $request->tanggal_akhir);
-        }
-
-        $returjual = $query->orderBy('t_returjual.no_returjual', $sort)->get();
-
-        return view('returjual.index', compact('returjual'));
+    $query = DB::table('t_returjual')
+        ->leftJoin('t_pelanggan', 't_returjual.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+        ->select('t_returjual.*', 't_pelanggan.nama_pelanggan');
+            
+    // Filter periode tanggal retur
+    if ($request->filled('tanggal_awal')) {
+        $query->whereDate('t_returjual.tanggal_returjual', '>=', $request->tanggal_awal);
     }
+    if ($request->filled('tanggal_akhir')) {
+        $query->whereDate('t_returjual.tanggal_returjual', '<=', $request->tanggal_akhir);
+    }
+
+    // Filter jenis retur
+    if ($request->filled('jenis_retur')) {
+        $query->where('t_returjual.jenis_retur', $request->jenis_retur);
+    }
+
+    $returjual = $query->orderBy('t_returjual.no_returjual', $sort)->get();
+
+    $allDetails = DB::table('t_returjual_detail')
+        ->join('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+        ->select(
+            't_returjual_detail.no_returjual',
+            't_returjual_detail.jumlah_retur',
+            't_produk.nama_produk',
+            't_returjual_detail.alasan'
+        )
+        ->get()
+        ->groupBy('no_returjual');
+
+    foreach ($returjual as $rj) {
+        $key = trim((string) $rj->no_returjual);
+        $details = $allDetails[$key] ?? [];
+        
+        $produkList = [];
+        foreach ($details as $detail) {
+            $produkText = "<b>{$detail->jumlah_retur}</b> x {$detail->nama_produk}";
+            if (!empty($detail->alasan)) {
+                $produkText .= " (" . trim($detail->alasan) . ")";
+            }
+            $produkList[] = $produkText;
+        }
+        
+        $rj->produk_jumlah = !empty($produkList) ? implode('<br>', $produkList) : '-';
+    }
+
+    $jenisList = ['Barang', 'Uang'];
+    return view('returjual.index', compact('returjual', 'jenisList'));
+}
 
     public function create()
     {
@@ -68,7 +94,8 @@ class ReturJualController extends Controller
             $penjualanDetail[$pj->no_jual] = $details;
         }
 
-        return view('returjual.create', compact('no_returjual', 'penjualan', 'pelanggan', 'produk', 'penjualanDetail'));
+        $jenisList = ['Penjualan', 'Pengembalian'];
+        return view('returjual.create', compact('no_returjual', 'penjualan', 'pelanggan', 'produk', 'penjualanDetail', 'jenisList'));
     }
 
     public function store(Request $request)
@@ -78,6 +105,7 @@ class ReturJualController extends Controller
             'no_jual' => 'required',
             'tanggal_returjual' => 'required|date',
             'kode_pelanggan' => 'required',
+            'jenis_retur' => 'required',
             'total_nilai_retur' => 'required|numeric',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
@@ -103,6 +131,7 @@ class ReturJualController extends Controller
                 'no_jual' => $request->no_jual,
                 'tanggal_returjual' => $request->tanggal_returjual,
                 'kode_pelanggan' => $request->kode_pelanggan,
+                'jenis_retur' => $request->jenis_retur,
                 'total_nilai_retur' => $request->total_nilai_retur,
                 'keterangan' => $request->keterangan,
             ]);
@@ -161,13 +190,15 @@ class ReturJualController extends Controller
             ->get()
             ->keyBy('kode_produk');
 
+        $jenisList = ['Penjualan', 'Pengembalian'];
         return view('returjual.edit', [
             'returjual' => $returjual,
             'penjualan' => $penjualan,
             'pelanggan' => $pelanggan,
             'produk' => $produk,
             'details' => $detailsArr,
-            'penjualanDetail' => $penjualanDetail
+            'penjualanDetail' => $penjualanDetail,
+            'jenisList' => $jenisList
         ]);
     }
 
@@ -177,6 +208,7 @@ class ReturJualController extends Controller
             'no_jual' => 'required',
             'tanggal_returjual' => 'required|date',
             'kode_pelanggan' => 'required',
+            'jenis_retur' => 'required',
             'total_nilai_retur' => 'required|numeric',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
@@ -200,6 +232,7 @@ class ReturJualController extends Controller
                 'no_jual' => $request->no_jual,
                 'tanggal_returjual' => $request->tanggal_returjual,
                 'kode_pelanggan' => $request->kode_pelanggan,
+                'jenis_retur' => $request->jenis_retur,
                 'total_nilai_retur' => $request->total_nilai_retur,
                 'keterangan' => $request->keterangan,
             ]);
