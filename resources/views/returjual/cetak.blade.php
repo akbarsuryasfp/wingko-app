@@ -47,8 +47,9 @@
             <tr>
                 <th>No</th>
                 <th>Nama Produk</th>
+                <th>Satuan</th>
                 <th>Jumlah Retur</th>
-                <th>Harga Satuan</th>
+                <th>Harga/Satuan</th>
                 <th>Alasan</th>
                 <th>Sub Total</th>
             </tr>
@@ -58,6 +59,7 @@
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>{{ $detail->nama_produk }}</td>
+                <td>{{ $detail->satuan ?? '-' }}</td>
                 <td>{{ $detail->jumlah_retur }}</td>
                 <td>Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
                 <td>{{ $detail->alasan }}</td>

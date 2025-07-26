@@ -1,20 +1,22 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h3 class="mb-4">INPUT PESANAN</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('pesananpenjualan.store') }}" method="POST">
-        @csrf
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-4">INPUT PESANAN</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form action="{{ route('pesananpenjualan.store') }}" method="POST">
+                @csrf
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <!-- Kolom Kiri: Data Pesanan -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
@@ -47,13 +49,13 @@
             <!-- Kolom Kanan: Data Produk -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Produk</label>
+                    <label class="me-2" style="width: 120px;">Nama Produk</label>
                     <select id="kode_produk" class="form-control">
                         <option value="">---Pilih Produk---</option>
                         @foreach($produk as $pr)
-                            <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}" 
-                                @if($pr->nama_produk == 'Moaci') data-harga="25000" 
-                                @elseif($pr->nama_produk == 'Wingko Babat') data-harga="20000" 
+                            <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}" data-satuan="{{ $pr->satuan ?? '' }}"
+                                @if($pr->nama_produk == 'Moaci') data-harga="25000"
+                                @elseif($pr->nama_produk == 'Wingko Babat') data-harga="20000"
                                 @else data-harga="0" @endif>
                                 {{ $pr->nama_produk }}
                             </option>
@@ -65,8 +67,22 @@
                     <input type="number" id="jumlah" class="form-control">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga Satuan</label>
-                    <input type="number" id="harga_satuan" class="form-control">
+                    <label class="me-2" style="width: 120px;">Satuan</label>
+                    <input type="text" id="satuan" class="form-control" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 120px;">Harga/Satuan</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" id="harga_satuan" class="form-control" autocomplete="off">
+                    </div>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 120px;">Diskon/Satuan</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" id="diskon_satuan" class="form-control" value="0" min="0" autocomplete="off">
+                    </div>
                 </div>
                 <div class="mb-3">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProduk()">Tambah Produk</button>
@@ -82,8 +98,10 @@
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
+                    <th>Satuan</th>
                     <th>Jumlah</th>
-                    <th>Harga Satuan</th>
+                    <th>Harga/Satuan</th>
+                    <th>Diskon/Satuan</th>
                     <th>Subtotal</th>
                     <th>Aksi</th>
                 </tr>
@@ -98,23 +116,59 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Pesanan</label>
-                <input type="text" id="total_pesanan" name="total_pesanan" readonly class="form-control" style="width: 160px;">
+                <div class="input-group" style="width: 180px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" id="total_pesanan_display" readonly class="form-control" tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+                </div>
+                <input type="hidden" id="total_pesanan" name="total_pesanan">
                 <button type="submit" class="btn btn-success">Submit</button>
             </div>
         </div>
         <input type="hidden" name="detail_json" id="detail_json">
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
     let daftarProduk = [];
+
+    // Helper format ribuan
+    function formatNumberInput(val) {
+        val = String(val).replace(/[^\d]/g, '');
+        if (!val) return '';
+        return val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    function parseNumberInput(val) {
+        return parseInt(String(val).replace(/\D/g, '')) || 0;
+    }
+
+    // Live format ribuan untuk input harga_satuan dan diskon_satuan
+    function addLiveRibuanFormat(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener('input', function(e) {
+            const cursor = this.selectionStart;
+            const oldLength = this.value.length;
+            let val = this.value;
+            this.value = formatNumberInput(val);
+            // Kembalikan posisi kursor
+            const newLength = this.value.length;
+            this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+        });
+    }
+    addLiveRibuanFormat('harga_satuan');
+    addLiveRibuanFormat('diskon_satuan');
 
     function tambahProduk() {
         const produkSelect = document.getElementById('kode_produk');
         const kode_produk = produkSelect.value;
         const nama_produk = produkSelect.options[produkSelect.selectedIndex].dataset.nama;
         const jumlah = parseFloat(document.getElementById('jumlah').value);
-        const harga_satuan = parseFloat(document.getElementById('harga_satuan').value);
+        // Gunakan parseNumberInput agar titik ribuan tidak error
+        const harga_satuan = parseNumberInput(document.getElementById('harga_satuan').value);
+        const diskon_satuan = parseNumberInput(document.getElementById('diskon_satuan').value) || 0;
+        const satuan = document.getElementById('satuan').value;
 
         if (!kode_produk || !jumlah || !harga_satuan || jumlah <= 0 || harga_satuan <= 0) {
             alert("Silakan lengkapi data produk.");
@@ -127,14 +181,15 @@
             return;
         }
 
-        const subtotal = jumlah * harga_satuan;
-        daftarProduk.push({ kode_produk, nama_produk, jumlah, harga_satuan, subtotal });
+        const subtotal = jumlah * (harga_satuan - diskon_satuan);
+        daftarProduk.push({ kode_produk, nama_produk, satuan, jumlah, harga_satuan, diskon_satuan, subtotal });
         updateTabel();
 
         // Reset input produk
         produkSelect.selectedIndex = 0;
         document.getElementById('jumlah').value = '';
         document.getElementById('harga_satuan').value = '';
+        document.getElementById('diskon_satuan').value = 0;
     }
 
     function hapusBaris(index) {
@@ -160,8 +215,10 @@
                 <tr>
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
+                    <td>${item.satuan || ''}</td>
                     <td>${item.jumlah}</td>
                     <td>${formatRupiah(item.harga_satuan)}</td>
+                    <td>${formatRupiah(item.diskon_satuan)}</td>
                     <td>${formatRupiah(item.subtotal)}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">
@@ -173,6 +230,8 @@
             tbody.insertAdjacentHTML('beforeend', row);
         });
 
+        // Format total pesanan for display, but set hidden input for backend
+        document.getElementById('total_pesanan_display').value = totalPesanan > 0 ? formatNumberInput(totalPesanan) : '';
         document.getElementById('total_pesanan').value = totalPesanan;
         document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
     }
@@ -189,7 +248,9 @@
     document.getElementById('kode_produk').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
         const harga = selected.getAttribute('data-harga');
-        document.getElementById('harga_satuan').value = harga ? harga : '';
+        const satuan = selected.getAttribute('data-satuan') || '';
+        document.getElementById('harga_satuan').value = harga ? formatNumberInput(harga) : '';
+        document.getElementById('satuan').value = satuan;
     });
 </script>
 @endsection

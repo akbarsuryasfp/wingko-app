@@ -13,6 +13,45 @@ use App\Models\Produk;
 
 class ReturConsignorController extends Controller
 {
+    /**
+     * Cetak laporan retur consignor (keseluruhan)
+     */
+    public function cetakLaporan(Request $request)
+    {
+        $sort = $request->get('sort', 'asc');
+        $query = ReturConsignor::with(['details.produk', 'consignor', 'konsinyasimasuk']);
+        $tanggal_awal = $request->tanggal_awal;
+        $tanggal_akhir = $request->tanggal_akhir;
+        if ($tanggal_awal) {
+            $query->whereDate('tanggal_returconsignor', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->whereDate('tanggal_returconsignor', '<=', $tanggal_akhir);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('no_returconsignor', 'like', "%$search%")
+                  ->orWhereHas('consignor', function($qc) use ($search) {
+                      $qc->where('nama_consignor', 'like', "%$search%");
+                  });
+            });
+        }
+        $returconsignor = $query->orderBy('no_returconsignor', $sort)->get();
+        // Pastikan setiap detail ada field satuan (ambil dari relasi produk jika ada)
+        foreach ($returconsignor as $rc) {
+            if ($rc->details) {
+                foreach ($rc->details as $detail) {
+                    if (isset($detail->produk) && isset($detail->produk->satuan)) {
+                        $detail->satuan = $detail->produk->satuan;
+                    } else {
+                        $detail->satuan = DB::table('t_produk_konsinyasi')->where('kode_produk', $detail->kode_produk)->value('satuan') ?? '-';
+                    }
+                }
+            }
+        }
+        return view('returconsignor.cetak_laporan', compact('returconsignor', 'tanggal_awal', 'tanggal_akhir'));
+    }
     public function index(Request $request)
     {
         $sort = $request->get('sort', 'asc');
@@ -22,6 +61,15 @@ class ReturConsignorController extends Controller
         }
         if ($request->filled('tanggal_akhir')) {
             $query->whereDate('tanggal_returconsignor', '<=', $request->tanggal_akhir);
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('no_returconsignor', 'like', "%$search%")
+                  ->orWhereHas('consignor', function($qc) use ($search) {
+                      $qc->where('nama_consignor', 'like', "%$search%");
+                  });
+            });
         }
         $returconsignor = $query->orderBy('no_returconsignor', $sort)->get();
         return view('returconsignor.index', compact('returconsignor'));
@@ -144,6 +192,7 @@ class ReturConsignorController extends Controller
             return [
                 'kode_produk' => $d->kode_produk,
                 'nama_produk' => $d->produk->nama_produk ?? '',
+                'satuan' => $d->produk->satuan ?? '-',
                 'jumlah_retur' => $d->jumlah_retur,
                 'harga_satuan' => $d->harga_satuan,
                 'alasan' => $d->alasan,
@@ -243,8 +292,8 @@ class ReturConsignorController extends Controller
     {
         $returconsignor = ReturConsignor::with(['consignor', 'konsinyasimasuk'])->where('no_returconsignor', $no_returconsignor)->firstOrFail();
         $details = ReturConsignorDetail::where('no_returconsignor', $no_returconsignor)
-            ->join('t_produk', 't_returconsignor_detail.kode_produk', '=', 't_produk.kode_produk')
-            ->select('t_returconsignor_detail.*', 't_produk.nama_produk')
+            ->join('t_produk_konsinyasi', 't_returconsignor_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->select('t_returconsignor_detail.*', 't_produk_konsinyasi.nama_produk', 't_produk_konsinyasi.satuan')
             ->get();
         return view('returconsignor.detail', compact('returconsignor', 'details'));
     }
@@ -258,6 +307,7 @@ class ReturConsignorController extends Controller
             ->select([
                 't_konsinyasimasuk_detail.kode_produk',
                 't_produk_konsinyasi.nama_produk',
+                't_produk_konsinyasi.satuan',
                 't_konsinyasimasuk_detail.jumlah_stok',
                 't_konsinyasimasuk_detail.harga_titip',
                 't_konsinyasimasuk_detail.subtotal',

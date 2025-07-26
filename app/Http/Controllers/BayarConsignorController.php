@@ -10,6 +10,32 @@ use Illuminate\Support\Facades\DB;
 
 class BayarConsignorController extends Controller
 {
+    // Cetak laporan pembayaran consignor
+    public function cetakLaporan(Request $request)
+    {
+        $sort = $request->get('sort', 'asc');
+        $tanggal_awal = $request->get('tanggal_awal');
+        $tanggal_akhir = $request->get('tanggal_akhir');
+        $query = \App\Models\BayarConsignor::with(['details.produk', 'consignor'])->orderBy('no_bayarconsignor', $sort);
+        if ($tanggal_awal) {
+            $query->where('tanggal_bayar', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->where('tanggal_bayar', '<=', $tanggal_akhir);
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('no_bayarconsignor', 'like', "%$search%")
+                  ->orWhereHas('consignor', function($q2) use ($search) {
+                      $q2->where('nama_consignor', 'like', "%$search%");
+                  });
+            });
+        }
+        $list = $query->get();
+        return view('bayarconsignor.cetak_laporan', compact('list'));
+    }
+
     // Hapus pembayaran consignor
     public function destroy($no_bayarconsignor)
     {
@@ -147,7 +173,7 @@ class BayarConsignorController extends Controller
         // Ambil produk konsinyasi yang belum pernah dibayar penuh
         $produk = DB::table('t_produk_konsinyasi')
             ->where('kode_consignor', $kode_consignor)
-            ->select('kode_produk', 'nama_produk')
+            ->select('kode_produk', 'nama_produk', 'satuan')
             ->get();
 
         $result = [];
@@ -173,6 +199,7 @@ class BayarConsignorController extends Controller
             $result[] = [
                 'kode_produk' => $p->kode_produk,
                 'nama_produk' => $p->nama_produk,
+                'satuan' => $p->satuan,
                 'terjual' => $terjual - $sudah_bayar, // hanya sisa yang belum dibayar
                 'total_penjualan' => $total_penjualan - ($sudah_bayar * ($total_penjualan/$terjual ?: 0)),
                 'sudah_bayar' => $sudah_bayar,
@@ -188,25 +215,27 @@ class BayarConsignorController extends Controller
             . '<th>No</th>'
             . '<th>Kode Produk</th>'
             . '<th>Nama Produk</th>'
+            . '<th>Satuan</th>'
             . '<th>Jumlah Terjual</th>'
             . '<th>Total Penjualan</th>'
             . '</tr>'
             . '</thead>'
             . '<tbody>';
         if (count($result) === 0) {
-            $html .= '<tr><td colspan="5" class="text-center">Data produk tidak ditemukan.</td></tr>';
+            $html .= '<tr><td colspan="6" class="text-center">Data produk tidak ditemukan.</td></tr>';
         } else {
             foreach ($result as $i => $p) {
                 $html .= '<tr>'
                     . '<td>' . ($i+1) . '</td>'
                     . '<td>' . $p['kode_produk'] . '</td>'
                     . '<td>' . $p['nama_produk'] . '</td>'
+                    . '<td>' . ($p['satuan'] ?? '-') . '</td>'
                     . '<td>' . $p['terjual'] . '</td>'
                     . '<td>Rp ' . number_format($p['total_penjualan'],0,',','.') . '</td>'
                     . '</tr>';
             }
             $html .= '<tr>'
-                . '<td colspan="4" class="text-end fw-bold">Total Bayar</td>'
+                . '<td colspan="5" class="text-end fw-bold">Total Bayar</td>'
                 . '<td class="fw-bold">Rp ' . number_format($total_bayar,0,',','.') . '</td>'
                 . '</tr>';
         }
@@ -236,6 +265,17 @@ class BayarConsignorController extends Controller
         }
         if ($tanggal_akhir) {
             $query->where('tanggal_bayar', '<=', $tanggal_akhir);
+        }
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('no_bayarconsignor', 'like', "%$search%")
+                  ->orWhereIn('kode_consignor', function($sub) use ($search) {
+                      $sub->select('kode_consignor')
+                          ->from('t_consignor')
+                          ->where('nama_consignor', 'like', "%$search%");
+                  });
+            });
         }
         $list = $query->get();
         $no = 1;

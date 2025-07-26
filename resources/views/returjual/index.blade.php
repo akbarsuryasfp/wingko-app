@@ -1,57 +1,70 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <h3>DAFTAR RETUR PENJUALAN PRODUK</h3>
-
+<div class="container-fluid px-3">
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success text-center">{{ session('success') }}</div>
     @endif
-
-    <div class="mb-2 w-100">
-        <div class="d-flex flex-wrap justify-content-between align-items-center w-100 mb-2">
-            <div class="d-flex align-items-center gap-2">
-                <span class="fw-semibold">Filter:</span>
-                <select name="jenis_retur" class="form-select form-select-sm w-auto" onchange="this.form.submit()" form="filterReturJual">
-                    <option value="">Semua Jenis</option>
-                    @foreach($jenisList as $jenis)
-                        <option value="{{ $jenis }}" {{ request('jenis_retur') === (string)$jenis ? 'selected' : '' }}>{{ ucfirst($jenis) }}</option>
-                    @endforeach
-                </select>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6 col-12 text-md-start text-center">
+                    <h4 class="mb-0 fw-semibold">Daftar Retur Penjualan </h4>
+                </div>
+                <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex justify-content-md-end justify-content-center gap-2">
+                    <a href="{{ route('returjual.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                        <i class="bi bi-printer"></i> Cetak Laporan
+                    </a>
+                    <a href="{{ route('returjual.create') }}" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle"></i> Tambah Retur Penjualan
+                    </a>
+                </div>
             </div>
-        </div>
-        <!-- Baris 2: Filter Periode dan Urutkan di kiri, Tambah di kanan -->
-        <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap w-100">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <form id="filterReturJual" method="GET" class="d-flex align-items-center gap-2 mb-0 flex-wrap">
-                    <span class="fw-semibold">Periode:</span>
-                    <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
-                    <span class="mx-1">s/d</span>
-                    <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
-                    <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
-                </form>
-                <a href="{{ route('returjual.index', array_merge(request()->except('page'), ['sort' => request('sort', 'asc') === 'asc' ? 'desc' : 'asc'])) }}"
-                   class="btn btn-outline-secondary btn-sm">
-                    Urutkan No Retur Jual {!! request('sort', 'asc') === 'asc' ? '▲' : '▼' !!}
-                </a>
+            <div class="row align-items-center mb-3">
+                <div class="col-md-8 col-12 text-md-start text-start mb-2 mb-md-0">
+                    <div class="d-flex gap-2 flex-wrap align-items-center w-100 mt-1 justify-content-start">
+                        <form id="filterTanggalReturJual" method="GET" class="d-flex align-items-center gap-2 flex-wrap mb-0">
+                            <span class="fw-semibold">Periode:</span>
+                            <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+                            <span class="mx-1">s/d</span>
+                            <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary ms-2">
+                                <i class="bi bi-funnel"></i> Terapkan
+                            </button>
+                        </form>
+                        <form id="filterJenisReturJual" method="GET" class="d-flex align-items-center gap-2 flex-wrap mb-0 ms-3">
+                            <span class="fw-semibold">Filter:</span>
+                            <select name="jenis_retur" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                                <option value="">Semua Jenis</option>
+                                @foreach($jenisList as $jenis)
+                                    <option value="{{ $jenis }}" {{ request('jenis_retur') === (string)$jenis ? 'selected' : '' }}>{{ ucfirst($jenis) }}</option>
+                                @endforeach
+                            </select>
+                        </form>
+                        <a href="{{ route('returjual.index', array_merge(request()->except('page'), ['sort' => request('sort', 'asc') === 'asc' ? 'desc' : 'asc'])) }}"
+                           class="btn btn-sm btn-outline-secondary ms-2">
+                            Urutkan No Retur Jual {!! request('sort', 'asc') === 'asc' ? '▲' : '▼' !!}
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-4 col-12 text-md-end text-start">
+                    <form method="GET" action="{{ route('returjual.index') }}" class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari No Retur Jual/Nama Pelanggan..." value="{{ request('search') }}" style="max-width: 220px;" autocomplete="off">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i> Cari
+                        </button>
+                    </form>
+                </div>
             </div>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="{{ route('returjual.create') }}" class="btn btn-primary btn-sm" title="Tambah Retur Penjualan">
-                    Tambah Retur Penjualan
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="table-responsive">
-    <table class="table table-bordered align-middle">
+            <div class="table-responsive">
+            <table class="table table-bordered mb-0 align-middle table-sm">
         <thead class="table-light">
             <tr>
                 <th class="text-center align-middle" style="width:40px;">No</th>
                 <th class="text-center align-middle" style="width:120px;">No Retur Jual</th>
                 <th class="text-center align-middle" style="width:110px;">No Jual</th>
                 <th class="text-center align-middle" style="width:140px;">Tanggal Retur</th>
-                <th class="text-center align-middle" style="width:140px;">Pelanggan</th>
+                <th class="text-center align-middle" style="width:140px;">Nama Pelanggan</th>
                 <th class="text-center align-middle" style="width:120px;">Jenis Retur</th>
                 <th class="text-center align-middle" style="min-width:100px;">Jumlah Retur & Nama Produk</th>
                 <th class="text-center align-middle" style="width:150px;">Total Retur</th>
@@ -64,7 +77,7 @@
                     <td class="text-center align-middle">{{ $idx + 1 }}</td>
                     <td class="text-center align-middle">{{ $rj->no_returjual }}</td>
                     <td class="text-center align-middle">{{ $rj->no_jual }}</td>
-                    <td class="text-center align-middle">{{ $rj->tanggal_returjual }}</td>
+                    <td class="text-center align-middle">{{ $rj->tanggal_returjual ? \Carbon\Carbon::parse($rj->tanggal_returjual)->format('d-m-Y') : '-' }}</td>
                     <td class="text-center align-middle">{{ $rj->nama_pelanggan ?? '-' }}</td>
                     <td class="text-center align-middle">{{ $rj->jenis_retur ?? '-' }}</td>
                     <td class="text-center align-middle">{!! $rj->produk_jumlah ?? '-' !!}</td>

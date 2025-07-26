@@ -159,4 +159,13 @@ class KartuStokController extends Controller
 
         return view('kartustok.laporan_produk', compact('produkList', 'tanggal'));
     }
+
+    public function getStokAkhirProduk($kode_produk)
+    {
+        $stok = \DB::table('t_kartupersproduk')
+            ->where('kode_produk', $kode_produk)
+            ->selectRaw('SUM(masuk) - SUM(keluar) as stok')
+            ->value('stok');
+        return response()->json(['stok' => $stok ?? 0]);
+    }
 }

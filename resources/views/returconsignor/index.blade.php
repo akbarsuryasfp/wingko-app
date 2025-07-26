@@ -1,41 +1,59 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <h3>DAFTAR RETUR CONSIGNOR (PEMILIK BARANG)</h3>
-
+<div class="container-fluid px-3">
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success text-center">{{ session('success') }}</div>
     @endif
-
-    <div class="mb-2 w-100">
-        <form id="filterReturConsignor" method="GET" class="d-flex align-items-center gap-2 mb-0 flex-wrap w-100 mt-1">
-            <span class="fw-semibold">Periode:</span>
-            <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
-            <span class="mx-1">s/d</span>
-            <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
-            <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
-            <a href="{{ route('returconsignor.index', array_merge(request()->except('page'), ['sort' => request('sort', 'asc') === 'asc' ? 'desc' : 'asc'])) }}"
-               class="btn btn-outline-secondary btn-sm ms-2">
-                Urutkan No Retur Consignor {!! request('sort', 'asc') === 'asc' ? '▲' : '▼' !!}
-            </a>
-            <div class="ms-auto">
-                <a href="{{ route('returconsignor.create') }}" class="btn btn-primary btn-sm" title="Tambah Retur Consignor">
-                    Tambah Retur Consignor
-                </a>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6 col-12 text-md-start text-center">
+                    <h4 class="mb-0 fw-semibold">Daftar Retur Consignor (Pemilik Barang)</h4>
+                </div>
+                <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex justify-content-md-end justify-content-center gap-2">
+                    <a href="{{ route('returconsignor.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                        <i class="bi bi-printer"></i> Cetak Laporan
+                    </a>
+                    <a href="{{ route('returconsignor.create') }}" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle"></i> Tambah Retur Consignor
+                    </a>
+                </div>
             </div>
-        </form>
-    </div>
-
-    <div class="table-responsive">
-    <table class="table table-bordered align-middle">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-8 col-12 text-md-start text-start mb-2 mb-md-0">
+                    <form method="GET" class="d-flex align-items-center gap-2 flex-wrap w-100 mt-1 justify-content-start">
+                        <span class="fw-semibold">Periode:</span>
+                        <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+                        <span class="mx-1">s/d</span>
+                        <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-funnel"></i> Terapkan
+                        </button>
+                        <a href="{{ route('returconsignor.index', array_merge(request()->except('page'), ['sort' => request('sort', 'asc') === 'asc' ? 'desc' : 'asc'])) }}"
+                           class="btn btn-sm btn-outline-secondary ms-2">
+                            Urutkan No Retur Consignor {!! request('sort', 'asc') === 'asc' ? '▲' : '▼' !!}
+                        </a>
+                    </form>
+                </div>
+                <div class="col-md-4 col-12 text-md-end text-start">
+                    <form method="GET" action="{{ route('returconsignor.index') }}" class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari No Retur Consignor/Nama Consignor..." value="{{ request('search') }}" style="max-width: 220px;" autocomplete="off">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i> Cari
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+            <table class="table table-bordered mb-0 align-middle table-sm">
         <thead class="table-light">
             <tr>
                 <th class="text-center align-middle" style="width:50px;">No</th>
-                <th class="text-center align-middle" style="width:200px;">No Retur Consignor</th>
-                <th class="text-center align-middle" style="width:200px;">No Konsinyasi Masuk</th>
+                <th class="text-center align-middle" style="width:220px;">No Retur Consignor</th>
+                <th class="text-center align-middle" style="width:250px;">No Konsinyasi Masuk</th>
                 <th class="text-center align-middle" style="width:160px;">Tanggal Retur</th>
-                <th class="text-center align-middle" style="width:160px;">Consignor</th>
+                <th class="text-center align-middle" style="width:200px;">Nama Consignor (Pemilik Barang)</th>
                 <th class="text-center align-middle" style="min-width:250px;">Jumlah Retur & Nama Produk</th>
                 <th class="text-center align-middle" style="min-width:180px;">Alasan Retur</th>
                 <th class="text-center align-middle" style="width:140px;">Total Retur</th>
@@ -48,7 +66,7 @@
                     <td class="text-center align-middle">{{ $idx + 1 }}</td>
                     <td class="text-center align-middle">{{ $rc->no_returconsignor }}</td>
                     <td class="text-center align-middle">{{ $rc->konsinyasimasuk->no_konsinyasimasuk ?? '-' }}</td>
-                    <td class="text-center align-middle">{{ $rc->tanggal_returconsignor }}</td>
+                    <td class="text-center align-middle">{{ $rc->tanggal_returconsignor ? \Carbon\Carbon::parse($rc->tanggal_returconsignor)->format('d-m-Y') : '-' }}</td>
                     <td class="text-center align-middle">{{ $rc->consignor->nama_consignor ?? '-' }}</td>
                     <td class="text-center align-middle">
                         <ul class="list-unstyled mb-0">

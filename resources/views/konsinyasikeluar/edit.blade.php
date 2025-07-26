@@ -2,17 +2,19 @@
 
 @section('content')
 <div class="container">
-    <h4 class="mb-4">EDIT KONSINYASI KELUAR</h4>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('konsinyasikeluar.update', $header->no_konsinyasikeluar) }}" method="POST">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="mb-4">EDIT KONSINYASI KELUAR</h4>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form action="{{ route('konsinyasikeluar.update', $header->no_konsinyasikeluar) }}" method="POST">
         @csrf
         @method('PUT')
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -20,11 +22,11 @@
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
-                    <input type="text" name="no_konsinyasikeluar" class="form-control" required value="{{ old('no_konsinyasikeluar', $header->no_konsinyasikeluar) }}" readonly>
+                    <input type="text" name="no_konsinyasikeluar" class="form-control" required value="{{ old('no_konsinyasikeluar', $header->no_konsinyasikeluar) }}" readonly style="pointer-events: none; background: #e9ecef;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Surat Konsinyasi Keluar</label>
-                    <input type="text" name="no_suratpengiriman" class="form-control" required value="{{ old('no_suratpengiriman', $header->no_suratpengiriman) }}" readonly>
+                    <input type="text" name="no_suratpengiriman" class="form-control" required value="{{ old('no_suratpengiriman', $header->no_suratpengiriman) }}" readonly style="pointer-events: none; background: #e9ecef;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Nama Consignee (Mitra)</label>
@@ -38,7 +40,7 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Tanggal Setor</label>
-                    <input type="date" name="tanggal_setor" class="form-control" required value="{{ old('tanggal_setor', $header->tanggal_setor) }}" readonly tabindex="-1">
+                    <input type="date" name="tanggal_setor" class="form-control" required value="{{ old('tanggal_setor', $header->tanggal_setor) }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
@@ -49,7 +51,7 @@
             <!-- Kolom Kanan: Data Produk Setor (Input) -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Produk</label>
+                    <label class="me-2" style="width: 120px;">Nama Produk</label>
                     <select id="kode_produk" class="form-control">
                         <option value="">---Pilih Produk---</option>
                         <!-- Opsi produk akan diisi via JS -->
@@ -64,7 +66,7 @@
                     <input type="text" id="satuan" class="form-control" readonly>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga Setor/Produk</label>
+                    <label class="me-2" style="width: 120px;">Harga Setor/Satuan</label>
                     <input type="number" id="harga_setor" class="form-control">
                 </div>
                 <div class="mb-3">
@@ -79,9 +81,9 @@
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
-                    <th>Jumlah Setor</th>
                     <th>Satuan</th>
-                    <th>Harga Setor/Produk</th>
+                    <th>Jumlah Setor</th>
+                    <th>Harga Setor/Satuan</th>
                     <th>Subtotal</th>
                     <th>Aksi</th>
                 </tr>
@@ -100,7 +102,9 @@
             </div>
         </div>
         <input type="hidden" name="detail_json" id="detail_json">
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 @php
     $produkSetorList = [];
@@ -189,11 +193,11 @@ function renderTabelProdukSetor() {
         tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>${item.nama_produk}</td>
-            <td><input type="number" class="form-control form-control-sm jumlah-edit" data-idx="${idx}" value="${item.jumlah_setor}" min="1" style="width:90px;"></td>
             <td>${item.satuan}</td>
+            <td><input type="number" class="form-control form-control-sm jumlah-edit" data-idx="${idx}" value="${item.jumlah_setor}" min="1" style="width:90px;"></td>
             <td><input type="number" class="form-control form-control-sm harga-edit" data-idx="${idx}" value="${item.harga_setor}" min="0" style="width:120px;"></td>
             <td class="subtotal">${formatRupiah(item.subtotal)}</td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusProdukSetor(${idx})" title="Hapus"><span style='font-size:1.2em;'>&#128465;</span></button></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusProdukSetor(${idx})" title="Hapus"><i class='bi bi-trash'></i></button></td>
         `;
         tbody.appendChild(tr);
     });

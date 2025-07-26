@@ -9,8 +9,38 @@ use App\Models\ProdukKonsinyasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
+
 class KonsinyasiKeluarController extends Controller
 {
+
+    /**
+     * Cetak laporan konsinyasi keluar (keseluruhan)
+     */
+    public function cetakLaporan(Request $request)
+    {
+        $query = \App\Models\KonsinyasiKeluar::with(['consignee', 'details.produk']);
+        if ($request->filled('tanggal_awal')) {
+            $query->whereDate('tanggal_setor', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->whereDate('tanggal_setor', '<=', $request->tanggal_akhir);
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('no_konsinyasikeluar', 'like', "%$search%")
+                  ->orWhereHas('consignee', function($qc) use ($search) {
+                      $qc->where('nama_consignee', 'like', "%$search%" );
+                  });
+            });
+        }
+        $sort = $request->get('sort', 'asc');
+        $query->orderBy('no_konsinyasikeluar', $sort);
+        $konsinyasiKeluarList = $query->get();
+        $tanggal_awal = $request->tanggal_awal;
+        $tanggal_akhir = $request->tanggal_akhir;
+        return view('konsinyasikeluar.cetak_laporan', compact('konsinyasiKeluarList', 'tanggal_awal', 'tanggal_akhir'));
+    }
     public function index(Request $request)
     {
         $query = KonsinyasiKeluar::with('consignee');
@@ -21,9 +51,15 @@ class KonsinyasiKeluarController extends Controller
         if ($request->filled('tanggal_akhir')) {
             $query->whereDate('tanggal_setor', '<=', $request->tanggal_akhir);
         }
-        // Filter no konsinyasi keluar
-        if ($request->filled('no_konsinyasikeluar')) {
-            $query->where('no_konsinyasikeluar', $request->no_konsinyasikeluar);
+        // Filter search: no konsinyasi keluar atau nama consignee
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('no_konsinyasikeluar', 'like', "%$search%")
+                  ->orWhereHas('consignee', function($qc) use ($search) {
+                      $qc->where('nama_consignee', 'like', "%$search%" );
+                  });
+            });
         }
         // Sorting
         $sort = $request->get('sort', 'asc');
@@ -48,8 +84,20 @@ class KonsinyasiKeluarController extends Controller
         } else {
             $kodeOtomatis = 'KK000001';
         }
-        // Nomor surat default: akan diubah via JS di form sesuai tanggal setor
-        $noSuratOtomatis = '';
+        // Penomoran otomatis no_suratpengiriman: ambil 3 digit awal dari no_suratpengiriman terakhir, increment
+        $lastSurat = DB::table('t_konsinyasikeluar')
+            ->whereNotNull('no_suratpengiriman')
+            ->where('no_suratpengiriman', '!=', '')
+            ->orderBy('no_suratpengiriman', 'desc')
+            ->first();
+        if ($lastSurat && preg_match('/^(\d{3})\//', $lastSurat->no_suratpengiriman, $m)) {
+            $lastSuratNum = intval($m[1]);
+            $noSuratOtomatis = str_pad($lastSuratNum + 1, 3, '0', STR_PAD_LEFT);
+        } else {
+            $noSuratOtomatis = '001';
+        }
+        // Format default: 001/KONS-KELUAR/WBP-SMG/VII/2025 (bulan dan tahun diisi via JS di form)
+        $noSuratOtomatis .= '/KONS-KELUAR/WBP-SMG/';
 
         return view('konsinyasikeluar.create', compact('consignees', 'produkList', 'kodeOtomatis', 'noSuratOtomatis'));
     }

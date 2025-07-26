@@ -2,15 +2,17 @@
 
 @section('content')
 
-<div class="container">
-    <h2 class="mb-4">INPUT PEMBAYARAN CONSIGNOR (PEMILIK BARANG)</h2>
-    <form method="POST" action="{{ route('bayarconsignor.store') }}">
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="mb-4">INPUT PEMBAYARAN CONSIGNOR (PEMILIK BARANG)</h2>
+            <form method="POST" action="{{ route('bayarconsignor.store') }}">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Bayar Consignor</label>
-                    <input type="text" name="no_bayarconsignor" id="no_bayarconsignor" class="form-control" value="{{ $no_bayarconsignor ?? '' }}" readonly>
+                    <input type="text" name="no_bayarconsignor" id="no_bayarconsignor" class="form-control" value="{{ $no_bayarconsignor ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Tanggal Bayar</label>
@@ -48,6 +50,7 @@
                         <th>No</th>
                         <th>Kode Produk</th>
                         <th>Nama Produk</th>
+                        <th>Satuan</th>
                         <th>Jumlah Terjual</th>
                         <th>Total Penjualan</th>
                     </tr>
@@ -63,6 +66,7 @@
                             <td>{{ $i+1 }}</td>
                             <td>{{ $p['kode_produk'] }}</td>
                             <td>{{ $p['nama_produk'] }}</td>
+                            <td>{{ $p['satuan'] ?? ($p['produk']['satuan'] ?? '-') }}</td>
                             <td>{{ $p['terjual'] }}</td>
                             <td>Rp {{ number_format($p['total_penjualan'],0,',','.') }}</td>
                         </tr>
@@ -86,7 +90,9 @@
                 <button type="submit" class="btn btn-success">Simpan Pembayaran</button>
             </div>
         </div>
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 
 

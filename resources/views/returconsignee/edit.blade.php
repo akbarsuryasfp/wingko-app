@@ -2,73 +2,76 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">EDIT RETUR CONSIGNEE</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('returconsignee.update', $returconsignee->no_returconsignee) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
-            <div style="flex: 1;">
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Retur Consignee</label>
-                    <input type="text" name="no_returconsignee" class="form-control" value="{{ $returconsignee->no_returconsignee }}" readonly>
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <h3 class="mb-4">EDIT RETUR CONSIGNEE</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
-                    <input type="text" class="form-control" value="{{ $returconsignee->no_konsinyasikeluar }} | {{ $returconsignee->consignee->nama_consignee ?? '-' }}" readonly>
-                    <input type="hidden" name="no_konsinyasikeluar" id="no_konsinyasikeluar" value="{{ $returconsignee->no_konsinyasikeluar }}">
+            @endif
+            <form action="{{ route('returconsignee.update', $returconsignee->no_returconsignee) }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">No Retur Consignee</label>
+                            <input type="text" name="no_returconsignee" class="form-control" value="{{ $returconsignee->no_returconsignee }}" readonly style="pointer-events: none; background: #e9ecef;">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
+                            <input type="text" class="form-control" value="{{ $returconsignee->no_konsinyasikeluar }} | {{ $returconsignee->consignee->nama_consignee ?? '-' }}" readonly style="pointer-events: none; background: #e9ecef;">
+                            <input type="hidden" name="no_konsinyasikeluar" id="no_konsinyasikeluar" value="{{ $returconsignee->no_konsinyasikeluar }}">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Tanggal Retur</label>
+                            <input type="date" name="tanggal_returconsignee" class="form-control" value="{{ $returconsignee->tanggal_returconsignee }}">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Nama Consignee (Mitra)</label>
+                            <input type="text" name="nama_consignee" id="nama_consignee" class="form-control" value="{{ $returconsignee->consignee->nama_consignee ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
+                            <input type="hidden" name="kode_consignee" id="kode_consignee" value="{{ $returconsignee->kode_consignee }}">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Keterangan</label>
+                            <input type="text" name="keterangan" class="form-control" value="{{ $returconsignee->keterangan }}">
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Tanggal Retur</label>
-                    <input type="date" name="tanggal_returconsignee" class="form-control" value="{{ $returconsignee->tanggal_returconsignee }}">
+                <hr>
+                <h4 class="text-center mb-3">DAFTAR PRODUK RETUR CONSIGNEE</h4>
+                <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Produk</th>
+                            <th>Satuan</th>
+                            <th>Jumlah Retur</th>
+                            <th>Harga/Satuan</th>
+                            <th>Alasan</th>
+                            <th>Subtotal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="d-flex justify-content-between mt-4">
+                    <div>
+                        <a href="{{ route('returconsignee.index') }}" class="btn btn-secondary">Back</a>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <label class="mb-0">Total Retur</label>
+                        <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
+                        <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
+                        <button type="submit" class="btn btn-success">Update</button>
+                    </div>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Nama Consignee (Mitra)</label>
-                    <input type="text" name="nama_consignee" id="nama_consignee" class="form-control" value="{{ $returconsignee->consignee->nama_consignee ?? '' }}" readonly>
-                    <input type="hidden" name="kode_consignee" id="kode_consignee" value="{{ $returconsignee->kode_consignee }}">
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Keterangan</label>
-                    <input type="text" name="keterangan" class="form-control" value="{{ $returconsignee->keterangan }}">
-                </div>
-            </div>
-        </div>
-        <hr>
-        <h4 class="text-center mb-3">DAFTAR PRODUK RETUR CONSIGNEE</h4>
-        <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Produk</th>
-                    <th>Jumlah Retur</th>
-                    <th>Harga/Satuan</th>
-                    <th>Alasan</th>
-                    <th>Subtotal</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <div class="d-flex justify-content-between mt-4">
-            <div>
-                <a href="{{ route('returconsignee.index') }}" class="btn btn-secondary">Back</a>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Retur</label>
-                <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
-                <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
-                <button type="submit" class="btn btn-success">Update</button>
-            </div>
-        </div>
-        <input type="hidden" name="detail_json" id="detail_json">
+                <input type="hidden" name="detail_json" id="detail_json">
 <script>
     let daftarProdukRetur = [];
     let maxJumlahPerProduk = {};
@@ -89,7 +92,7 @@
         let totalRetur = 0;
 
         if (daftarProdukRetur.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7">Tidak ada produk konsinyasi keluar.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">Tidak ada produk konsinyasi keluar.</td></tr>';
         } else {
             daftarProdukRetur.forEach((item, index) => {
                 const subtotal = Number(item.jumlah_retur) * Number(item.harga_satuan) || 0;
@@ -100,6 +103,7 @@
                     <tr>
                         <td>${index + 1}</td>
                         <td>${item.nama_produk}</td>
+                        <td>${item.satuan || '-'}</td>
                         <td>
                             <input type="number" class="form-control form-control-sm" min="0" max="${max}" value="${item.jumlah_retur}" 
                                 onchange="updateJumlahRetur(${index}, this.value)">
@@ -172,6 +176,7 @@
                             daftarProdukRetur.push({
                                 kode_produk: item.kode_produk,
                                 nama_produk: item.nama_produk,
+                                satuan: item.satuan || (existing ? existing.satuan : ''),
                                 jumlah_retur: existing ? existing.jumlah_retur : 0,
                                 harga_satuan: item.harga_setor,
                                 alasan: existing ? existing.alasan : '',

@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\PenerimaanKonsinyasi;
@@ -11,17 +10,65 @@ use Illuminate\Support\Facades\DB;
 
 class PenerimaanKonsinyasiController extends Controller
 {
-    public function index(Request $request)
+    public function cetakLaporan(Request $request)
     {
-        $query = PenerimaanKonsinyasi::with(['consignee']);
-        if ($request->filled('tanggal_awal')) {
+        $query = \App\Models\PenerimaanKonsinyasi::with(['consignee', 'details.produk']);
+
+        // Filter periode
+        if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
+            $query->whereBetween('tanggal_terima', [$request->tanggal_awal, $request->tanggal_akhir]);
+        } elseif ($request->filled('tanggal_awal')) {
             $query->where('tanggal_terima', '>=', $request->tanggal_awal);
-        }
-        if ($request->filled('tanggal_akhir')) {
+        } elseif ($request->filled('tanggal_akhir')) {
             $query->where('tanggal_terima', '<=', $request->tanggal_akhir);
         }
+
+        // Filter search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('no_penerimaankonsinyasi', 'like', "%$search%")
+                  ->orWhereHas('consignee', function($qc) use ($search) {
+                      $qc->where('nama_consignee', 'like', "%$search%");
+                  });
+            });
+        }
+
+        // Sorting
         $sort = $request->get('sort', 'asc');
-        $query->orderBy('no_penerimaankonsinyasi', $sort);
+        $query->orderBy('no_penerimaankonsinyasi', $sort === 'desc' ? 'desc' : 'asc');
+
+        $penerimaanKonsinyasiList = $query->get();
+        return view('penerimaankonsinyasi.cetak_laporan', compact('penerimaanKonsinyasiList'));
+    }
+    public function index(Request $request)
+    {
+        $query = PenerimaanKonsinyasi::with(['consignee', 'details.produk']);
+
+        // Filter periode
+        if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
+            $query->whereBetween('tanggal_terima', [$request->tanggal_awal, $request->tanggal_akhir]);
+        } elseif ($request->filled('tanggal_awal')) {
+            $query->where('tanggal_terima', '>=', $request->tanggal_awal);
+        } elseif ($request->filled('tanggal_akhir')) {
+            $query->where('tanggal_terima', '<=', $request->tanggal_akhir);
+        }
+
+        // Filter search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('no_penerimaankonsinyasi', 'like', "%$search%")
+                  ->orWhereHas('consignee', function($qc) use ($search) {
+                      $qc->where('nama_consignee', 'like', "%$search%");
+                  });
+            });
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'asc');
+        $query->orderBy('no_penerimaankonsinyasi', $sort === 'desc' ? 'desc' : 'asc');
+
         $penerimaanKonsinyasiList = $query->get();
         return view('penerimaankonsinyasi.index', compact('penerimaanKonsinyasiList'));
     }

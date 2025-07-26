@@ -50,7 +50,7 @@
                 <th>Nama Produk</th>
                 <th>Satuan</th>
                 <th>Jumlah Setor</th>
-                <th>Harga Setor/Produk</th>
+                <th>Harga Setor/Satuan</th>
                 <th>Subtotal</th>
             </tr>
         </thead>

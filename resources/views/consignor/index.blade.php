@@ -1,94 +1,91 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <h1 class="text-center">DAFTAR CONSIGNOR (PEMILIK BARANG)</h1>
-
+<div class="container-fluid px-3">
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success text-center">{{ session('success') }}</div>
     @endif
 
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <input type="text" id="searchConsignor" class="form-control me-2" placeholder="Cari consignor..." style="max-width:300px;">
-        <a href="{{ route('consignor.create') }}" class="btn btn-primary">Tambah Consignor</a>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6 col-12 text-md-start text-center">
+                    <h4 class="mb-0 fw-semibold">Daftar Consignor (Pemilik Barang)</h4>
+                </div>
+                <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
+                    <a href="{{ route('consignor.create') }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Tambah Consignor
+                    </a>
+                </div>
+            </div>
+            <div class="row align-items-center mb-3">
+                <div class="col-md-12 text-md-end text-start">
+                    <form method="GET" action="{{ route('consignor.index') }}" class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="text" name="search" id="searchConsignor" class="form-control form-control-sm" placeholder="Cari Nama Consignor..." value="{{ request('search') }}" style="max-width: 200px;" autocomplete="off">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i> Cari
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 align-middle table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center align-middle py-3" style="width:110px;">Kode Consignor</th>
+                            <th class="text-center align-middle py-3" style="width:150px;">Nama Consignor</th>
+                            <th class="text-center align-middle py-3" style="width:180px;">Alamat</th>
+                            <th class="text-center align-middle py-3" style="width:120px;">No. Telepon</th>
+                            <th class="text-center align-middle py-3" style="width:180px;">Rekening</th>
+                            <th class="text-center align-middle py-3" style="width:110px;">Keterangan</th>
+                            <th class="text-center align-middle py-3" style="width:110px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($consignor as $item)
+                            <tr>
+                                <td class="text-center py-3">{{ $item->kode_consignor }}</td>
+                                <td class="text-center py-3">{{ $item->nama_consignor }}</td>
+                                <td class="text-start py-3">{{ $item->alamat }}</td>
+                                <td class="text-center py-3">{{ $item->no_telp }}</td>
+                                <td class="text-center py-3">{{ $item->rekening }}</td>
+                                <td class="text-center align-middle">
+                                    @if($item->produkKonsinyasi->count())
+                                        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailProdukModal{{ $item->kode_consignor }}" title="Detail Produk">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center py-3">
+                                    <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center">
+                                        <a href="{{ route('produk-konsinyasi.create', ['kode_consignor' => $item->kode_consignor]) }}" class="btn btn-success btn-sm" title="Tambah Produk Konsinyasi Masuk">
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                        <a href="{{ route('consignor.edit', $item->kode_consignor) }}" class="btn btn-warning btn-sm" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form action="{{ route('consignor.destroy', $item->kode_consignor) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-3">Data tidak tersedia.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-<script>
-// Fitur search/filter baris tabel consignor
-document.getElementById('searchConsignor').addEventListener('input', function() {
-    const q = this.value.toLowerCase();
-    const rows = document.querySelectorAll('table tbody tr');
-    rows.forEach(row => {
-        // Gabungkan semua kolom jadi satu string
-        const text = row.innerText.toLowerCase();
-        if (q === '' || text.includes(q)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-});
-</script>
-
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Kode Consignor</th>
-                <th>Nama Consignor</th>
-                <th>Alamat</th>
-                <th>No. Telepon</th>
-                <th>Rekening</th> <!-- Ubah label -->
-                <th class="text-center align-middle">Keterangan</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($consignor as $item)
-                <tr>
-                    <td>{{ $item->kode_consignor }}</td>
-                    <td>{{ $item->nama_consignor }}</td>
-                    <td>{{ $item->alamat }}</td>
-                    <td>{{ $item->no_telp }}</td>
-                    <td>{{ $item->rekening }}</td> <!-- Ubah field -->
-                    <td class="text-center align-middle">
-                        @if($item->produkKonsinyasi->count())
-                            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#detailProdukModal{{ $item->kode_consignor }}" title="Detail Produk">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        @else
-                            <span class="text-muted">-</span>
-                        @endif
-                    </td>
-                    <td>
-                        <div class="d-flex gap-2 flex-wrap align-items-center justify-content-center">
-                            <!-- Button Tambah Produk Konsinyasi Masuk -->
-                            <a href="{{ route('produk-konsinyasi.create', ['kode_consignor' => $item->kode_consignor]) }}"
-                               class="btn btn-success btn-sm" title="Tambah Produk Konsinyasi Masuk">
-                                <i class="bi bi-plus-circle"></i>
-                            </a>
-                            <!-- Edit -->
-                            <a href="{{ route('consignor.edit', $item->kode_consignor) }}" class="btn btn-warning btn-sm" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <!-- Hapus -->
-                            <form action="{{ route('consignor.destroy', $item->kode_consignor) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm" title="Hapus">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                    
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="7" class="text-center">Data tidak tersedia.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
 </div>
 @endsection
 

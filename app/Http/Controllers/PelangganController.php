@@ -7,9 +7,16 @@ use App\Models\Pelanggan;
 
 class PelangganController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $pelanggan = Pelanggan::all();
+        $query = \App\Models\Pelanggan::query();
+
+        if ($request->filled('search')) {
+            $query->where('nama_pelanggan', 'like', '%' . $request->search . '%');
+        }
+
+        $pelanggan = $query->get();
+
         return view('pelanggan.index', compact('pelanggan'));
     }
 

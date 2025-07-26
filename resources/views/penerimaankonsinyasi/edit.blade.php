@@ -2,17 +2,19 @@
 
 @section('content')
 <div class="container">
-    <h4 class="mb-4">EDIT PENERIMAAN KONSINYASI</h4>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('penerimaankonsinyasi.update', $header->no_penerimaankonsinyasi) }}" method="POST">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h4 class="mb-4">EDIT PENERIMAAN KONSINYASI</h4>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form action="{{ route('penerimaankonsinyasi.update', $header->no_penerimaankonsinyasi) }}" method="POST">
         @csrf
         @method('PUT')
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -20,12 +22,12 @@
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Penerimaan Konsinyasi</label>
-                    <input type="text" class="form-control" value="{{ $header->no_penerimaankonsinyasi }}" readonly>
+                    <input type="text" class="form-control" value="{{ $header->no_penerimaankonsinyasi }}" readonly style="pointer-events: none; background: #e9ecef;">
                     <input type="hidden" name="no_penerimaankonsinyasi" value="{{ $header->no_penerimaankonsinyasi }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
-                    <input type="text" class="form-control" value="{{ $header->no_konsinyasikeluar }} - {{ $header->consignee->nama_consignee ?? '' }}" readonly>
+                    <input type="text" class="form-control" value="{{ $header->no_konsinyasikeluar }} - {{ $header->consignee->nama_consignee ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
                     <input type="hidden" name="no_konsinyasikeluar" value="{{ $header->no_konsinyasikeluar }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
@@ -34,7 +36,7 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Nama Consignee (Mitra)</label>
-                    <input type="text" class="form-control" value="{{ $header->consignee->nama_consignee ?? '-' }}" readonly>
+                    <input type="text" class="form-control" value="{{ $header->consignee->nama_consignee ?? '-' }}" readonly style="pointer-events: none; background: #e9ecef;">
                     <input type="hidden" name="kode_consignee" value="{{ $header->kode_consignee }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
@@ -59,9 +61,9 @@
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
+                    <th>Satuan</th>
                     <th>Jumlah Setor</th>
                     <th>Jumlah Terjual</th>
-                    <th>Satuan</th>
                     <th>Harga/Satuan</th>
                     <th>Subtotal</th>
                 </tr>
@@ -71,12 +73,12 @@
                 <tr>
                     <td>{{ $i+1 }}</td>
                     <td>{{ $d->produk->nama_produk ?? $d->nama_produk ?? '-' }}</td>
+                    <td>{{ $d->satuan }}</td>
                     <td>{{ $d->jumlah_setor }}</td>
                     <td>
                         <input type="number" name="detail[{{ $i }}][jumlah_terjual]" min="0" max="{{ $d->jumlah_setor }}" value="{{ $d->jumlah_terjual }}" class="form-control form-control-sm" style="width:90px;display:inline-block;">
                         <input type="hidden" name="detail[{{ $i }}][no_detailpenerimaankonsinyasi]" value="{{ $d->no_detailpenerimaankonsinyasi }}">
                     </td>
-                    <td>{{ $d->satuan }}</td>
                     <td class="harga-satuan" data-value="{{ $d->harga_satuan }}">Rp{{ number_format($d->harga_satuan,0,',','.') }}</td>
                     <td class="subtotal">Rp{{ number_format($d->subtotal,0,',','.') }}</td>
                 </tr>
@@ -94,7 +96,9 @@
                 <button type="submit" class="btn btn-success">Update</button>
             </div>
         </div>
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 <script>
 // Script untuk update subtotal dan total terima otomatis saat jumlah terjual diubah

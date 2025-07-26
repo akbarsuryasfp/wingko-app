@@ -2,24 +2,26 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">INPUT PENERIMAAN KONSINYASI</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('penerimaankonsinyasi.store') }}" method="POST">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-4">INPUT PENERIMAAN KONSINYASI</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form action="{{ route('penerimaankonsinyasi.store') }}" method="POST">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <!-- Kolom Kiri: Data Penerimaan -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Penerimaan Konsinyasi</label>
-                    <input type="text" name="no_penerimaankonsinyasi" id="no_penerimaankonsinyasi" class="form-control" value="{{ $no_penerimaankonsinyasi ?? old('no_penerimaankonsinyasi') }}" readonly required>
+                    <input type="text" name="no_penerimaankonsinyasi" id="no_penerimaankonsinyasi" class="form-control" value="{{ $no_penerimaankonsinyasi ?? old('no_penerimaankonsinyasi') }}" readonly required style="pointer-events: none; background: #e9ecef;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
@@ -69,9 +71,9 @@
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
+                    <th>Satuan</th>
                     <th>Jumlah Setor</th>
                     <th>Jumlah Terjual</th>
-                    <th>Satuan</th>
                     <th>Harga/Satuan</th>
                     <th>Subtotal</th>
                 </tr>
@@ -93,7 +95,9 @@
             </div>
         </div>
         <input type="hidden" name="detail_json" id="detail_json">
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 <script>
 let produkKonsinyasiKeluar = [];
@@ -162,9 +166,9 @@ function renderTabelProdukTerima() {
         tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>${item.nama_produk}</td>
+            <td>${item.satuan}</td>
             <td>${item.jumlah_setor}</td>
             <td><input type="number" min="0" max="${item.jumlah_setor}" value="${item.jumlah_terjual}" class="form-control form-control-sm" onchange="ubahJumlahTerjual(${idx}, this.value)"></td>
-            <td>${item.satuan}</td>
             <td>Rp${item.harga_satuan.toLocaleString('id-ID')}</td>
             <td>Rp${subtotal.toLocaleString('id-ID')}</td>
         `;

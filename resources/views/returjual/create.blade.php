@@ -1,103 +1,112 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h3 class="mb-4">INPUT RETUR PENJUALAN</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('returjual.store') }}" method="POST">
-        @csrf
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
-            <!-- Kolom Kiri: Data Retur -->
-            <div style="flex: 1;">
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Retur Jual</label>
-                    <input type="text" name="no_returjual" class="form-control" value="{{ $no_returjual ?? '' }}" readonly>
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Jual</label>
-                    <select name="no_jual" id="no_jual" class="form-control" required>
-                        <option value="">---Pilih No Penjualan---</option>
-                        @foreach($penjualan as $item)
-                            <option value="{{ $item->no_jual }}" data-pelanggan="{{ $item->kode_pelanggan }}">
-                                {{ $item->no_jual }} | {{ $item->tanggal_jual }} | {{ $item->kode_pelanggan }}
-                            </option>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-4">INPUT RETUR PENJUALAN</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
                         @endforeach
-                    </select>
+                    </ul>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Tanggal Retur</label>
-                    <input type="date" name="tanggal_returjual" class="form-control" required>
+            @endif
+            <form action="{{ route('returjual.store') }}" method="POST">
+                @csrf
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                    <!-- Kolom Kiri: Data Retur -->
+                    <div style="flex: 1;">
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">No Retur Jual</label>
+                            <input type="text" name="no_returjual" class="form-control" value="{{ $no_returjual ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">No Jual</label>
+                            <select name="no_jual" id="no_jual" class="form-control" required>
+                                <option value="">---Pilih No Penjualan---</option>
+                                @foreach($penjualan as $item)
+                                    <option value="{{ $item->no_jual }}" data-pelanggan="{{ $item->kode_pelanggan }}">
+                                        {{ $item->no_jual }} | {{ $item->tanggal_jual }} | {{ $item->kode_pelanggan }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Tanggal Retur</label>
+                            <input type="date" name="tanggal_returjual" class="form-control" required>
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Nama Pelanggan</label>
+                            <select name="kode_pelanggan" id="kode_pelanggan" class="form-control" required>
+                                <option value="">---Pilih Pelanggan---</option>
+                                @foreach($pelanggan as $item)
+                                    <option value="{{ $item->kode_pelanggan }}">{{ $item->nama_pelanggan }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Jenis Retur</label>
+                            <select name="jenis_retur" class="form-control" required>
+                                <option value="">---Pilih Jenis Retur---</option>
+                                <option value="Barang">Barang</option>
+                                <option value="Uang">Uang</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Keterangan</label>
+                            <input type="text" name="keterangan" class="form-control">
+                        </div>
+                    </div>
+                    <!-- Kolom Kanan: Data Produk Retur -->
+                    <!-- HAPUS seluruh input manual produk di sini -->
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Pelanggan</label>
-                    <select name="kode_pelanggan" id="kode_pelanggan" class="form-control" required>
-                        <option value="">---Pilih Pelanggan---</option>
-                        @foreach($pelanggan as $item)
-                            <option value="{{ $item->kode_pelanggan }}">{{ $item->nama_pelanggan }}</option>
-                        @endforeach
-                    </select>
+
+                <hr>
+
+                <!-- Judul di atas tabel, tengah -->
+                <h4 class="text-center mb-3">DAFTAR PRODUK RETUR PENJUALAN</h4>
+
+                <!-- Tabel Produk Retur -->
+                <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Produk</th>
+                            <th>Satuan</th>
+                            <th>Jumlah Retur</th>
+                            <th>Harga/Satuan</th>
+                            <th>Alasan</th>
+                            <th>Subtotal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <div>
+                        <a href="{{ route('returjual.index') }}" class="btn btn-secondary">Back</a>
+                        <button type="reset" class="btn btn-warning">Reset</button>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <label class="mb-0">Total Retur</label>
+                        <div class="input-group" style="width: 180px;">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="background:#e9ecef;pointer-events:none;">
+                        </div>
+                        <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
+                        <button type="submit" class="btn btn-success">Submit</button>
+                    </div>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Jenis Retur</label>
-                    <select name="jenis_retur" class="form-control" required>
-                        <option value="">---Pilih Jenis Retur---</option>
-                        <option value="Barang">Barang</option>
-                        <option value="Uang">Uang</option>
-                    </select>
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Keterangan</label>
-                    <input type="text" name="keterangan" class="form-control">
-                </div>
-            </div>
-            <!-- Kolom Kanan: Data Produk Retur -->
-            <!-- HAPUS seluruh input manual produk di sini -->
+
+                <input type="hidden" name="detail_json" id="detail_json">
+            </form>
         </div>
-
-        <hr>
-
-        <!-- Judul di atas tabel, tengah -->
-        <h4 class="text-center mb-3">DAFTAR PRODUK RETUR PENJUALAN</h4>
-
-        <!-- Tabel Produk Retur -->
-        <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Produk</th>
-                    <th>Jumlah Retur</th>
-                    <th>Harga Satuan</th>
-                    <th>Alasan</th>
-                    <th>Subtotal</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <div class="d-flex justify-content-between mt-4">
-            <div>
-                <a href="{{ route('returjual.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning">Reset</button>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Retur</label>
-                <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
-                <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
-                <button type="submit" class="btn btn-success">Submit</button>
-            </div>
-        </div>
-
-        <input type="hidden" name="detail_json" id="detail_json">
-    </form>
+    </div>
 </div>
 
 <script>
@@ -110,7 +119,8 @@
     }
 
     function formatRupiah(angka) {
-        return 'Rp' + angka.toLocaleString('id-ID');
+        if (!angka && angka !== 0) return '';
+        return parseInt(angka).toLocaleString('id-ID');
     }
 
     function updateTabelRetur() {
@@ -128,6 +138,7 @@
                 <tr>
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
+                    <td>${item.satuan || '-'}</td>
                     <td>
                         <input type="number" class="form-control form-control-sm" min="0" max="${max}" value="${item.jumlah_retur}" 
                             onchange="updateJumlahRetur(${index}, this.value)">
@@ -149,7 +160,7 @@
             tbody.insertAdjacentHTML('beforeend', row);
         });
 
-        document.getElementById('total_nilai_retur_view').value = formatRupiah(totalRetur);
+        document.getElementById('total_nilai_retur_view').value = totalRetur > 0 ? formatRupiah(totalRetur) : '';
         document.getElementById('total_nilai_retur').value = totalRetur;
         document.getElementById('detail_json').value = JSON.stringify(daftarProdukRetur);
     }
@@ -206,6 +217,7 @@
                     return {
                         kode_produk: item.kode_produk,
                         nama_produk: item.nama_produk,
+                        satuan: item.satuan || '-',
                         jumlah_retur: item.jumlah, // default: semua qty diretur, bisa diubah user
                         harga_satuan: item.harga_satuan,
                         alasan: '',
