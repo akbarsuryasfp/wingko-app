@@ -14,7 +14,7 @@ class HppOverhead extends Model
     protected $fillable = [
         'no_hpp_bop',
         'no_detail_produksi',
-        'kode_bop',
+        'keterangan',
         'biaya_bop',
     ];
 
@@ -25,6 +25,6 @@ class HppOverhead extends Model
 
     public function produksiDetail()
     {
-        return $this->belongsTo(ProduksiDetail::class, 'no_detail_produksi', 'no_produksi_detail');
+        return $this->belongsTo(ProduksiDetail::class, 'no_detail_produksi', 'no_detail_produksi');
     }
 }

@@ -58,28 +58,62 @@
         <h5 class="mt-4">Daftar Pembelian Bahan</h5>
         {{-- Tampilkan detail bahan di sini, readonly/table --}}
         <h5 class="mt-4">Detail Bahan</h5>
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Nama Bahan</th>
-                    <th>Satuan</th>
-                    <th>Jumlah</th>
-                    <th>Harga</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($details as $detail)
-                <tr>
-                    <td>{{ $detail->nama_bahan }}</td>
-                    <td>{{ $detail->satuan }}</td>
-                    <td>{{ $detail->bahan_masuk }}</td>
-                    <td>{{ $detail->harga_beli }}</td>
-                    <td>{{ $detail->subtotal ?? $detail->bahan_masuk * $detail->harga_beli }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Nama Bahan</th>
+            <th>Satuan</th>
+            <th>Jumlah</th>
+            <th>Harga</th>
+            <th>Tanggal Expired</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($details as $i => $detail)
+        <tr>
+            <td>
+                @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <input type="text" class="form-control" name="bahan_nama[]" value="{{ $detail->nama_bahan }}" readonly>
+                    <input type="hidden" name="bahan[]" value="{{ $detail->kode_bahan }}">
+                @else
+                    {{ $detail->nama_bahan }}
+                @endif
+            </td>
+            <td>{{ $detail->satuan }}</td>
+            <td>
+                @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <input type="number" class="form-control" name="jumlah[]" value="{{ $detail->bahan_masuk }}" min="1" required>
+                @else
+                    {{ $detail->bahan_masuk }}
+                @endif
+            </td>
+            <td>
+                @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <input type="number" class="form-control" name="harga[]" value="{{ $detail->harga_beli }}" min="0" required>
+                @else
+                    {{ $detail->harga_beli }}
+                @endif
+            </td>
+            <td>
+                @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <input type="date" class="form-control" name="tanggal_exp[]" value="{{ $detail->tanggal_exp }}">
+                @else
+                    {{ $detail->tanggal_exp ?? '-' }}
+                @endif
+            </td>
+            <td>
+                @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <span class="subtotal">{{ $detail->bahan_masuk * $detail->harga_beli }}</span>
+                @else
+                    {{ $detail->subtotal ?? $detail->bahan_masuk * $detail->harga_beli }}
+                @endif
+            </td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
 
         <div class="row mb-2 align-items-center">
             <label class="col-sm-4 col-form-label">Total Harga</label>
@@ -121,6 +155,13 @@
             <label class="col-sm-4 col-form-label">Kurang Bayar</label>
             <div class="col-sm-8">
                 <input type="number" class="form-control" name="hutang" id="hutang" value="{{ $pembelian->hutang }}" readonly>
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+            <div class="col-sm-8">
+                <input type="date" class="form-control" name="jatuh_tempo"
+                    value="{{ old('jatuh_tempo', $jatuh_tempo ?? '') }}">
             </div>
         </div>
 

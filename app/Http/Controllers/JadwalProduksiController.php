@@ -10,10 +10,34 @@ use Illuminate\Support\Facades\DB;
 
 class JadwalProduksiController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
-        $permintaan = PermintaanProduksi::with('details.produk')->where('status', 'Diproses')->get();
-        return view('jadwal.create', compact('permintaan'));
+        $permintaan = PermintaanProduksi::with('details.produk')->where('status', 'Menunggu')->get();
+
+        // Ambil pesanan penjualan yang belum dijadwalkan
+        $pesanan = \App\Models\PesananPenjualan::with('details.produk', 'pelanggan')->get();
+
+        $selectedPermintaan = null;
+        $selectedPesanan = null;
+
+        if ($request->has('permintaan')) {
+            $selectedPermintaan = $permintaan->where('kode_permintaan_produksi', $request->permintaan)->first();
+        }
+        if ($request->has('pesanan')) {
+            $selectedPesanan = $pesanan->where('kode_pesanan', $request->pesanan)->first();
+        }
+
+        $setorKonsinyasi = \DB::table('t_consignee_setor')
+            ->join('t_consignee', 't_consignee.kode_consignee', '=', 't_consignee_setor.kode_consignee')
+            ->join('t_produk', 't_produk.kode_produk', '=', 't_consignee_setor.kode_produk')
+            ->select(
+                't_consignee_setor.*',
+                't_consignee.nama_consignee',
+                't_produk.nama_produk'
+            )
+            ->get();
+
+        return view('jadwal.create', compact('permintaan', 'pesanan', 'setorKonsinyasi', 'selectedPermintaan', 'selectedPesanan'));
     }
 
     public function store(Request $request)
@@ -35,6 +59,8 @@ class JadwalProduksiController extends Controller
                 'keterangan' => $request->keterangan,
             ]);
 
+            $kodeSumberDiproses = [];
+
             foreach ($request->produk as $i => $p) {
                 JadwalProduksiDetail::create([
                     'kode_jadwal_detail' => $kodeJadwal . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT),
@@ -44,7 +70,12 @@ class JadwalProduksiController extends Controller
                     'sumber_data' => 'permintaan',
                     'kode_sumber' => $p['kode_sumber'],
                 ]);
+                $kodeSumberDiproses[] = $p['kode_sumber'];
             }
+
+            // Update status permintaan produksi terkait ke 'Diproses'
+            PermintaanProduksi::whereIn('kode_permintaan_produksi', $kodeSumberDiproses)
+                ->update(['status' => 'Diproses']);
         });
 
         return redirect()->route('jadwal.index')->with('success', 'Jadwal produksi berhasil disimpan!');

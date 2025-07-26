@@ -5,36 +5,62 @@
     <h2>Input Retur Pembelian</h2>
     <form action="{{ route('returbeli.store') }}" method="POST">
         @csrf
-        <div class="mb-3">
-            <label>Kode Retur Pembelian</label>
-            <input type="text" class="form-control" name="kode_retur" value="{{ $kode_retur }}" readonly required>
-        </div>
-        <div class="mb-3">
-            <label>No Pembelian</label>
-            <select class="form-control" name="kode_pembelian" id="kode_pembelian" required>
-                <option value="">-- Pilih No Pembelian --</option>
-                @foreach($pembelian as $item)
-                    <option value="{{ $item->no_pembelian }}"
-                        data-tanggal="{{ $item->tanggal_pembelian }}"
-                        data-supplier="{{ $item->nama_supplier }}">
-                        {{ $item->no_pembelian }} | {{ $item->tanggal_pembelian }} | {{ $item->nama_supplier }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="mb-3">
-            <label>Nama Supplier</label>
-            <input type="text" class="form-control" id="nama_supplier" readonly>
-        </div>
-        <div class="mb-3">
-            <label>Tanggal Retur</label>
-            <input type="date" class="form-control" name="tanggal_retur_beli" required>
-        </div>
-        <div class="mb-3">
-            <label>Keterangan (Opsional)</label>
-            <textarea class="form-control" name="keterangan">{{ old('keterangan') }}</textarea>
-        </div>
 
+<div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label">Kode Retur Pembelian</label>
+    <div class="col-sm-9">
+        <input type="text" class="form-control" name="kode_retur" value="{{ $kode_retur }}" readonly required style="max-width: 400px;">
+    </div>
+</div>
+
+<div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label">No Pembelian</label>
+    <div class="col-sm-9">
+        <select class="form-control" name="kode_pembelian" id="kode_pembelian" required style="max-width: 400px;">
+            <option value="">-- Pilih No Pembelian --</option>
+            @foreach($pembelian as $item)
+                <option value="{{ $item->no_pembelian }}"
+                    data-tanggal="{{ $item->tanggal_pembelian }}"
+                    data-supplier="{{ $item->nama_supplier }}">
+                    {{ $item->no_pembelian }} | {{ $item->tanggal_pembelian }} | {{ $item->nama_supplier }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+</div>
+
+<div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label">Nama Supplier</label>
+    <div class="col-sm-9">
+        <input type="text" class="form-control" id="nama_supplier" readonly style="max-width: 400px;">
+    </div>
+</div>
+
+<div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label">Tanggal Retur</label>
+    <div class="col-sm-9">
+        <input type="date" class="form-control" name="tanggal_retur_beli" 
+               value="{{ date('Y-m-d') }}" required style="max-width: 400px;">
+    </div>
+</div>
+
+<div class="row mb-3 align-items-center">
+    <label class="col-sm-3 col-form-label">Jenis Pengembalian</label>
+    <div class="col-sm-9">
+        <select class="form-control" name="jenis_pengembalian" required style="max-width: 400px;">
+            <option value="">-- Pilih Jenis Pengembalian --</option>
+            <option value="uang">Uang</option>
+            <option value="barang">Barang</option>
+        </select>
+    </div>
+</div>
+
+<div class="row mb-3 align-items-start">
+    <label class="col-sm-3 col-form-label">Keterangan (Opsional)</label>
+    <div class="col-sm-9">
+        <textarea class="form-control" name="keterangan" style="max-width: 400px;">{{ old('keterangan') }}</textarea>
+    </div>
+</div>
         <h3>Daftar Retur Pembelian</h3>
         <div id="detail_bahan">
             <table class="table" id="detail_table">

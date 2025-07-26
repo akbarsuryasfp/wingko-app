@@ -1,20 +1,59 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+
+<div class="mb-4">
     <h4>Detail Retur Pembelian</h4>
-    <div class="mb-3">
-        <strong>No Retur:</strong> {{ $retur->no_retur_beli }}<br>
-        <strong>No Pembelian:</strong> {{ $retur->no_pembelian }}<br>
-        <strong>Tanggal Retur:</strong> {{ $retur->tanggal_retur_beli }}<br>
-        <strong>Supplier:</strong> {{ $retur->nama_supplier }}<br>
-        <strong>Total Retur:</strong> {{ number_format($retur->total_retur, 0, ',', '.') }}<br>
+    <table class="table table-borderless" style="max-width: 600px;">
+        <tr>
+            <th style="width: 200px;">No Retur</th>
+            <td>: {{ $retur->no_retur_beli }}</td>
+        </tr>
+        <tr>
+            <th>No Pembelian</th>
+            <td>: {{ $retur->no_pembelian }}</td>
+        </tr>
+        <tr>
+            <th>Tanggal Retur</th>
+            <td>: {{ \Carbon\Carbon::parse($retur->tanggal_retur_beli)->format('d-m-Y') }}</td>
+        </tr>
+        <tr>
+            <th>Supplier</th>
+            <td>: {{ $retur->nama_supplier }}</td>
+        </tr>
+        <tr>
+            <th>Total Retur</th>
+            <td>: Rp {{ number_format($retur->total_retur, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <th>Jenis Pengembalian</th>
+            <td>: {{ $retur->jenis_pengembalian === 'barang' ? 'Barang Pengganti' : 'Pengembalian Uang' }}</td>
+        </tr>
+<tr>
+    <th>Status</th>
+    <td>:
+        <span class="badge 
+            @if($retur->status == 'pending') bg-warning text-dark 
+            @elseif($retur->status == 'selesai') bg-success 
+            @else bg-secondary 
+            @endif">
+            {{ ucfirst($retur->status) }}
+        </span>
+    </td>
+</tr>
         @if(!empty($retur->keterangan))
-            <strong>Keterangan:</strong> {{ $retur->keterangan }}
+        <tr>
+            <th>Keterangan</th>
+            <td>: {{ $retur->keterangan }}</td>
+        </tr>
         @endif
-    </div>
-    <table class="table table-bordered">
-        <thead>
+    </table>
+</div>
+
+
+    <h5>Detail Barang Retur</h5>
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
             <tr>
                 <th>Nama Bahan</th>
                 <th>Harga Beli</th>
@@ -27,14 +66,17 @@
             @foreach($details as $d)
             <tr>
                 <td>{{ $d->nama_bahan }}</td>
-                <td>{{ number_format($d->harga_beli, 0, ',', '.') }}</td>
+                <td>Rp {{ number_format($d->harga_beli, 0, ',', '.') }}</td>
                 <td>{{ $d->jumlah_retur }}</td>
-                <td>{{ number_format($d->subtotal, 0, ',', '.') }}</td>
+                <td>Rp {{ number_format($d->subtotal, 0, ',', '.') }}</td>
                 <td>{{ $d->alasan }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
-    <a href="{{ route('returbeli.index') }}" class="btn btn-secondary">Kembali</a>
+
+    <div class="mt-4">
+        <a href="{{ route('returbeli.index') }}" class="btn btn-secondary">Kembali</a>
+    </div>
 </div>
 @endsection

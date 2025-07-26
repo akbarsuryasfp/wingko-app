@@ -31,7 +31,7 @@
                 <th>No</th>
                 <th>No Piutang</th>
                 <th>No Jual</th>
-                <th>Pelanggan</th>
+                {{-- <th>Pelanggan</th> --}}
                 <th>Total Tagihan</th>
                 <th>Total Bayar</th>
                 <th>Sisa Piutang</th>
@@ -46,7 +46,7 @@
                 <td>{{ $i+1 }}</td>
                 <td>{{ $p->no_piutang }}</td>
                 <td>{{ $p->no_jual }}</td>
-                <td>{{ $p->kode_pelanggan }}</td>
+                {{-- <td>{{ $p->kode_pelanggan }}</td> --}}
                 <td>Rp{{ number_format($p->total_tagihan,0,',','.') }}</td>
                 <td>Rp{{ number_format($p->total_bayar,0,',','.') }}</td>
                 <td>
@@ -75,7 +75,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="10">Data piutang belum ada.</td>
+                <td colspan="9">Data piutang belum ada.</td>
             </tr>
             @endforelse
         </tbody>

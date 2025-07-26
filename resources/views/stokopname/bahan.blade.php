@@ -4,6 +4,20 @@
 <div class="container mt-4">
     <h4 class="mb-4">Stok Opname Bahan</h4>
 
+    <!-- Notifikasi -->
+    @if ($errors->any())
+        <div class="alert alert-danger">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+
     <!-- Tabs kategori -->
     <ul class="nav nav-tabs mb-3" id="kategoriTab" role="tablist">
         <li class="nav-item" role="presentation">
@@ -69,7 +83,10 @@
                                            name="stok_fisik[{{ $bahan->kode_bahan }}]" 
                                            class="form-control text-end stok-fisik-input" 
                                            data-id="{{ $bahan->kode_bahan }}"
-                                           data-kategori="{{ $kodeKategori }}">
+                                           data-kategori="{{ $kodeKategori }}"
+                                           step="any"
+                                           inputmode="decimal"
+                                           placeholder="0,00">
                                 </td>
                                 <td>
                                     <input type="text" 

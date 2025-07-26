@@ -12,8 +12,12 @@ class PembelianController extends Controller
     public function create(Request $request)
     {
         // Generate kode pembelian otomatis
-        $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
-        if ($last && preg_match('/PB(\d+)/', $last->no_pembelian, $match)) {
+        $last = DB::table('t_pembelian')
+            ->whereRaw("no_pembelian REGEXP '^PB[0-9]{8}$'")
+            ->orderBy('no_pembelian', 'desc')
+            ->first();
+
+        if ($last && preg_match('/PB(\d{8})/', $last->no_pembelian, $match)) {
             $nextNumber = (int)$match[1] + 1;
         } else {
             $nextNumber = 1;
@@ -36,23 +40,45 @@ class PembelianController extends Controller
         return view('pembelian.create', compact('kode_pembelian', 'suppliers', 'bahan', 'terimabahan'));
     }
 
-    // Untuk pembelian langsung (tanpa order), gunakan view langsung.blade.php
-    public function createLangsung()
-    {
-        // Ambil kode pembelian terakhir
-        $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
-        if ($last && preg_match('/P(\d+)/', $last->no_pembelian, $match)) {
-            $nextNumber = (int)$match[1] + 1;
-        } else {
-            $nextNumber = 1;
-        }
-        $kode_pembelian = 'PBL' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
-
-        $supplier = DB::table('t_supplier')->get();
-        $bahan = DB::table('t_bahan')->get();
-
-        return view('pembelian.langsung', compact('kode_pembelian', 'supplier', 'bahan'));
+public function createLangsung()
+{
+    // Ambil kode pembelian terakhir
+    $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
+    if ($last && preg_match('/PBL(\d+)/', $last->no_pembelian, $match)) {
+        $nextNumber = (int)$match[1] + 1;
+    } else {
+        $nextNumber = 1;
     }
+    $kode_pembelian = 'PBL' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
+
+    $supplier = DB::table('t_supplier')->get();
+    $bahan = DB::table('t_bahan')->get();
+
+    // Hitung kekurangan bahan
+    $bahanKurangLangsung = DB::table('t_bahan')
+        ->whereColumn('stok', '<', 'stokmin')
+        ->select(
+            'kode_bahan',
+            'nama_bahan',
+            'satuan',
+            DB::raw('(stokmin - stok) as jumlah_beli')
+        )
+        ->get();
+
+$today = date('Y-m-d');
+$bahansPrediksiHarian = DB::table('t_bahan')
+    ->where('frekuensi_pembelian', 'Harian')
+    ->whereNotIn('kode_bahan', function($q) use ($today) {
+        $q->select('kode_bahan')
+          ->from('t_terimab_detail')
+          ->join('t_terimabahan', 't_terimab_detail.no_terima_bahan', '=', 't_terimabahan.no_terima_bahan')
+          ->join('t_pembelian', 't_terimabahan.no_terima_bahan', '=', 't_pembelian.no_terima_bahan')
+          ->whereDate('t_pembelian.tanggal_pembelian', $today);
+    })
+    ->get();
+
+    return view('pembelian.langsung', compact('kode_pembelian', 'supplier', 'bahan', 'bahanKurangLangsung', 'bahansPrediksiHarian'));
+}
 
     // Simpan data untuk pembelian berdasarkan order (create.blade.php)
     public function store(Request $request)
@@ -68,6 +94,7 @@ class PembelianController extends Controller
             'total_pembelian'    => 'required|numeric|min:0',
             'total_bayar'        => 'required|numeric|min:0',
             'metode_bayar'       => 'required|string', // ganti dari jenis_pembayaran
+            'jatuh_tempo' => 'nullable|date',
         ]);
 
         $uang_muka = 0;
@@ -154,6 +181,7 @@ class PembelianController extends Controller
                 'total_tagihan' => $kurang_bayar,      // sesuai permintaan
                 'total_bayar'   => 0,            // sesuai permintaan
                 'sisa_utang'    => $kurang_bayar,      // sesuai permintaan
+                'jatuh_tempo'   => $request->jatuh_tempo,
             ]);
         }
 
@@ -175,17 +203,17 @@ class PembelianController extends Controller
         $uang_muka        = $uang_muka_dipakai ?? 0; // dari logika sebelumnya
         $sisa_hutang      = $kurang_bayar;
 
-        // Kode akun (bisa juga diambil dari master akun atau request)
-        $kode_akun_persediaan = '103'; // contoh: Persediaan Barang
-        $kode_akun_ongkir     = '515'; // contoh: Ongkos Kirim
-        $kode_akun_diskon     = '513'; // contoh: Diskon Pembelian
-        $kode_akun_kas        = '101'; // contoh: Kas/Bank
-        $kode_akun_uangmuka   = '113'; // contoh: Uang Muka Pembelian
-        $kode_akun_hutang     = '201'; // contoh: Hutang Usaha
+        // Kode akun dari mapping JurnalHelper
+        $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+        $kode_akun_ongkir     = JurnalHelper::getKodeAkun('ongkos_kirim');
+        $kode_akun_diskon     = JurnalHelper::getKodeAkun('diskon_pembelian');
+        $kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
+        $kode_akun_uangmuka   = JurnalHelper::getKodeAkun('uang_muka');
+        $kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
 
         // 1. Persediaan Barang (Debit)
         DB::table('t_jurnal_detail')->insert([
-            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
             'no_jurnal'        => $no_jurnal,
             'kode_akun'        => $kode_akun_persediaan,
             'debit'            => $nilai_persediaan,
@@ -195,7 +223,7 @@ class PembelianController extends Controller
         // 2. Ongkos Kirim (Debit)
         if ($ongkir > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_ongkir,
                 'debit'            => $ongkir,
@@ -206,7 +234,7 @@ class PembelianController extends Controller
         // 3. Diskon Pembelian (Kredit)
         if ($diskon > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_diskon,
                 'debit'            => 0,
@@ -217,7 +245,7 @@ class PembelianController extends Controller
         // 4. Kas/Bank (Kredit)
         if ($dibayar_sekarang > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_kas,
                 'debit'            => 0,
@@ -228,7 +256,7 @@ class PembelianController extends Controller
         // 5. Uang Muka (Kredit)
         if ($uang_muka > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_uangmuka,
                 'debit'            => 0,
@@ -239,7 +267,7 @@ class PembelianController extends Controller
         // 6. Hutang Usaha (Kredit)
         if ($sisa_hutang > 0) {
             DB::table('t_jurnal_detail')->insert([
-                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
                 'no_jurnal'        => $no_jurnal,
                 'kode_akun'        => $kode_akun_hutang,
                 'debit'            => 0,
@@ -267,6 +295,7 @@ class PembelianController extends Controller
             'harga'              => 'required|array',
             'tanggal_exp'        => 'required|array',
             'metode_bayar'       => 'required|string', // ganti dari jenis_pembayaran
+            'jatuh_tempo' => 'nullable|date',
         ]);
 
         $hutang = $request->total_pembelian - $request->total_bayar;
@@ -350,6 +379,101 @@ $no_terima_bahan = $last
             'uang_muka'        => 0, // Tidak ada uang muka untuk pembelian langsung
         ]);
 
+        if ($hutang > 0) {
+    // Generate no_utang otomatis
+    $lastUtang = DB::table('t_utang')->orderBy('no_utang', 'desc')->first();
+    if ($lastUtang && preg_match('/U(\d+)/', $lastUtang->no_utang, $match)) {
+        $nextUtang = (int)$match[1] + 1;
+    } else {
+        $nextUtang = 1;
+    }
+    $no_utang = 'U' . str_pad($nextUtang, 7, '0', STR_PAD_LEFT);
+
+    DB::table('t_utang')->insert([
+        'no_utang'      => $no_utang,
+        'no_pembelian'  => $request->kode_pembelian,
+        'kode_supplier' => $request->kode_supplier,
+        'total_tagihan' => $hutang,
+        'total_bayar'   => 0,
+        'sisa_utang'    => $hutang,
+        'jatuh_tempo'   => $request->jatuh_tempo, // pastikan input jatuh_tempo sudah ada di form
+    ]);
+}
+$no_jurnal = JurnalHelper::generateNoJurnal();
+
+DB::table('t_jurnal_umum')->insert([
+    'no_jurnal'   => $no_jurnal,
+    'tanggal'     => $request->tanggal_pembelian,
+    'keterangan'  => 'Pembelian Langsung ' . $request->kode_pembelian,
+    'nomor_bukti' => $request->kode_pembelian,
+]);
+
+// Nilai-nilai jurnal
+$nilai_persediaan = $request->total_harga;
+$ongkir           = $request->ongkir;
+$diskon           = $request->diskon;
+$dibayar_sekarang = $request->total_bayar;
+$sisa_hutang      = $hutang;
+
+// Kode akun dari mapping JurnalHelper
+$kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+$kode_akun_ongkir     = JurnalHelper::getKodeAkun('ongkos_kirim');
+$kode_akun_diskon     = JurnalHelper::getKodeAkun('diskon_pembelian');
+$kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
+$kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
+
+// 1. Persediaan Barang (Debit)
+DB::table('t_jurnal_detail')->insert([
+    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+    'no_jurnal'        => $no_jurnal,
+    'kode_akun'        => $kode_akun_persediaan,
+    'debit'            => $nilai_persediaan,
+    'kredit'           => 0,
+]);
+
+// 2. Ongkos Kirim (Debit)
+if ($ongkir > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+        'no_jurnal'        => $no_jurnal,
+        'kode_akun'        => $kode_akun_ongkir,
+        'debit'            => $ongkir,
+        'kredit'           => 0,
+    ]);
+}
+
+// 3. Diskon Pembelian (Kredit)
+if ($diskon > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+        'no_jurnal'        => $no_jurnal,
+        'kode_akun'        => $kode_akun_diskon,
+        'debit'            => 0,
+        'kredit'           => $diskon,
+    ]);
+}
+
+// 4. Kas/Bank (Kredit)
+if ($dibayar_sekarang > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+        'no_jurnal'        => $no_jurnal,
+        'kode_akun'        => $kode_akun_kas,
+        'debit'            => 0,
+        'kredit'           => $dibayar_sekarang,
+    ]);
+}
+
+// 5. Hutang Usaha (Kredit)
+if ($sisa_hutang > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+        'no_jurnal'        => $no_jurnal,
+        'kode_akun'        => $kode_akun_hutang,
+        'debit'            => 0,
+        'kredit'           => $sisa_hutang,
+    ]);
+}
         return redirect()->route('pembelian.index')->with('success', 'Data pembelian & penerimaan berhasil disimpan.');
     }
 
@@ -378,12 +502,17 @@ $no_terima_bahan = $last
         $pembelian = DB::table('t_pembelian')
             ->leftJoin('t_supplier', 't_pembelian.kode_supplier', '=', 't_supplier.kode_supplier')
             ->where('t_pembelian.no_pembelian', $no_pembelian)
-            ->select('t_pembelian.*', 't_supplier.nama_supplier', 't_pembelian.no_nota') // pastikan ada no_nota
+            ->select('t_pembelian.*', 't_supplier.nama_supplier', 't_pembelian.no_nota')
             ->first();
 
         if (!$pembelian) {
             abort(404, 'Data pembelian tidak ditemukan.');
         }
+
+        // Ambil jatuh tempo dari t_utang
+        $jatuh_tempo = DB::table('t_utang')
+            ->where('no_pembelian', $no_pembelian)
+            ->value('jatuh_tempo');
 
         if ($pembelian->no_terima_bahan && $pembelian->no_terima_bahan !== '-') {
             $details = DB::table('t_terimab_detail')
@@ -394,6 +523,7 @@ $no_terima_bahan = $last
                     't_bahan.satuan',
                     't_terimab_detail.bahan_masuk',
                     't_terimab_detail.harga_beli',
+                    't_terimab_detail.tanggal_exp',
                     DB::raw('t_terimab_detail.bahan_masuk * t_terimab_detail.harga_beli as subtotal')
                 )
                 ->get();
@@ -401,7 +531,7 @@ $no_terima_bahan = $last
             $details = collect([]);
         }
 
-        return view('pembelian.detail', compact('pembelian', 'details'));
+        return view('pembelian.detail', compact('pembelian', 'details', 'jatuh_tempo'));
     }
 
     public function detailTerimaBahan($no_terima_bahan)
@@ -524,23 +654,93 @@ $no_terima_bahan = $last
                 ->value('t_supplier.nama_supplier');
         }
 
-        return view('pembelian.edit', compact('pembelian', 'suppliers', 'bahan', 'details', 'nama_supplier'));
+        $jatuh_tempo = DB::table('t_utang')
+        ->where('no_pembelian', $no_pembelian)
+        ->value('jatuh_tempo');
+
+        return view('pembelian.edit', compact('pembelian', 'suppliers', 'bahan', 'details', 'nama_supplier', 'jatuh_tempo'));
     }
 
-    public function update(Request $request, $no_pembelian)
-    {
-        $request->validate([
-            'tanggal_pembelian'  => 'required|date',
-            'metode_bayar'       => 'required|string',
-            'diskon'             => 'required|numeric|min:0',
-            'ongkir'             => 'required|numeric|min:0',
-            'total_bayar'        => 'required|numeric|min:0',
-            'no_nota'            => 'nullable|string',
-            // tambahkan validasi lain sesuai kebutuhan
-        ]);
+public function update(Request $request, $no_pembelian)
+{
+    $request->validate([
+        'tanggal_pembelian'  => 'required|date',
+        'metode_bayar'       => 'required|string',
+        'diskon'             => 'required|numeric|min:0',
+        'ongkir'             => 'required|numeric|min:0',
+        'total_bayar'        => 'required|numeric|min:0',
+        'no_nota'            => 'nullable|string',
+        'jatuh_tempo'        => 'nullable|date',
+        // validasi detail bahan hanya untuk pembelian langsung
+        'bahan'              => 'sometimes|array',
+        'jumlah'             => 'sometimes|array',
+        'harga'              => 'sometimes|array',
+        'tanggal_exp'        => 'sometimes|array',
+    ]);
 
-        // Ambil data lama
-        $pembelian = DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->first();
+    $pembelian = DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->first();
+
+    // --- Update detail bahan jika pembelian langsung ---
+    if ($pembelian->jenis_pembelian == 'pembelian langsung' && $request->has('bahan')) {
+        $no_terima_bahan = $pembelian->no_terima_bahan;
+
+        // Hapus detail lama
+        DB::table('t_terimab_detail')->where('no_terima_bahan', $no_terima_bahan)->delete();
+        DB::table('t_kartupersbahan')->where('no_transaksi', $no_terima_bahan)->where('keterangan', 'Pembelian Langsung')->delete();
+
+        $total_harga = 0;
+        foreach ($request->bahan as $i => $kode_bahan) {
+            $jumlah = $request->jumlah[$i];
+            $harga  = $request->harga[$i];
+            $tanggal_exp = $request->tanggal_exp[$i] ?? null;
+
+            $no_terimab_detail = 'TD' . date('ymdHis') . rand(100,999);
+
+            DB::table('t_terimab_detail')->insert([
+                'no_terimab_detail' => $no_terimab_detail,
+                'no_terima_bahan'   => $no_terima_bahan,
+                'kode_bahan'        => $kode_bahan,
+                'bahan_masuk'       => $jumlah,
+                'harga_beli'        => $harga,
+                'total'             => $jumlah * $harga,
+                'tanggal_exp'       => $tanggal_exp,
+            ]);
+
+            DB::table('t_kartupersbahan')->insert([
+                'no_transaksi' => $no_terima_bahan,
+                'tanggal'      => $request->tanggal_pembelian,
+                'kode_bahan'   => $kode_bahan,
+                'masuk'        => $jumlah,
+                'keluar'       => 0,
+                'harga'        => $harga,
+                'satuan'       => DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->value('satuan'),
+                'keterangan'   => 'Pembelian Langsung',
+                'tanggal_exp'  => $tanggal_exp,
+            ]);
+
+            // Update stok
+            $saldo = DB::table('t_kartupersbahan')
+                ->where('kode_bahan', $kode_bahan)
+                ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as saldo')
+                ->value('saldo');
+            DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->update(['stok' => $saldo]);
+
+            $total_harga += $jumlah * $harga;
+        }
+    } else {
+        // Jika bukan pembelian langsung, ambil total_harga lama
+        $total_harga = $pembelian->total_harga;
+    }
+
+    // --- Hitung total pembelian dan pembayaran ---
+    $total_pembelian = $total_harga - $request->diskon + $request->ongkir;
+    if ($total_pembelian < 0) $total_pembelian = 0;
+
+    $uang_muka_dipakai = ($pembelian->jenis_pembelian == 'pembelian langsung') ? 0 : ($pembelian->uang_muka ?? 0);
+    $kurang_bayar = $total_pembelian - $uang_muka_dipakai - $request->total_bayar;
+    if ($kurang_bayar < 0) $kurang_bayar = 0;
+    $status = $kurang_bayar > 0 ? 'Hutang' : 'Lunas';
+
 
         // Ambil uang muka awal dan sisa uang muka (jika pembelian berdasarkan order)
         $uang_muka_awal = 0;
@@ -616,6 +816,7 @@ if ($kurang_bayar > 0) {
             'total_tagihan' => $kurang_bayar,
             'total_bayar'   => 0, // atau update sesuai pembayaran jika ada
             'sisa_utang'    => $kurang_bayar,
+            'jatuh_tempo'   => $request->jatuh_tempo, // <-- update di sini
         ]);
     } else {
         // Generate no_utang otomatis
@@ -668,17 +869,17 @@ $dibayar_sekarang = $request->total_bayar;
 $uang_muka        = $uang_muka_dipakai ?? 0;
 $sisa_hutang      = $kurang_bayar;
 
-// Kode akun
-$kode_akun_persediaan = '103';
-$kode_akun_ongkir     = '515';
-$kode_akun_diskon     = '513';
-$kode_akun_kas        = '101';
-$kode_akun_uangmuka   = '113';
-$kode_akun_hutang     = '201';
+// Kode akun dari mapping JurnalHelper
+$kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+$kode_akun_ongkir     = JurnalHelper::getKodeAkun('ongkos_kirim');
+$kode_akun_diskon     = JurnalHelper::getKodeAkun('diskon_pembelian');
+$kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
+$kode_akun_uangmuka   = JurnalHelper::getKodeAkun('uang_muka');
+$kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
 
 // Untuk setiap detail:
 DB::table('t_jurnal_detail')->insert([
-    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
     'no_jurnal'        => $no_jurnal_baru,
     'kode_akun'        => $kode_akun_persediaan,
     'debit'            => $nilai_persediaan,
@@ -688,7 +889,7 @@ DB::table('t_jurnal_detail')->insert([
 // 2. Ongkos Kirim (Debit)
 if ($ongkir > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_ongkir,
         'debit'            => $ongkir,
@@ -699,7 +900,7 @@ if ($ongkir > 0) {
 // 3. Diskon Pembelian (Kredit)
 if ($diskon > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_diskon,
         'debit'            => 0,
@@ -710,7 +911,7 @@ if ($diskon > 0) {
 // 4. Kas/Bank (Kredit)
 if ($dibayar_sekarang > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_kas,
         'debit'            => 0,
@@ -721,7 +922,7 @@ if ($dibayar_sekarang > 0) {
 // 5. Uang Muka (Kredit)
 if ($uang_muka > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_uangmuka,
         'debit'            => 0,
@@ -732,7 +933,7 @@ if ($uang_muka > 0) {
 // 6. Hutang Usaha (Kredit)
 if ($sisa_hutang > 0) {
     DB::table('t_jurnal_detail')->insert([
-        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
         'no_jurnal'        => $no_jurnal_baru,
         'kode_akun'        => $kode_akun_hutang,
         'debit'            => 0,

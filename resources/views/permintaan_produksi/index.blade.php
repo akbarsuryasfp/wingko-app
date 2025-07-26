@@ -24,7 +24,19 @@
                     <td>{{ $item->kode_permintaan_produksi }}</td>
                     <td>{{ $item->tanggal }}</td>
                     <td>{{ $item->keterangan }}</td>
-                    <td><span class="badge bg-{{ $item->status === 'Selesai' ? 'success' : 'warning' }}">{{ $item->status }}</span></td>
+                    <td>
+                        @if ($item->status === 'Menunggu')
+                            <span class="badge bg-warning text-dark" style="text-decoration:none;">
+                                {{ $item->status }}
+                            </span>
+                        @elseif ($item->status === 'Diproses')
+                            <span class="badge bg-primary">{{ $item->status }}</span>
+                        @elseif ($item->status === 'Selesai')
+                            <span class="badge bg-success">{{ $item->status }}</span>
+                        @else
+                            <span class="badge bg-secondary">{{ $item->status }}</span>
+                        @endif
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-primary btn-toggle-detail" 
                                 type="button"
@@ -34,7 +46,7 @@
                     </td>
                 </tr>
                 <tr class="detail-row" id="detail-{{ $item->kode_permintaan_produksi }}" style="display: none;">
-                    <td colspan="5" class="p-0">
+                    <td colspan="6" class="p-0">
                         <div class="p-3">
                             <table class="table table-sm table-striped">
                                 <thead>

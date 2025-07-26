@@ -101,131 +101,132 @@ class StokOpnameController extends Controller
 
             // 3. Setelah data masuk ke penyesuaian & detail, baru update kartu stok & stok bahan
             foreach ($detailData as $detail) {
-                $bahan = DB::table('t_bahan')->where('kode_bahan', $detail['kode_item'])->first();
-                if (!$bahan) continue;
+    $bahan = DB::table('t_bahan')->where('kode_bahan', $detail['kode_item'])->first();
+    if (!$bahan) continue;
 
-                if ($detail['jumlah'] < 0) {
-                    // FIFO keluar per batch
-                    $qty_keluar = abs($detail['jumlah']);
-                    $stokMasuk = DB::table('t_kartupersbahan')
-                        ->where('kode_bahan', $bahan->kode_bahan)
-                        ->whereRaw('(masuk - keluar) > 0')
-                        ->orderBy('tanggal', 'asc')
-                        ->get();
+    if ($detail['jumlah'] < 0) {
+        // Selisih kurang: keluarkan stok per batch FIFO
+        $qty_keluar = abs($detail['jumlah']);
+        $stokMasuk = DB::table('t_kartupersbahan')
+            ->where('kode_bahan', $bahan->kode_bahan)
+            ->whereRaw('(masuk - keluar) > 0')
+            ->orderBy('tanggal', 'asc')
+            ->get();
 
-                    foreach ($stokMasuk as $row) {
-                        if ($qty_keluar <= 0) break;
-                        $stok_tersedia = $row->masuk - $row->keluar;
-                        $ambil = min($qty_keluar, $stok_tersedia);
+        foreach ($stokMasuk as $row) {
+            if ($qty_keluar <= 0) break;
+            $stok_tersedia = $row->masuk - $row->keluar;
+            $ambil = min($qty_keluar, $stok_tersedia);
 
-                        DB::table('t_kartupersbahan')->insert([
-                            'id'           => $nextId++,
-                            'no_transaksi' => $no_opname,
-                            'tanggal'      => $tanggal,
-                            'kode_bahan'   => $bahan->kode_bahan,
-                            'masuk'        => 0,
-                            'keluar'       => $ambil,
-                            'harga'        => $row->harga,
-                            'satuan'       => $bahan->satuan,
-                            'keterangan'   => $detail['alasan'],
-                            'tanggal_exp'  => $row->tanggal_exp,
-                        ]);
-                        $qty_keluar -= $ambil;
-                    }
-                } else {
-                    // Penambahan stok (masuk) tetap satu baris
-                    DB::table('t_kartupersbahan')->insert([
-                        'id'           => $nextId++,
-                        'no_transaksi' => $no_opname,
-                        'tanggal'      => $tanggal,
-                        'kode_bahan'   => $bahan->kode_bahan,
-                        'masuk'        => $detail['jumlah'],
-                        'keluar'       => 0,
-                        'harga'        => $detail['harga_satuan'],
-                        'satuan'       => $bahan->satuan,
-                        'keterangan'   => $detail['alasan'],
-                        'tanggal_exp'  => $row->tanggal_exp,
-                    ]);
-                }
+            DB::table('t_kartupersbahan')->insert([
+                'id'           => $nextId++,
+                'no_transaksi' => $no_opname,
+                'tanggal'      => $tanggal,
+                'kode_bahan'   => $bahan->kode_bahan,
+                'masuk'        => 0,
+                'keluar'       => $ambil,
+                'harga'        => $row->harga,
+                'satuan'       => $bahan->satuan,
+                'keterangan'   => $detail['alasan'],
+                'tanggal_exp'  => $row->tanggal_exp,
+            ]);
+            $qty_keluar -= $ambil;
+        }
+    } else {
+        // Selisih lebih: tambah stok, ambil harga & tanggal_exp dari stok masuk terakhir
+        $lastMasuk = DB::table('t_kartupersbahan')
+            ->where('kode_bahan', $bahan->kode_bahan)
+            ->where('masuk', '>', 0)
+            ->orderBy('tanggal', 'desc')
+            ->first();
 
-                // Update stok akhir pada t_bahan
-                $stok_akhir = DB::table('t_kartupersbahan')
-                    ->where('kode_bahan', $bahan->kode_bahan)
-                    ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
-                    ->value('stok') ?? 0;
-                DB::table('t_bahan')
-                    ->where('kode_bahan', $bahan->kode_bahan)
-                    ->update(['stok' => $stok_akhir]);
-            }
+        DB::table('t_kartupersbahan')->insert([
+            'id'           => $nextId++,
+            'no_transaksi' => $no_opname,
+            'tanggal'      => $tanggal,
+            'kode_bahan'   => $bahan->kode_bahan,
+            'masuk'        => $detail['jumlah'],
+            'keluar'       => 0,
+            'harga'        => $lastMasuk ? $lastMasuk->harga : 0,
+            'satuan'       => $bahan->satuan,
+            'keterangan'   => $detail['alasan'],
+            'tanggal_exp'  => $lastMasuk ? $lastMasuk->tanggal_exp : null,
+        ]);
+    }
 
-            // Hitung total nominal untuk jurnal hanya dari tab aktif
-            $total_debet = 0;
-            $total_kredit = 0;
-            foreach ($request->stok_fisik as $kode_bahan => $stok_fisik) {
-                $stok_sistem = $request->stok_sistem[$kode_bahan] ?? 0;
-                $selisih = $stok_fisik - $stok_sistem;
-                if ($selisih == 0) continue;
+    // Update stok akhir pada t_bahan
+    $stok_akhir = DB::table('t_kartupersbahan')
+        ->where('kode_bahan', $bahan->kode_bahan)
+        ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
+        ->value('stok') ?? 0;
+    DB::table('t_bahan')
+        ->where('kode_bahan', $bahan->kode_bahan)
+        ->update(['stok' => $stok_akhir]);
+}
 
-                // Ambil data bahan dan pastikan hanya tab aktif
-                $bahan = DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->first();
-                if (!$bahan || $bahan->kode_kategori !== $tabAktif) continue;
+// Hitung total debet dan kredit
+$total_debet = 0;   // Untuk selisih kurang (stok hilang)
+$total_kredit = 0;  // Untuk selisih lebih (stok bertambah)
 
-                // Ambil harga: minus = harga paling awal (FIFO), plus = harga paling akhir (LIFO)
-                if ($selisih < 0) {
-                    $harga = DB::table('t_kartupersbahan')
-                        ->where('kode_bahan', $kode_bahan)
-                        ->where('masuk', '>', 0)
-                        ->orderBy('tanggal', 'asc')
-                        ->value('harga') ?? 0;
-                } else {
-                    $harga = DB::table('t_kartupersbahan')
-                        ->where('kode_bahan', $kode_bahan)
-                        ->where('masuk', '>', 0)
-                        ->orderBy('tanggal', 'desc')
-                        ->value('harga') ?? 0;
-                }
-                $nominal = abs($selisih) * $harga;
-                if ($selisih < 0) {
-                    $total_debet += $nominal;
-                } else {
-                    $total_kredit += $nominal;
-                }
-            }
+foreach ($detailData as $detail) {
+    if ($detail['jumlah'] < 0) {
+        $total_debet += abs($detail['jumlah']) * $detail['harga_satuan'];
+    } else if ($detail['jumlah'] > 0) {
+        $total_kredit += abs($detail['jumlah']) * $detail['harga_satuan'];
+    }
+}
 
-            // Insert ke jurnal jika ada selisih
-            if ($total_debet > 0 || $total_kredit > 0) {
-                $lastJurnal = DB::table('t_jurnal_umum')->orderBy('no_jurnal', 'desc')->first();
-                $no_jurnal = JurnalHelper::generateNoJurnal();
+if ($total_debet > 0 || $total_kredit > 0) {
+    $no_jurnal = JurnalHelper::generateNoJurnal();
 
-                // Ambil kode akun persediaan bahan dari helper
-                $kode_akun_persediaan = AkunHelper::getIdAkun('103'); // 103 = Persediaan Bahan Baku
+    $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+    $kode_akun_beban = JurnalHelper::getKodeAkun('beban_lain');
+    $kode_akun_pendapatan = JurnalHelper::getKodeAkun('pendapatan_lain');
 
-                DB::table('t_jurnal_umum')->insert([
-                    'no_jurnal'   => $no_jurnal,
-                    'tanggal'     => $tanggal,
-                    'keterangan'  => 'Stok Opname ' . $no_opname,
-                    'nomor_bukti' => $no_opname,
-                ]);
+    DB::table('t_jurnal_umum')->insert([
+        'no_jurnal'   => $no_jurnal,
+        'tanggal'     => $tanggal,
+        'keterangan'  => 'Stok Opname ' . $no_opname,
+        'nomor_bukti' => $no_opname,
+        'jenis_jurnal'=> 'penyesuaian'
+    ]);
 
-                // Insert detail
-                DB::table('t_jurnal_detail')->insert([
-                    [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                        'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => $kode_akun_persediaan,
-                        'debit'            => $total_kredit,
-                        'kredit'           => $total_debet,
-                    ],
-                    [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                        'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => '710',
-                        'debit'            => $total_debet,
-                        'kredit'           => $total_kredit,
-                    ],
-                ]);
-            }
+    // Selisih kurang (stok hilang): Debit Beban, Kredit Persediaan
+    if ($total_debet > 0) {
+        DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => $kode_akun_beban,
+            'debit'            => $total_debet,
+            'kredit'           => 0,
+        ]);
+        DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => $kode_akun_persediaan,
+            'debit'            => 0,
+            'kredit'           => $total_debet,
+        ]);
+    }
 
+    // Selisih lebih (stok bertambah): Debit Persediaan, Kredit Pendapatan Lain-lain
+    if ($total_kredit > 0) {
+        DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => $kode_akun_persediaan,
+            'debit'            => $total_kredit,
+            'kredit'           => 0,
+        ]);
+        DB::table('t_jurnal_detail')->insert([
+            'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+            'no_jurnal'        => $no_jurnal,
+            'kode_akun'        => $kode_akun_pendapatan,
+            'debit'            => 0,
+            'kredit'           => $total_kredit,
+        ]);
+    }
+}
             DB::commit();
             return redirect()->back()->with('success', 'Stok opname berhasil disimpan. No Opname: ' . $no_opname);
         } catch (\Exception $e) {
@@ -258,173 +259,244 @@ class StokOpnameController extends Controller
         return view('stokopname.bahan', compact('no_opname', 'bahanList'));
     }
 
-    public function storeProduk(Request $request)
-    {
-        $request->validate([
-            'tanggal' => 'required|date',
-            'stok_fisik' => 'required|array',
-            'stok_sistem' => 'required|array',
+public function storeProduk(Request $request)
+{
+    $request->validate([
+        'tanggal' => 'required|date',
+        'stok_fisik' => 'required|array',
+        'stok_sistem' => 'required|array',
+    ]);
+
+    // Generate nomor opname otomatis (SOP000001, SOP000002, dst)
+    $last = DB::table('t_penyesuaian')->where('no_penyesuaian', 'like', 'SOP%')->orderByDesc('no_penyesuaian')->value('no_penyesuaian');
+    if ($last) {
+        $num = (int)substr($last, 3) + 1;
+        $no_opname = 'SOP' . str_pad($num, 6, '0', STR_PAD_LEFT);
+    } else {
+        $no_opname = 'SOP000001';
+    }
+
+    $tanggal = $request->tanggal;
+    $keterangan_umum = $request->keterangan_umum;
+
+    $lastId = DB::table('t_kartupersproduk')->max('id');
+    $nextId = $lastId ? $lastId + 1 : 1;
+
+    try {
+        DB::beginTransaction();
+
+        // Insert ke t_penyesuaian (header)
+        DB::table('t_penyesuaian')->insert([
+            'no_penyesuaian' => $no_opname,
+            'tanggal'        => $tanggal,
+            'keterangan'     => 'Penyesuaian Stok Opname Produk ' . $no_opname,
         ]);
 
-        // Generate nomor opname otomatis (SOP000001, SOP000002, dst)
-        $last = DB::table('t_penyesuaian')->where('no_penyesuaian', 'like', 'SOP%')->orderByDesc('no_penyesuaian')->value('no_penyesuaian');
-        if ($last) {
-            $num = (int)substr($last, 3) + 1;
-            $no_opname = 'SOP' . str_pad($num, 6, '0', STR_PAD_LEFT);
-        } else {
-            $no_opname = 'SOP000001';
+        $detailData = [];
+        foreach ($request->stok_fisik as $kode_produk => $stok_fisik) {
+            if (is_null($stok_fisik)) continue;
+
+            $produk = DB::table('t_produk')->where('kode_produk', $kode_produk)->first();
+            if (!$produk) continue;
+
+            $stok_sistem = DB::table('t_kartupersproduk')
+                ->where('kode_produk', $kode_produk)
+                ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
+                ->value('stok') ?? 0;
+            $selisih = $stok_fisik - $stok_sistem;
+            $keterangan_produk = $request->keterangan[$kode_produk] ?? '';
+            $keterangan = 'Stok Opname: ' . trim($keterangan_umum . ($keterangan_produk ? ' - ' . $keterangan_produk : ''));
+
+            if ($selisih == 0) continue;
+
+            // Hitung hpp
+            if ($selisih < 0) {
+                $hpp = getHargaFIFOProduk($kode_produk, abs($selisih));
+            } else {
+                $lastMasuk = DB::table('t_kartupersproduk')
+                    ->where('kode_produk', $produk->kode_produk)
+                    ->where('masuk', '>', 0)
+                    ->orderBy('tanggal', 'desc')
+                    ->first();
+                $hpp = $lastMasuk ? $lastMasuk->hpp : 0;
+            }
+
+            $total_nilai = abs($selisih) * $hpp;
+
+            $detailData[] = [
+                'no_penyesuaian' => $no_opname,
+                'tipe_item'      => 'PRODUK',
+                'kode_item'      => $produk->kode_produk,
+                'jumlah'         => $selisih,
+                'harga_satuan'   => $hpp,
+                'total_nilai'    => $total_nilai,
+                'alasan'         => $keterangan,
+            ];
         }
 
-        $tanggal = $request->tanggal;
-        $keterangan_umum = $request->keterangan_umum;
+        if (count($detailData) > 0) {
+            DB::table('t_penyesuaian_detail')->insert($detailData);
+        }
 
-        $lastId = DB::table('t_kartupersproduk')->max('id');
-        $nextId = $lastId ? $lastId + 1 : 1;
+        // Insert ke kartu persediaan produk & update stok
+        foreach ($detailData as $detail) {
+            $produk = DB::table('t_produk')->where('kode_produk', $detail['kode_item'])->first();
+            if (!$produk) continue;
 
-        \Log::debug('Data opname produk', [
-            'stok_fisik' => $request->stok_fisik,
-            'stok_sistem' => $request->stok_sistem,
-        ]);
+            if ($detail['jumlah'] < 0) {
+                // Selisih kurang: keluarkan stok per batch FIFO
+                $qty_keluar = abs($detail['jumlah']);
+                $stokMasuk = DB::table('t_kartupersproduk')
+                    ->where('kode_produk', $produk->kode_produk)
+                    ->whereRaw('(masuk - keluar) > 0')
+                    ->orderBy('tanggal', 'asc')
+                    ->get();
 
-        try {
-            DB::beginTransaction();
+                foreach ($stokMasuk as $row) {
+                    if ($qty_keluar <= 0) break;
+                    $stok_tersedia = $row->masuk - $row->keluar;
+                    $ambil = min($qty_keluar, $stok_tersedia);
 
-            // Insert ke t_penyesuaian (SEBELUM proses lain)
-            DB::table('t_penyesuaian')->insert([
-                'no_penyesuaian' => $no_opname,
-                'tanggal'        => $tanggal,
-                'keterangan'     => 'Penyesuaian Stok Opname Produk ' . $no_opname,
-            ]);
-
-            // Simpan ke t_kartupersproduk & update stok
-            foreach ($request->stok_fisik as $kode_produk => $stok_fisik) {
-                $stok_sistem = $request->stok_sistem[$kode_produk] ?? 0;
-                $selisih = $stok_fisik - $stok_sistem;
-                $keterangan_produk = $request->keterangan[$kode_produk] ?? '';
-                $keterangan = 'Stok Opname: ' . trim($keterangan_umum . ($keterangan_produk ? ' - ' . $keterangan_produk : ''));
-
-                if ($selisih == 0) continue; // Data dengan selisih 0 tidak diproses
-
-                // Ambil data produk
-                $produk = DB::table('t_produk')->where('kode_produk', $kode_produk)->first();
-                if (!$produk) continue;
-
-                // Ambil harga: minus = harga paling awal (FIFO), plus = harga paling akhir (LIFO)
-                if ($selisih < 0) {
-$harga = getHargaFIFOProduk($kode_produk, abs($selisih));
-
-                } else {
-                    $harga = DB::table('t_kartupersproduk')
-                        ->where('kode_produk', $produk->kode_produk)
-                        ->where('masuk', '>', 0)
-                        ->orderBy('tanggal', 'desc')
-                        ->value('harga') ?? 0;
+                    DB::table('t_kartupersproduk')->insert([
+                        'id'           => $nextId++,
+                        'no_transaksi' => $no_opname,
+                        'tanggal'      => $tanggal,
+                        'kode_produk'  => $produk->kode_produk,
+                        'masuk'        => 0,
+                        'keluar'       => $ambil,
+                        'hpp'          => $row->hpp,
+                        'satuan'       => $produk->satuan,
+                        'keterangan'   => $detail['alasan'],
+                        'tanggal_exp'  => $row->tanggal_exp,
+                    ]);
+                    $qty_keluar -= $ambil;
                 }
+            } else {
+                // Selisih lebih: tambah stok, ambil hpp & tanggal_exp dari stok masuk terakhir
+                $lastMasuk = DB::table('t_kartupersproduk')
+                    ->where('kode_produk', $produk->kode_produk)
+                    ->where('masuk', '>', 0)
+                    ->orderBy('tanggal', 'desc')
+                    ->first();
 
                 DB::table('t_kartupersproduk')->insert([
                     'id'           => $nextId++,
                     'no_transaksi' => $no_opname,
                     'tanggal'      => $tanggal,
                     'kode_produk'  => $produk->kode_produk,
-                    'masuk'        => $selisih > 0 ? abs($selisih) : 0,
-                    'keluar'       => $selisih < 0 ? abs($selisih) : 0,
-                    'harga'        => $harga,
+                    'masuk'        => $detail['jumlah'],
+                    'keluar'       => 0,
+                    'hpp'          => $lastMasuk ? $lastMasuk->hpp : 0,
                     'satuan'       => $produk->satuan,
-                    'keterangan'   => $keterangan,
-                    'tanggal_exp'  => $row->tanggal_exp,
+                    'keterangan'   => $detail['alasan'],
+                    'tanggal_exp'  => $lastMasuk ? $lastMasuk->tanggal_exp : null,
                 ]);
-
-                // Update stok akhir pada t_produk
-                DB::table('t_produk')
-                    ->where('kode_produk', $produk->kode_produk)
-                    ->update(['stok' => $stok_fisik]);
             }
 
-            // Hitung total nominal untuk jurnal
-            $total_debet = 0;
-            $total_kredit = 0;
-            foreach ($request->stok_fisik as $kode_produk => $stok_fisik) {
-                $stok_sistem = $request->stok_sistem[$kode_produk] ?? 0;
-                $selisih = $stok_fisik - $stok_sistem;
-                if ($selisih == 0) continue; // Data dengan selisih 0 tidak dihitung jurnal
+            // Update stok akhir pada t_produk
+            $stok_akhir = DB::table('t_kartupersproduk')
+                ->where('kode_produk', $produk->kode_produk)
+                ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
+                ->value('stok') ?? 0;
+            DB::table('t_produk')
+                ->where('kode_produk', $produk->kode_produk)
+                ->update(['stok' => $stok_akhir]);
+        }
 
-                if ($selisih < 0) {
-                    $harga = DB::table('t_kartupersproduk')
-                        ->where('kode_produk', $kode_produk)
-                        ->where('masuk', '>', 0)
-                        ->orderBy('tanggal', 'asc')
-                        ->value('harga') ?? 0;
-                } else {
-                    $harga = DB::table('t_kartupersproduk')
-                        ->where('kode_produk', $kode_produk)
-                        ->where('masuk', '>', 0)
-                        ->orderBy('tanggal', 'desc')
-                        ->value('harga') ?? 0;
-                }
-                $nominal = abs($selisih) * $harga;
-                if ($selisih < 0) {
-                    $total_debet += $nominal;
-                } else {
-                    $total_kredit += $nominal;
-                }
+        // Jurnal
+        $total_debet = 0;
+        $total_kredit = 0;
+        foreach ($detailData as $detail) {
+            if ($detail['jumlah'] < 0) {
+                $total_debet += abs($detail['jumlah']) * $detail['harga_satuan'];
+            } else if ($detail['jumlah'] > 0) {
+                $total_kredit += abs($detail['jumlah']) * $detail['harga_satuan'];
             }
+        }
 
-            // Insert ke jurnal jika ada selisih
-            if ($total_debet > 0 || $total_kredit > 0) {
-                $lastJurnal = DB::table('t_jurnal_umum')->orderBy('no_jurnal', 'desc')->first();
-                $no_jurnal = JurnalHelper::generateNoJurnal();
+        if ($total_debet > 0 || $total_kredit > 0) {
+            $no_jurnal = JurnalHelper::generateNoJurnal();
 
-                DB::table('t_jurnal_umum')->insert([
-                    'no_jurnal'   => $no_jurnal,
-                    'tanggal'     => $tanggal,
-                    'keterangan'  => 'Stok Opname Produk ' . $no_opname,
-                    'nomor_bukti' => $no_opname,
-                ]);
+            $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_produk');
+            $kode_akun_beban = JurnalHelper::getKodeAkun('beban_lain');
+            $kode_akun_pendapatan = JurnalHelper::getKodeAkun('pendapatan_lain');
 
-                // Insert detail
+            DB::table('t_jurnal_umum')->insert([
+                'no_jurnal'   => $no_jurnal,
+                'tanggal'     => $tanggal,
+                'keterangan'  => 'Stok Opname Produk ' . $no_opname,
+                'nomor_bukti' => $no_opname,
+                'jenis_jurnal'=> 'penyesuaian'
+            ]);
+
+            // Selisih kurang (stok hilang): Debit Beban, Kredit Persediaan
+            if ($total_debet > 0) {
                 DB::table('t_jurnal_detail')->insert([
-                    [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                        'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => '105',
-                        'debit'            => $total_kredit,
-                        'kredit'           => 0,
-                    ],
-                    [
-                        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail(),
-                        'no_jurnal'        => $no_jurnal,
-                        'kode_akun'        => '710',
-                        'debit'            => 0,
-                        'kredit'           => $total_kredit,
-                    ],
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_beban,
+                    'debit'            => $total_debet,
+                    'kredit'           => 0,
+                ]);
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_persediaan,
+                    'debit'            => 0,
+                    'kredit'           => $total_debet,
                 ]);
             }
 
-            DB::commit();
-            return redirect()->back()->with('success', 'Stok opname produk berhasil disimpan. No Opname: ' . $no_opname);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Gagal menyimpan stok opname produk', ['error' => $e->getMessage()]);
-            return back()->withErrors(['msg' => $e->getMessage()]);
+            // Selisih lebih (stok bertambah): Debit Persediaan, Kredit Pendapatan Lain-lain
+            if ($total_kredit > 0) {
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_persediaan,
+                    'debit'            => $total_kredit,
+                    'kredit'           => 0,
+                ]);
+                DB::table('t_jurnal_detail')->insert([
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_pendapatan,
+                    'debit'            => 0,
+                    'kredit'           => $total_kredit,
+                ]);
+            }
         }
-    }
 
+        DB::commit();
+        return redirect()->back()->with('success', 'Stok opname produk berhasil disimpan. No Opname: ' . $no_opname);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Gagal menyimpan stok opname produk', ['error' => $e->getMessage()]);
+        return back()->withErrors(['msg' => $e->getMessage()]);
+    }
+}
     public function produk()
-    {
-        // Generate nomor opname otomatis untuk produk (SOP000001)
-        $last = DB::table('t_penyesuaian')->where('no_penyesuaian', 'like', 'SOP%')->orderByDesc('no_penyesuaian')->value('no_penyesuaian');
-        if ($last) {
-            $num = (int)substr($last, 3) + 1;
-            $no_opname = 'SOP' . str_pad($num, 6, '0', STR_PAD_LEFT);
-        } else {
-            $no_opname = 'SOP000001';
-        }
-
-        // Ambil semua produk untuk ditampilkan di form
-        $produkList = DB::table('t_produk')->get();
-
-        return view('stokopname.produk', compact('no_opname', 'produkList'));
+{
+    // Generate nomor opname otomatis untuk produk (SOP000001)
+    $last = DB::table('t_penyesuaian')->where('no_penyesuaian', 'like', 'SOP%')->orderByDesc('no_penyesuaian')->value('no_penyesuaian');
+    if ($last) {
+        $num = (int)substr($last, 3) + 1;
+        $no_opname = 'SOP' . str_pad($num, 6, '0', STR_PAD_LEFT);
+    } else {
+        $no_opname = 'SOP000001';
     }
+
+    // Ambil semua produk dan hitung stok sistem dari kartu persediaan produk
+    $produkList = DB::table('t_produk')->get()->map(function($produk) {
+        $stok_sistem = DB::table('t_kartupersproduk')
+            ->where('kode_produk', $produk->kode_produk)
+            ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
+            ->value('stok') ?? 0;
+        $produk->stok_sistem = $stok_sistem;
+        return $produk;
+    });
+
+    return view('stokopname.produk', compact('no_opname', 'produkList'));
+}
 }
 
 /**
@@ -470,7 +542,7 @@ function getHargaFIFOProduk($kode_produk, $qty_keluar) {
         ->where('kode_produk', $kode_produk)
         ->where('masuk', '>', 0)
         ->orderBy('tanggal', 'asc')
-        ->get(['masuk', 'keluar', 'harga']);
+        ->get(['masuk', 'keluar', 'hpp']);
 
     $qty_sisa = $qty_keluar;
     $harga_total = 0;
@@ -481,7 +553,7 @@ function getHargaFIFOProduk($kode_produk, $qty_keluar) {
         if ($stok_tersedia <= 0) continue;
 
         $ambil = min($qty_sisa, $stok_tersedia);
-        $harga_total += $ambil * $row->harga;
+        $harga_total += $ambil * $row->hpp;
         $qty_diambil += $ambil;
         $qty_sisa -= $ambil;
 

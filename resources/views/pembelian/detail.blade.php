@@ -87,32 +87,41 @@
                     <input type="text" class="form-control" value="{{ $pembelian->hutang }}" readonly>
                 </div>
             </div>
+            <div class="mb-3 row">
+    <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+    <div class="col-sm-8">
+        <input type="text" class="form-control" value="{{ $jatuh_tempo ?? '-' }}" readonly>
+    </div>
+</div>
         </div>
     </div>
 
     <!-- Detail Bahan -->
     <h5 class="mt-4">Detail Bahan</h5>
     <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Nama Bahan</th>
-                <th>Satuan</th>
-                <th>Jumlah</th>
-                <th>Harga</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($details as $detail)
-            <tr>
-                <td>{{ $detail->nama_bahan }}</td>
-                <td>{{ $detail->satuan }}</td>
-                <td>{{ $detail->bahan_masuk }}</td>
-                <td>{{ number_format($detail->harga_beli, 0, ',', '.') }}</td>
-                <td>{{ number_format($detail->subtotal ?? $detail->bahan_masuk * $detail->harga_beli, 0, ',', '.') }}</td>
-            </tr>
-            @endforeach
-        </tbody>
+
+<thead>
+    <tr>
+        <th>Nama Bahan</th>
+        <th>Satuan</th>
+        <th>Jumlah</th>
+        <th>Harga</th>
+        <th>Subtotal</th>
+        <th>Tanggal Expired</th> <!-- Tambahan -->
+    </tr>
+</thead>
+<tbody>
+    @foreach($details as $detail)
+    <tr>
+        <td>{{ $detail->nama_bahan }}</td>
+        <td>{{ $detail->satuan }}</td>
+        <td>{{ $detail->bahan_masuk }}</td>
+        <td>{{ number_format($detail->harga_beli, 0, ',', '.') }}</td>
+        <td>{{ number_format($detail->subtotal ?? $detail->bahan_masuk * $detail->harga_beli, 0, ',', '.') }}</td>
+        <td>{{ $detail->tanggal_exp ?? '-' }}</td> <!-- Tambahan -->
+    </tr>
+    @endforeach
+</tbody>
     </table>
 
     <div class="mt-3">
