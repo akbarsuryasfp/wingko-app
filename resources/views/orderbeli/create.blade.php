@@ -2,115 +2,211 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">INPUT PERMINTAAN PEMBELIAN</h3>
-    <style>
-    .table th {
-        text-align: center;
-        vertical-align: middle !important;
-    }
+    <div class="card shadow">
+                            <style>
+input[readonly] {
+    background-color: #e9ecef;
+    color: #495057;
+}
+                    </style>
 
-    .col-nama-bahan {
-        width: 250px;
+<div class="card-header bg-transparent border-0 text-center py-3">
+    <h4 class="mb-0">Tambah Permintaan Pembelian</h4>
+</div>
+        
+        <div class="card-body">
+            <form action="{{ route('orderbeli.store') }}" method="POST">
+                @csrf
+                
+<div class="row g-3 mb-4 align-items-stretch">
+    <!-- Kolom Kiri: Data Order -->
+    <div class="col-lg-6">
+        <div class="card h-100 border-light shadow-sm">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title mb-3">
+                    <i class="fas fa-clipboard-list me-0"></i>Informasi Permintaan Pembelian
+                </h5>
+                
+                <div class="flex-grow-1">
+                    <div class="mb-2 row align-items-center">
+                        <label class="col-sm-4 col-form-label fw-medium">Kode Permintaan</label>
+                        <div class="col-sm-8">
+                            <input type="text" name="no_order_beli" class="form-control form-control-sm" value="{{ $no_order_beli }}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2 row align-items-center">
+                        <label class="col-sm-4 col-form-label fw-medium">Tanggal Order</label>
+                        <div class="col-sm-8">
+                            <input type="date" name="tanggal_order" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2 row align-items-center">
+                        <label class="col-sm-4 col-form-label fw-medium">Supplier</label>
+                        <div class="col-sm-8">
+                            <select name="kode_supplier" class="form-select form-select-sm" required>
+                                <option value="">Pilih Supplier</option>
+                                @foreach($suppliers as $supplier)
+                                    <option value="{{ $supplier->kode_supplier }}">{{ $supplier->nama_supplier }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+<div class="mt-4">
+    <div class="row g-3">
+        <!-- Tombol Kekurangan Produksi -->
+        <div class="col-md-6">
+            <button type="button" class="btn btn-primary w-100 py-2" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
+                <i class="fas fa-boxes me-2"></i> Kekurangan Produksi
+                <span class="badge bg-white text-primary ms-2">!</span>
+            </button>
+        </div>
+        
+        <!-- Tombol Kebutuhan Produksi -->
+        <div class="col-md-6">
+            <button type="button" class="btn btn-success w-100 py-2" data-bs-toggle="modal" data-bs-target="#prediksiModal">
+                <i class="fas fa-chart-line me-2"></i> Kebutuhan Produksi
+                <span class="badge bg-white text-success ms-2">↗</span>
+            </button>
+        </div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kolom Kanan: Data Bahan -->
+    <div class="col-lg-6">
+        <div class="card h-100 border-light shadow-sm">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title mb-3">
+                    <i class="fas fa-cube me-0"></i>Tambah Bahan
+                </h5>
+                
+                <div class="flex-grow-1">
+                    <div class="mb-2 row align-items-center">
+                        <label class="col-sm-4 col-form-label fw-medium">Nama Bahan</label>
+                        <div class="col-sm-8">
+                            <select id="kode_bahan" class="form-select form-select-sm">
+                                <option value="">Pilih Bahan</option>
+                                @foreach($bahans as $bahan)
+                                    <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">
+                                        {{ $bahan->nama_bahan }} ({{ $bahan->satuan }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2 row align-items-center">
+                        <label class="col-sm-4 col-form-label fw-medium">Jumlah Beli</label>
+                        <div class="col-sm-8">
+                            <input type="number" id="jumlah_beli" class="form-control form-control-sm" min="1">
+                        </div>
+                    </div>
+                    
+<div class="mb-2 row align-items-center">
+    <label class="col-sm-4 col-form-label fw-medium">Harga/Satuan</label>
+    <div class="col-sm-8">
+        <div class="input-group">
+            <span class="input-group-text">Rp</span>
+            <input type="number" id="harga_beli" class="form-control form-control-sm" min="0" placeholder="0">
+        </div>
+    </div>
+</div>
+                </div>
+                
+<div class="mt-4">
+    <button type="button" 
+            class="btn btn-primary w-100 py-2" 
+            onclick="tambahBahan()"
+            id="tambahBahanBtn">
+        <i class="fas fa-plus-circle me-2"></i> Tambah Bahan
+    </button>
+</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- Daftar Permintaan Pembelian -->
+                <div class="card border-light mb-">
+                    <div class="card-body">
+                        <h5 class="card-title text-center mb-3">Daftar Permintaan Pembelian</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle" id="daftar-bahan">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="5%" class="text-center">No</th>
+                                        <th class="text-center">Nama Bahan</th>
+                                        <th width="10%" class="text-center">Satuan</th>
+                                        <th width="15%" class="text-center">Jumlah Order</th>
+                                        <th width="15%" class="text-center">Harga/Satuan</th>
+                                        <th width="15%" class="text-center">Total</th>
+                                        <th width="5%" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <a href="{{ route('orderbeli.index') }}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i> ← Kembali
+                        </a>
+                        <button type="reset" class="btn btn-warning">
+                             Reset
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-6 text-md-end mb-2">
+    <div class="d-flex align-items-center justify-content-md-end gap-3">
+        <label class="mb-0">Total Harga:</label>
+        <div class="input-group" style="width: 150px;">
+            <span class="input-group-text bg-light">Rp</span>
+            <input type="text" id="total_order" name="total_order" readonly 
+                   class="form-control text-end">
+        </div>
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-1"></i> Simpan
+        </button>
+    </div>
+</div>
+                </div>
+
+                <input type="hidden" name="detail_json" id="detail_json">
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 8px;
     }
-    .col-jumlah-order {
-        width: 180px;
+    .card-header {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    .card.border-light {
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .table th {
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+    .form-control, .form-select {
+        font-size: 1rem;
     }
 </style>
-    <form action="{{ route('orderbeli.store') }}" method="POST">
-        @csrf
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
-            <!-- Kolom Kiri: Data Order -->
-            <div style="flex: 1;">
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 160px;">Kode Order Pembelian</label>
-                    <input type="text" name="no_order_beli" class="form-control" value="{{ $no_order_beli }}" readonly>
-                </div>
-<div class="mb-3 d-flex align-items-center">
-    <label class="me-2" style="width: 160px;">Tanggal Order</label>
-    <input type="date" name="tanggal_order" class="form-control" 
-           value="{{ date('Y-m-d') }}" required>
-</div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 160px;">Nama Supplier</label>
-                    <select name="kode_supplier" class="form-control" required>
-                        <option value="">---Pilih Supplier---</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->kode_supplier }}">{{ $supplier->nama_supplier }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
-                Kekurangan Bahan
-                </button>
-    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#prediksiModal">
-        Kebutuhan Produksi
-    </button>
-
-            </div>
-
-            <!-- Kolom Kanan: Data Bahan -->
-            <div style="flex: 1;">
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Nama Bahan</label>
-                    <select id="kode_bahan" class="form-control">
-                        <option value="">---Pilih Bahan---</option>
-@foreach($bahans as $bahan)
-    <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">
-        {{ $bahan->nama_bahan }} ({{ $bahan->satuan }})
-    </option>
-@endforeach
-                    </select>
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Jumlah Beli</label>
-                    <input type="number" id="jumlah_beli" class="form-control">
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga/Satuan</label>
-                    <input type="number" id="harga_beli" class="form-control">
-                </div>
-                <div class="mb-3 d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary w-100" onclick="tambahBahan()">Tambah Bahan</button>
-                </div>
-            </div>
-        </div>
-
-        <hr>
-
-        <h4 class="text-center">DAFTAR PERMINTAAN PEMBELIAN</h4>
-        <table class="table table-bordered text-center align-middle" id="daftar-bahan">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Bahan</th>
-                    <th>Satuan</th>
-                    <th>Jumlah Order</th>
-                    <th>Harga/Satuan</th>
-                    <th>Total</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <div class="d-flex justify-content-between mt-4">
-            <!-- Tombol kiri -->
-            <div>
-                <a href="{{ route('orderbeli.index') }}" class="btn btn-secondary">Back</a>
-                <button type="reset" class="btn btn-warning">Reset</button>
-            </div>
-
-            <!-- Total dan Submit kanan -->
-            <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Harga</label>
-                <input type="text" id="total_order" name="total_order" readonly class="form-control" style="width: 160px;">
-                <button type="submit" class="btn btn-success">Submit</button>
-            </div>
-        </div>
-
-        <input type="hidden" name="detail_json" id="detail_json">
-    </form>
-</div>
 
 <!-- Modal Kekurangan Bahan -->
 <div class="modal fade" id="modalKekurangan" tabindex="-1" aria-labelledby="modalKekuranganLabel" aria-hidden="true">
@@ -193,8 +289,18 @@
                     <td>${item.nama_bahan}</td>
                     <td>${item.satuan}</td>
                     <td>${item.jumlah_beli}</td>
-                    <td>${item.harga_beli}</td>
-                    <td>${item.total}</td>
+                    <td class="text-end">
+    <div class="d-flex justify-content-end align-items-center">
+        <span class="me-1">Rp</span>
+        <span>${new Intl.NumberFormat('id-ID').format(item.harga_beli)}</span>
+    </div>
+</td>
+<td class="text-end">
+    <div class="d-flex justify-content-end align-items-center">
+        <span class="me-1">Rp</span>
+        <span>${new Intl.NumberFormat('id-ID').format(item.total)}</span>
+    </div>
+</td>
                     <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})">X</button></td>
                 </tr>
             `;
@@ -347,16 +453,16 @@ prediksiTabContent.innerHTML += `
     <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
         <table class="table table-bordered mt-3">
             <thead class="table-light">
-                <tr class="text-center">
-                    <th>No</th>
-                    <th class="col-nama-bahan">Nama Bahan</th>
-                    <th>Frekuensi Pembelian</th>
-                    <th class="col-jumlah-order">Jumlah Dibeli per Periode</th>
-                    <th>Stok Minimum</th>
-                    <th>Stok Tersedia</th>
-                    <th>Satuan</th>
-                    <th>Aksi</th>
-                </tr>
+<tr class="text-center">
+    <th style="vertical-align: middle;">No</th>
+    <th class="col-nama-bahan" style="vertical-align: middle;">Nama Bahan</th>
+    <th style="vertical-align: middle;">Frekuensi Pembelian</th>
+    <th class="col-jumlah-order" style="vertical-align: middle;">Jumlah Dibeli per Periode</th>
+    <th style="vertical-align: middle;">Stok Minimum</th>
+    <th style="vertical-align: middle;">Stok Tersedia</th>
+    <th style="vertical-align: middle;">Satuan</th>
+    <th style="vertical-align: middle;">Aksi</th>
+</tr>
             </thead>
             <tbody>
                 ${rows}

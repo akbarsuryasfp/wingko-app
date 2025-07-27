@@ -95,13 +95,13 @@
                     <span class="float-start">Rp</span>
                     <span class="float-end">{{ number_format($p->hutang,0,',','.') }}</span>
                 </td>
-                <td>
-                    @if($p->hutang > 0)
-                        <span class="badge bg-warning text-dark">Belum Lunas</span>
-                    @else
-                        <span class="badge bg-success">Lunas</span>
-                    @endif
-                </td>
+<td>
+    @if ($p->utang_status === 'lunas' || $p->hutang == 0)
+        <span class="badge bg-success">Lunas</span>
+    @else
+        <span class="badge bg-warning text-dark">Belum Lunas</span>
+    @endif
+</td>
                 <td>
                     <a href="{{ route('pembelian.show', $p->no_pembelian) }}" class="btn btn-secondary btn-sm" title="Detail">
                         <i class="bi bi-info-circle"></i>

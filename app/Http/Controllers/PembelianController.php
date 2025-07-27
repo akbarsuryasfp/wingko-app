@@ -555,8 +555,12 @@ if ($sisa_hutang > 0) {
 {
     $query = DB::table('t_pembelian')
         ->leftJoin('t_supplier', 't_pembelian.kode_supplier', '=', 't_supplier.kode_supplier')
-        ->select('t_pembelian.*', 't_supplier.nama_supplier');
-
+        ->leftJoin('t_utang', 't_pembelian.no_pembelian', '=', 't_utang.no_pembelian')
+        ->select(
+            't_pembelian.*',
+            't_supplier.nama_supplier',
+            't_utang.status as utang_status'
+        );
     if ($request->jenis_pembelian) {
         $query->where('t_pembelian.jenis_pembelian', $request->jenis_pembelian);
     }
@@ -565,8 +569,23 @@ if ($sisa_hutang > 0) {
     $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
     $query->whereBetween('t_pembelian.tanggal_pembelian', [$tanggal_mulai, $tanggal_selesai]);
 
-    $pembelian = $query->orderBy('t_pembelian.no_pembelian', 'asc')->get();
+    $pembelian = $query->orderBy('t_pembelian.tanggal_pembelian', 'asc')->get();
+        // Sinkronisasi status: jika utang_status == 'lunas', maka status pembelian juga 'Lunas' dan hutang = 0
+    // Revisi: Update langsung ke database jika status utang == lunas
+    foreach ($pembelian as $p) {
+        if ($p->utang_status === 'Lunas') {
+            DB::table('t_pembelian')
+                ->where('no_pembelian', $p->no_pembelian)
+                ->update([
+                    'status' => 'Lunas',
+                    'hutang' => 0
+                ]);
 
+            // Update di objek agar view ikut menampilkan nilai baru
+            $p->status = 'Lunas';
+            $p->hutang = 0;
+        }
+    }
     return view('pembelian.index', compact('pembelian'));
 }
 

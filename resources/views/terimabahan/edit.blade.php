@@ -73,10 +73,14 @@
 
         <input type="hidden" name="detail_json" id="detail_json" value="{{ json_encode($terimaBahan->details) }}">
 
-        <div class="mt-4">
-            <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary">Kembali</a>
-            <button type="submit" class="btn btn-primary">Simpan</button>
-        </div>
+                    <div>
+                    <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary">← Kembali</a>
+                    <button type="reset" class="btn btn-warning">Reset</button>
+</div>
+<div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+</div>
+                </div>
     </form>
 
     <div id="order-detail-info" class="mb-2" style="font-size: 90%; color: #555;"></div>

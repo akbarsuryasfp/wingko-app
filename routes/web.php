@@ -76,11 +76,12 @@ Route::post('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 's
 // Route terima bahan
 Route::get('/terimabahan/laporan', [TerimabahanController::class, 'laporan'])->name('terimabahan.laporan');
 Route::resource('terimabahan', TerimabahanController::class);
-Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimabahanController::class, 'getSisaOrder']);
+Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimaBahanController::class, 'getSisaOrder']);
 Route::get('/terimabahan/{id}/edit', [TerimabahanController::class, 'edit'])->name('terimabahan.edit');
 Route::get('/terimabahan/{no_terima_bahan}/detail', [PembelianController::class, 'detailTerimaBahan']);
 Route::get('/terimabahan/{no_terima_bahan}/data', [PembelianController::class, 'getTerimaBahan']);
-
+Route::get('/terimabahan/sisa-order/{no_order}', [TerimaBahanController::class, 'getSisaOrder']);
+Route::get('/get-order-detail/{no_order_beli}', [TerimaBahanController::class, 'getOrderDetail']);
 
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
