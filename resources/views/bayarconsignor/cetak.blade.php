@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Surat Pengiriman Produk Konsinyasi - {{ $header->no_konsinyasikeluar }}</title>
+    <title>Bukti Pembayaran Consignor - {{ $header->no_bayarconsignor }}</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 14px; }
         .nota-container { width: 700px; margin: 0 auto; border: 1px solid #333; padding: 24px 32px; }
@@ -30,17 +30,18 @@
     <div class="nota-header">
         <div class="nota-title">
             <h2 style="margin-bottom:12px;">WINGKO BABAT PRATAMA</h2>
-            <div class="sub fw-bold" style="margin-bottom:8px;">Surat Pengiriman Produk Konsinyasi</div>
-            <div class="sub" style="margin-bottom:8px;">Tanggal Pengiriman: {{ $header->tanggal_setor }}</div>
-            <div class="sub">Kepada Yth: {{ $header->consignee->nama_consignee ?? '-' }}</div>
+            <div class="sub fw-bold" style="margin-bottom:8px;">Bukti Pembayaran Consignor (Pemilik Barang)</div>
+            <div class="sub" style="margin-bottom:8px;">Tanggal Pembayaran: {{ $header->tanggal_bayar }}</div>
+            <div class="sub">Kepada Yth: {{ $header->consignor->nama_consignor ?? '-' }}</div>
         </div>
         <div class="nota-print no-print">
             <button onclick="window.print()" style="padding:4px 12px;">Print</button>
         </div>
     </div>
-    <div class="nota-info" style="margin-top:8px;">No Surat Pengiriman: {{ $header->no_suratpengiriman ?? $header->no_konsinyasikeluar }}</div>
-    <div class="nota-info" style="margin-top:2px;">No Konsinyasi Keluar: {{ $header->no_konsinyasikeluar }}</div>
-    <div class="nota-info" style="margin-top:2px;">Alamat Mitra: {{ $header->consignee->alamat ?? '-' }}</div>
+    <div class="nota-info" style="margin-top:8px;">No Bukti Pembayaran: {{ $header->no_bayarconsignor }}</div>
+    <div class="nota-info" style="margin-top:2px;">Alamat: {{ $header->consignor->alamat ?? '-' }}</div>
+    <div class="nota-info" style="margin-top:2px;">Rekening: {{ $header->consignor->rekening ?? '-' }}</div>
+    <div class="nota-info" style="margin-top:12px;">Metode Pembayaran: {{ $header->metode_pembayaran ?? '-' }}</div>
     <div class="nota-info" style="margin-top:2px;">Keterangan: {{ $header->keterangan ?? '-' }}</div>
 
     <table class="nota-table" style="margin-top: 18px;">
@@ -48,36 +49,38 @@
             <tr>
                 <th>No</th>
                 <th>Nama Produk</th>
-                <th>Satuan</th>
-                <th>Jumlah Setor</th>
-                <th>Harga Setor/Produk</th>
+                <th>Stok</th>
+                <th>Jumlah Terjual</th>
+                <th>Harga Satuan</th>
                 <th>Subtotal</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($header->details as $i => $detail)
+            @php $total = 0; @endphp
+            @foreach($header->details as $i => $d)
             <tr>
                 <td>{{ $i+1 }}</td>
-                <td>{{ $detail->produk->nama_produk ?? $detail->nama_produk ?? '-' }}</td>
-                <td>{{ $detail->satuan }}</td>
-                <td>{{ $detail->jumlah_setor }}</td>
-                <td>Rp{{ number_format($detail->harga_setor, 0, ',', '.') }}</td>
-                <td>Rp{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
+                <td>{{ $d->produk->nama_produk ?? '-' }}</td>
+                <td>{{ $d->jumlah_stok ?? ($d->produk->jumlah_stok ?? '-') }}</td>
+                <td>{{ $d->jumlah_terjual }}</td>
+                <td>Rp{{ number_format($d->harga_satuan,0,',','.') }}</td>
+                <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
+            @php $total += $d->subtotal; @endphp
             @endforeach
         </tbody>
     </table>
 
     <table class="nota-summary" style="margin-left:0; width: 350px;">
         <tr>
-            <td class="fw-bold" style="width:170px;">Total Setor</td>
-            <td>: Rp{{ number_format($header->total_setor, 0, ',', '.') }}</td>
+            <td class="fw-bold" style="width:170px;">Total Bayar</td>
+            <td>: Rp{{ number_format($total, 0, ',', '.') }}</td>
         </tr>
     </table>
 
     <div class="section-title">Catatan</div>
     <div style="font-size:13px;">
-        Produk di atas dikirim untuk dititipkan/dijual secara konsinyasi di tempat mitra. Mohon periksa dan konfirmasi penerimaan produk.
+        Bukti pembayaran ini diberikan kepada consignor sebagai tanda pembayaran atas produk yang telah terjual secara konsinyasi.
     </div>
 
     <div class="footer">

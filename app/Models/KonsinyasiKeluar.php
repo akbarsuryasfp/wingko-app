@@ -7,8 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class KonsinyasiKeluar extends Model
 {
     protected $table = 't_konsinyasikeluar';
+    protected $primaryKey = 'no_konsinyasikeluar';
+    public $incrementing = false;
+    protected $keyType = 'string';
+    public $timestamps = false;
+    
     protected $fillable = [
-        'kode_setor', 'tanggal_setor', 'kode_consignee', 'total_setor'
+        'kode_setor', 'tanggal_setor', 'kode_consignee', 'total_setor', 'keterangan', 'no_suratpengiriman'
     ];
 
     public function consignee()
@@ -18,7 +23,7 @@ class KonsinyasiKeluar extends Model
 
     public function details()
     {
-        return $this->hasMany(KonsinyasiKeluar::class, 'konsinyasikeluar_id');
+        return $this->hasMany(KonsinyasiKeluarDetail::class, 'no_konsinyasikeluar', 'no_konsinyasikeluar');
     }
 
     // KonsinyasiKeluarDetail logic

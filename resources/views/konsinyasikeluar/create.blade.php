@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h4 class="mb-4">DATA KONSINYASI KELUAR</h4>
+    <h3 class="mb-4">INPUT KONSINYASI KELUAR</h3>
     @if ($errors->any())
         <div class="alert alert-danger">
             <ul>
@@ -14,95 +14,266 @@
     @endif
     <form action="{{ route('konsinyasikeluar.store') }}" method="POST">
         @csrf
-        <div class="row mb-3">
-            <div class="col-md-3">
-                <label>No Konsinyasi Keluar</label>
-                <input type="text" name="kode_setor" class="form-control" required value="{{ $kodeOtomatis ?? old('kode_setor') }}" readonly>
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+            <!-- Kolom Kiri: Data Konsinyasi -->
+            <div style="flex: 1;">
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
+                    <input type="text" name="kode_setor" class="form-control" required value="{{ $kodeOtomatis ?? old('kode_setor') }}" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">No Surat Konsinyasi Keluar</label>
+                    <input type="text" name="no_suratpengiriman" id="no_suratpengiriman" class="form-control" style="width:100%;" required value="{{ old('no_suratpengiriman') }}" readonly>
+                </div>
+                <div class="mb-1 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;"></label>
+                    <div class="form-control" style="background: #f8f9fa; color: #6c757d; border: 1px solid #dee2e6; min-height: 38px;">Nomor surat akan muncul setelah memilih Nama Consignee (Mitra) dan Tanggal Setor.</div>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Nama Consignee (Mitra)</label>
+                    <select name="kode_consignee" class="form-control" required>
+                        <option value="">---Pilih Consignee---</option>
+                        @foreach($consignees as $c)
+                            <option value="{{ $c->kode_consignee }}" {{ old('kode_consignee')==$c->kode_consignee?'selected':'' }}>{{ $c->nama_consignee }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Tanggal Setor</label>
+                    <input type="date" name="tanggal_setor" class="form-control" required value="{{ old('tanggal_setor') }}">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Keterangan</label>
+                    <input type="text" name="keterangan" class="form-control">
+                </div>
             </div>
-            <div class="col-md-3">
-                <label>No Surat Konsinyasi Keluar</label>
-                <input type="text" name="no_surat" class="form-control" required value="{{ $noSuratOtomatis ?? old('no_surat') }}" readonly>
-            </div>
-            <div class="col-md-3">
-                <label>Nama Consignee (Mitra)</label>
-                <select name="kode_consignee" class="form-control" required>
-                    <option value="">---Pilih Consignee---</option>
-                    @foreach($consignees as $c)
-                        <option value="{{ $c->kode_consignee }}" {{ old('kode_consignee')==$c->kode_consignee?'selected':'' }}>{{ $c->nama_consignee }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label>Tanggal Setor</label>
-                <input type="date" name="tanggal_setor" class="form-control" required value="{{ old('tanggal_setor') }}">
+
+            <!-- Kolom Kanan: Data Produk Setor -->
+            <div style="flex: 1;">
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 120px;">Produk</label>
+                    <select id="kode_produk" class="form-control">
+                        <option value="">---Pilih Produk---</option>
+                        <!-- Opsi produk akan diisi via JS -->
+                    </select>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 120px;">Jumlah Setor</label>
+                    <input type="number" id="jumlah_setor" class="form-control">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 120px;">Satuan</label>
+                    <input type="text" id="satuan" class="form-control" readonly>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 120px;">Harga Setor/Produk</label>
+                    <input type="number" id="harga_setor" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProdukSetor()">Tambah Produk</button>
+                </div>
             </div>
         </div>
+
         <hr>
-        <h5 class="mb-3">DAFTAR PRODUK KONSINYASI KELUAR</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered text-center align-middle" id="produk-table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama Produk</th>
-                        <th>Jumlah Setor</th>
-                        <th>Satuan</th>
-                        <th>Harga Setor</th>
-                        <th>Subtotal</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Baris produk dinamis -->
-                </tbody>
-            </table>
+
+        <h4 class="text-center">DAFTAR PRODUK KONSINYASI KELUAR</h4>
+        <table class="table table-bordered text-center align-middle" id="daftar-produk-setor">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Produk</th>
+                    <th>Jumlah Setor</th>
+                    <th>Satuan</th>
+                    <th>Harga Setor/Produk</th>
+                    <th>Subtotal</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="d-flex justify-content-between mt-4">
+            <div>
+                <a href="{{ route('konsinyasikeluar.index') }}" class="btn btn-secondary">Back</a>
+                <button type="reset" class="btn btn-warning">Reset</button>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <label class="mb-0">Total Setor</label>
+                <input type="text" id="total_setor_view" readonly class="form-control" style="width: 160px;">
+                <input type="hidden" id="total_setor" name="total_setor">
+                <button type="submit" class="btn btn-success">Submit</button>
+            </div>
         </div>
-        <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="tambahProduk()">Tambah Produk</button>
-        <div class="d-flex justify-content-start gap-2 mt-4">
-            <a href="{{ route('konsinyasikeluar.index') }}" class="btn btn-secondary">Back</a>
-            <button type="reset" class="btn btn-warning">Reset</button>
-            <button type="submit" class="btn btn-success ms-auto">Submit</button>
-        </div>
+
+        <input type="hidden" name="detail_json" id="detail_json">
     </form>
 </div>
+
 <script>
-    let produkList = @json($produkList);
-    function tambahProduk() {
-        let row = `<tr>
-            <td></td>
-            <td><select name="produk[][kode_produk]" class="form-control produk-select" required onchange="isiSatuan(this)">
-                <option value="">---Pilih Produk---</option>
-                ${produkList.map(p=>`<option value='${p.kode_produk}' data-satuan='${p.satuan}'>${p.nama_produk}</option>`).join('')}
-            </select></td>
-            <td><input type="number" name="produk[][jumlah_setor]" class="form-control jumlah" min="1" required></td>
-            <td><input type="text" name="produk[][satuan]" class="form-control satuan" required readonly></td>
-            <td><input type="number" name="produk[][harga_setor]" class="form-control harga" min="0" required></td>
-            <td class="subtotal">0</td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)"><i class='bi bi-trash'></i></button></td>
-        </tr>`;
-        document.querySelector('#produk-table tbody').insertAdjacentHTML('beforeend', row);
-        updateNoUrut();
-    }
-    function hapusBaris(btn) {
-        btn.closest('tr').remove();
-        updateNoUrut();
-    }
-    function updateNoUrut() {
-        document.querySelectorAll('#produk-table tbody tr').forEach((tr, i) => {
-            tr.querySelector('td').innerText = i+1;
-        });
-    }
-    function isiSatuan(select) {
-        let satuan = select.options[select.selectedIndex].getAttribute('data-satuan') || '';
-        select.closest('tr').querySelector('.satuan').value = satuan;
-    }
-    document.addEventListener('input', function(e) {
-        if(e.target.classList.contains('jumlah') || e.target.classList.contains('harga')) {
-            let tr = e.target.closest('tr');
-            let jumlah = tr.querySelector('.jumlah').value || 0;
-            let harga = tr.querySelector('.harga').value || 0;
-            tr.querySelector('.subtotal').innerText = jumlah * harga;
-        }
+const allProdukKonsinyasi = @json($produkList);
+
+// --- Nomor Surat Otomatis ---
+function getMonthRomawi(month) {
+    const romawi = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    return romawi[month-1] || '';
+}
+function padSuratNo(num) {
+    return String(num).padStart(3, '0');
+}
+function generateNoSuratpengiriman(tanggalSetor, consignee) {
+    if (!tanggalSetor) return '';
+    const date = new Date(tanggalSetor);
+    const bulan = date.getMonth() + 1;
+    const tahun = date.getFullYear();
+    const bulanRomawi = getMonthRomawi(bulan);
+    // Ambil nomor urut terakhir dari localStorage (atau bisa AJAX ke backend jika ingin lebih akurat)
+    let lastNo = localStorage.getItem('lastNoSuratKonsKeluar') || 0;
+    lastNo = parseInt(lastNo) + 1;
+    localStorage.setItem('lastNoSuratKonsKeluar', lastNo);
+    return `${padSuratNo(lastNo)}/KONS-KELUAR/WBP-SMG/${bulanRomawi}/${tahun}`;
+}
+
+const tanggalSetorInput = document.querySelector('input[name="tanggal_setor"]');
+const noSuratpengirimanInput = document.getElementById('no_suratpengiriman');
+
+tanggalSetorInput.addEventListener('change', function() {
+    // Reset nomor urut jika tahun/bulan berubah (opsional, jika ingin urut per bulan)
+    localStorage.removeItem('lastNoSuratKonsKeluar');
+    const noSuratpengiriman = generateNoSuratpengiriman(this.value);
+    noSuratpengirimanInput.value = noSuratpengiriman;
+});
+// Set otomatis saat load jika tanggal sudah terisi
+if (tanggalSetorInput.value) {
+    const noSuratpengiriman = generateNoSuratpengiriman(tanggalSetorInput.value);
+    noSuratpengirimanInput.value = noSuratpengiriman;
+}
+
+// Populate produk select
+function updateProdukSelect() {
+    const produkSelect = document.getElementById('kode_produk');
+    produkSelect.innerHTML = '<option value="">---Pilih Produk---</option>';
+    allProdukKonsinyasi.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.kode_produk;
+        opt.textContent = p.nama_produk;
+        opt.setAttribute('data-satuan', p.satuan);
+        // Set harga_setor, harga_jual, harga_beli ke data attribute jika ada
+        if (p.harga_setor) opt.setAttribute('data-harga_setor', p.harga_setor);
+        if (p.harga_jual) opt.setAttribute('data-harga_jual', p.harga_jual);
+        if (p.harga_beli) opt.setAttribute('data-harga_beli', p.harga_beli);
+        produkSelect.appendChild(opt);
     });
+}
+updateProdukSelect();
+
+document.getElementById('kode_produk').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const satuan = selected?.getAttribute('data-satuan') || '';
+    document.getElementById('satuan').value = satuan;
+    // Harga default: Moaci = 20000, Wingko Babat = 25000, selain itu cek data produk
+    let harga = '';
+    const nama = selected?.textContent?.toLowerCase() || '';
+    if (nama.includes('moaci')) {
+        harga = 20000;
+    } else if (nama.includes('wingko babat')) {
+        harga = 25000;
+    } else {
+        harga = selected?.getAttribute('data-harga_setor')
+            || selected?.getAttribute('data-harga_jual')
+            || selected?.getAttribute('data-harga_beli')
+            || '';
+    }
+    document.getElementById('harga_setor').value = harga;
+});
+
+// Data array untuk detail produk setor
+let produkSetorList = [];
+
+function tambahProdukSetor() {
+    const kode_produk = document.getElementById('kode_produk').value;
+    const jumlah_setor = parseInt(document.getElementById('jumlah_setor').value);
+    const harga_setor = parseFloat(document.getElementById('harga_setor').value);
+    const satuan = document.getElementById('satuan').value;
+    const produkSelect = document.getElementById('kode_produk');
+    const nama_produk = produkSelect.options[produkSelect.selectedIndex]?.text || '';
+
+    if (!kode_produk || !jumlah_setor || !harga_setor) {
+        alert('Lengkapi data produk!');
+        return;
+    }
+    // Cek duplikat produk
+    if (produkSetorList.some(p => p.kode_produk === kode_produk)) {
+        alert('Produk sudah ditambahkan!');
+        return;
+    }
+    const subtotal = jumlah_setor * harga_setor;
+    produkSetorList.push({ kode_produk, nama_produk, jumlah_setor, satuan, harga_setor, subtotal });
+    renderTabelProdukSetor();
+    resetInputProduk();
+}
+
+function renderTabelProdukSetor() {
+    const tbody = document.querySelector('#daftar-produk-setor tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+    function formatRupiah(angka) {
+        if (!angka && angka !== 0) return '';
+        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
+    }
+    produkSetorList.forEach((item, idx) => {
+        total += item.subtotal;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${item.nama_produk}</td>
+            <td>${item.jumlah_setor}</td>
+            <td>${item.satuan}</td>
+            <td>${formatRupiah(item.harga_setor)}</td>
+            <td>${formatRupiah(item.subtotal)}</td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusProdukSetor(${idx})" title="Hapus"><span style='font-size:1.2em;'>&#128465;</span></button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('total_setor_view').value = formatRupiah(total);
+    document.getElementById('total_setor').value = total;
+    document.getElementById('detail_json').value = JSON.stringify(produkSetorList.map(p => ({
+        kode_produk: p.kode_produk,
+        jumlah_setor: p.jumlah_setor,
+        satuan: p.satuan,
+        harga_setor: p.harga_setor,
+        subtotal: p.subtotal
+    })));
+}
+
+function hapusProdukSetor(idx) {
+    produkSetorList.splice(idx, 1);
+    renderTabelProdukSetor();
+}
+
+function resetInputProduk() {
+    document.getElementById('kode_produk').value = '';
+    document.getElementById('jumlah_setor').value = '';
+    document.getElementById('harga_setor').value = '';
+    document.getElementById('satuan').value = '';
+}
+
+// Validasi sebelum submit form
+const form = document.querySelector('form[action="{{ route('konsinyasikeluar.store') }}"]');
+form.addEventListener('submit', function(e) {
+    if (produkSetorList.length === 0) {
+        alert('Minimal 1 produk harus ditambahkan!');
+        e.preventDefault();
+        return false;
+    }
+    // Pastikan detail_json terisi data terbaru
+    document.getElementById('detail_json').value = JSON.stringify(produkSetorList.map(p => ({
+        kode_produk: p.kode_produk,
+        jumlah_setor: p.jumlah_setor,
+        satuan: p.satuan,
+        harga_setor: p.harga_setor,
+        subtotal: p.subtotal
+    })));
+});
 </script>
 @endsection

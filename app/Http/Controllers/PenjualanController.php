@@ -44,6 +44,12 @@ class PenjualanController extends Controller
                 )
                 ->get();
             $jual->details = $details;
+
+            // Ambil sisa piutang terbaru dari t_piutang
+            $piutang = DB::table('t_piutang')->where('no_jual', $jual->no_jual)->first();
+            if ($piutang) {
+                $jual->piutang = $piutang->sisa_piutang;
+            }
         }
 
         return view('penjualan.index', compact('penjualan'));
@@ -104,8 +110,16 @@ class PenjualanController extends Controller
             $request->validate($rules);
             \Log::info('PenjualanController@store - validasi sukses');
 
+
+            $status_pembayaran = ($request->piutang == 0) ? 'lunas' : 'belum lunas';
+
+
+            DB::transaction(function () use ($request, $status_pembayaran) {
+                // Insert ke t_penjualan
+
             DB::transaction(function () use ($request) {
                 // Simpan penjualan
+
                 DB::table('t_penjualan')->insert([
                     'no_jual' => $request->no_jual,
                     'tanggal_jual' => $request->tanggal_jual,
@@ -118,17 +132,87 @@ class PenjualanController extends Controller
                     'keterangan' => $request->keterangan,
                 ]);
 
-                // Simpan detail penjualan
+
                 $details = json_decode($request->detail_json, true);
                 foreach ($details as $i => $detail) {
-                    DB::table('t_penjualan_detail')->insert([
-                        'no_detailjual' => $request->no_jual . '-' . ($i+1),
-                        'no_jual' => $request->no_jual,
-                        'kode_produk' => $detail['kode_produk'],
-                        'jumlah' => $detail['jumlah'],
-                        'harga_satuan' => $detail['harga_satuan'],
-                        'subtotal' => $detail['subtotal'],
-                    ]);
+                    $isKonsinyasi = DB::table('t_produk_konsinyasi')->where('kode_produk', $detail['kode_produk'])->exists();
+                    $jumlahJual = $detail['jumlah'];
+                    $hargaSatuan = $detail['harga_satuan'];
+                    $subtotal = $detail['subtotal'];
+                    $kode_produk = $detail['kode_produk'];
+                    $counter = 1;
+                    if ($isKonsinyasi) {
+                        // FIFO: Ambil batch konsinyasi masuk tertua (masuk > 0, sisa > 0)
+                        $batches = DB::table('t_kartuperskonsinyasi')
+                            ->where('kode_produk', $kode_produk)
+                            ->where('masuk', '>', 0)
+                            ->where('sisa', '>', 0)
+                            ->orderBy('tanggal')
+                            ->orderBy('id')
+                            ->get();
+                        foreach ($batches as $batch) {
+                            if ($jumlahJual <= 0) break;
+                            $ambil = min($jumlahJual, $batch->sisa);
+                            DB::table('t_penjualan_detail')->insert([
+                                'no_detailjual' => $request->no_jual . '-' . ($i+1) . '-' . $counter,
+                                'no_jual' => $request->no_jual,
+                                'kode_produk' => $kode_produk,
+                                'jumlah' => $ambil,
+                                'harga_satuan' => $hargaSatuan,
+                                'subtotal' => $hargaSatuan * $ambil,
+                                'no_batch' => $batch->no_transaksi,
+                            ]);
+                            // Update sisa batch (opsional, jika ingin update langsung di kartu stok)
+                            // DB::table('t_kartuperskonsinyasi')->where('id', $batch->id)->decrement('sisa', $ambil);
+                            // Catat ke kartu stok konsinyasi (barang keluar)
+                            $hargaTitip = DB::table('t_konsinyasimasuk_detail')
+                                ->where('kode_produk', $kode_produk)
+                                ->orderByDesc('no_detailkonsinyasimasuk')
+                                ->value('harga_titip');
+                            $lastSisa = $batch->sisa - $ambil;
+                            DB::table('t_kartuperskonsinyasi')->insert([
+                                'tanggal' => $request->tanggal_jual,
+                                'kode_produk' => $kode_produk,
+                                'masuk' => 0,
+                                'keluar' => $ambil,
+                                'sisa' => $lastSisa,
+                                'harga_konsinyasi' => $hargaTitip,
+                                'lokasi' => 'Gudang',
+                                'keterangan' => 'Penjualan',
+                                'no_transaksi' => $request->no_jual
+                            ]);
+                            $jumlahJual -= $ambil;
+                            $counter++;
+                        }
+                    } else {
+                        // FIFO: Ambil batch produksi tertua (masuk > 0, sisa > 0), gunakan no_detail_produksi sebagai no_batch
+                        $batches = DB::table('t_kartupersproduk')
+                            ->where('kode_produk', $kode_produk)
+                            ->where('masuk', '>', 0)
+                            ->where('sisa', '>', 0)
+                            ->orderBy('tanggal')
+                            ->orderBy('id')
+                            ->get();
+                        foreach ($batches as $batch) {
+                            if ($jumlahJual <= 0) break;
+                            $ambil = min($jumlahJual, $batch->sisa);
+                            // Ambil no_detail_produksi dari t_produksi_detail
+                            $no_detail_produksi = $batch->no_transaksi; // diasumsikan field ini memang no_detail_produksi
+                            DB::table('t_penjualan_detail')->insert([
+                                'no_detailjual' => $request->no_jual . '-' . ($i+1) . '-' . $counter,
+                                'no_jual' => $request->no_jual,
+                                'kode_produk' => $kode_produk,
+                                'jumlah' => $ambil,
+                                'harga_satuan' => $hargaSatuan,
+                                'subtotal' => $hargaSatuan * $ambil,
+                                'no_batch' => $no_detail_produksi,
+                            ]);
+                            // Update sisa batch (opsional, jika ingin update langsung di kartu stok)
+                            // DB::table('t_kartupersproduk')->where('id', $batch->id)->decrement('sisa', $ambil);
+                            $jumlahJual -= $ambil;
+                            $counter++;
+                        }
+                    }
                 }
 
                 // Jika ada piutang (penjualan kredit), catat ke t_piutang
@@ -255,15 +339,21 @@ class PenjualanController extends Controller
                             ->value('sisa');
                         $lastStok = $lastStok ?? 0;
                         $sisaBaru = $lastStok - $detail['jumlah'];
+                        // Ambil harga titip terakhir dari konsinyasi masuk detail
+                        $hargaTitip = DB::table('t_konsinyasimasuk_detail')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->orderByDesc('no_detailkonsinyasimasuk')
+                            ->value('harga_titip');
                         DB::table('t_kartuperskonsinyasi')->insert([
                             'tanggal' => $request->tanggal_jual,
                             'kode_produk' => $detail['kode_produk'],
                             'masuk' => 0,
                             'keluar' => $detail['jumlah'],
                             'sisa' => $sisaBaru,
-                            'harga_konsinyasi' => $detail['harga_satuan'],
+                            'harga_konsinyasi' => $hargaTitip,
                             'lokasi' => 'Gudang',
-                            'keterangan' => 'Penjualan'
+                            'keterangan' => 'Penjualan',
+                            'no_transaksi' => $no_jual
                         ]);
                     }
                 }

@@ -41,43 +41,25 @@
                     </select>
                 </div>
                 <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Jenis Retur</label>
+                    <select name="jenis_retur" class="form-control" required>
+                        <option value="">---Pilih Jenis Retur---</option>
+                        <option value="Barang" {{ $returjual->jenis_retur == 'Barang' ? 'selected' : '' }}>Barang</option>
+                        <option value="Uang" {{ $returjual->jenis_retur == 'Uang' ? 'selected' : '' }}>Uang</option>
+                    </select>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control" value="{{ $returjual->keterangan }}">
                 </div>
             </div>
 
-            <!-- Kolom Kanan: Data Produk Retur -->
-            <div style="flex: 1;">
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Produk</label>
-                    <select id="kode_produk" class="form-control" disabled tabindex="-1" style="background:#e9ecef; pointer-events:none;">
-                        <option value="">---Pilih Produk---</option>
-                        @foreach($produk as $pr)
-                            <option value="{{ $pr->kode_produk }}" data-nama="{{ $pr->nama_produk }}">{{ $pr->nama_produk }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Jumlah Retur</label>
-                    <input type="number" id="jumlah_retur" class="form-control" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga Satuan</label>
-                    <input type="number" id="harga_satuan" class="form-control" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Alasan</label>
-                    <input type="text" id="alasan" class="form-control" readonly tabindex="-1" style="background:#e9ecef; pointer-events:none;">
-                </div>
-                <div class="mb-3">
-                    <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProdukRetur()">Tambah Produk Retur</button>
-                </div>
-            </div>
+            <!-- Kolom Kanan: Data Produk Retur dihapus agar tampilan edit sama seperti create -->
         </div>
 
         <hr>
 
-        <h4 class="text-center">DAFTAR PRODUK RETUR</h4>
+        <h4 class="text-center">DAFTAR PRODUK RETUR PENJUALAN</h4>
         <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
             <thead>
                 <tr>
@@ -109,28 +91,73 @@
     </form>
 </div>
 
+@php
+    if (!isset($jenisList)) {
+        $jenisList = ['Penjualan', 'Pengembalian'];
+    }
+@endphp
+
 <script>
-    // Inisialisasi dari backend
-    let daftarProdukRetur = @json($details);
-    // Data jumlah maksimal per produk dari penjualan
+    // Gabungkan semua produk penjualan (t_penjualan_detail) dengan detail retur
+    let daftarProdukRetur = [];
     let maxJumlahPerProduk = {};
+    let hargaSatuanProduk = {};
+    // Mapping harga satuan per produk
+    @foreach($produk as $pr)
+        hargaSatuanProduk['{{ $pr->kode_produk }}'] = {{ $pr->harga_satuan ?? 0 }};
+    @endforeach
+
+    // Data jumlah maksimal per produk dari penjualan
     @foreach($penjualanDetail as $kode_produk => $detail)
         maxJumlahPerProduk['{{ $kode_produk }}'] = {{ $detail->jumlah }};
     @endforeach
 
-    // Pastikan data awal tidak melebihi max
-    daftarProdukRetur.forEach(function(item, idx) {
-        const max = maxJumlahPerProduk[item.kode_produk] || 0;
-        if (item.jumlah_retur > max) {
-            item.jumlah_retur = max;
-            item.subtotal = max * item.harga_satuan;
+    // Gabungkan produk penjualan dan detail retur
+    @php
+        // Pastikan $produk asosiatif: [kode_produk => produkObj]
+        if (is_array($produk)) {
+            $produkAssoc = $produk;
+        } elseif (method_exists($produk, 'keyBy')) {
+            $produkAssoc = $produk->keyBy('kode_produk')->all();
+        } else {
+            $produkAssoc = [];
         }
-    });
-
-    // Mapping harga satuan per produk
-    let hargaSatuanProduk = {};
-    @foreach($produk as $pr)
-        hargaSatuanProduk['{{ $pr->kode_produk }}'] = {{ $pr->harga_satuan ?? 0 }};
+    @endphp
+    @foreach($penjualanDetail as $kode_produk => $detail)
+        @php
+            $found = null;
+            foreach ($details as $d) {
+                if ($d['kode_produk'] == $kode_produk) { $found = $d; break; }
+            }
+            // Selalu prioritaskan nama produk dari t_produk (master produk)
+            $nama_produk = '';
+            if (isset($produkAssoc[$kode_produk]) && isset($produkAssoc[$kode_produk]->nama_produk)) {
+                $nama_produk = $produkAssoc[$kode_produk]->nama_produk;
+            } else if (isset($detail->produk) && isset($detail->produk->nama_produk)) {
+                $nama_produk = $detail->produk->nama_produk;
+            } else if (isset($detail->nama_produk)) {
+                $nama_produk = $detail->nama_produk;
+            } else if ($found && isset($found['nama_produk'])) {
+                $nama_produk = $found['nama_produk'];
+            }
+            if (empty($nama_produk)) {
+                $nama_produk = 'Tidak ditemukan';
+            }
+            $harga_satuan = isset($detail->harga_satuan) ? $detail->harga_satuan : (isset($detail->produk) && isset($detail->produk->harga_satuan) ? $detail->produk->harga_satuan : 0);
+        @endphp
+        // DEBUG: tampilkan nama_produk dan kode_produk di console
+        console.log('kode_produk: {{ $kode_produk }} | nama_produk: {{ $nama_produk }}');
+        @if ($loop->first)
+        console.log('DAFTAR KODE PRODUK DI $produk:', {!! json_encode(array_keys($produkAssoc)) !!});
+        @endif
+        daftarProdukRetur.push({
+            kode_produk: '{{ $kode_produk }}',
+            nama_produk: {!! json_encode($nama_produk) !!},
+            jumlah_retur: {{ $found ? $found['jumlah_retur'] : 0 }},
+            harga_satuan: {{ $found ? $found['harga_satuan'] : $harga_satuan }},
+            alasan: {!! json_encode($found ? $found['alasan'] : '') !!},
+            subtotal: {{ $found ? ($found['jumlah_retur'] * $found['harga_satuan']) : 0 }}
+        });
     @endforeach
 
     // Event: saat produk dipilih, isi harga satuan otomatis

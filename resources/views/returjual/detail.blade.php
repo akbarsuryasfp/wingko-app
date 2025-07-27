@@ -21,7 +21,11 @@
             <td>{{ $returjual->nama_pelanggan ?? '-' }}</td>
         </tr>
         <tr>
-            <th>Total Nilai Retur</th>
+            <th>Jenis Retur</th>
+            <td>{{ $returjual->jenis_retur ?? '-' }}</td>
+        </tr>
+        <tr>
+            <th>Total Retur</th>
             <td>Rp{{ number_format($returjual->total_nilai_retur,0,',','.') }}</td>
         </tr>
         <tr>
@@ -30,7 +34,7 @@
         </tr>
     </table>
 
-    <h5 class="text-center">DETAIL PRODUK RETUR</h5>
+    <h5 class="text-center">DETAIL PRODUK RETUR PENJUALAN</h5>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -53,6 +57,10 @@
                 <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
             @endforeach
+            <tr>
+                <td colspan="5" class="text-end fw-bold">Total Retur</td>
+                <td class="fw-bold">Rp{{ number_format($returjual->total_nilai_retur,0,',','.') }}</td>
+            </tr>
         </tbody>
     </table>
     <a href="{{ route('returjual.index') }}" class="btn btn-secondary">Back</a>

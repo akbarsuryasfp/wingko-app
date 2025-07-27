@@ -388,8 +388,29 @@
 
     document.getElementById('kode_produk').addEventListener('change', function() {
         const selected = this.options[this.selectedIndex];
-        const harga = selected.getAttribute('data-harga');
-        document.getElementById('harga_satuan').value = harga ? harga : '';
+        const kode_produk = selected.value;
+        // Cek apakah produk konsinyasi (bisa pakai data attribute atau cek ke backend jika perlu)
+        // Untuk universal, selalu coba fetch harga jual dari konsinyasi masuk detail
+        if (kode_produk) {
+            fetch('/api/harga-jual-konsinyasi/' + encodeURIComponent(kode_produk))
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.harga_jual) {
+                        document.getElementById('harga_satuan').value = data.harga_jual;
+                    } else {
+                        // fallback ke data-harga jika tidak ada harga jual di konsinyasi masuk
+                        const harga = selected.getAttribute('data-harga');
+                        document.getElementById('harga_satuan').value = harga ? harga : '';
+                    }
+                })
+                .catch(() => {
+                    // fallback ke data-harga jika error
+                    const harga = selected.getAttribute('data-harga');
+                    document.getElementById('harga_satuan').value = harga ? harga : '';
+                });
+        } else {
+            document.getElementById('harga_satuan').value = '';
+        }
     });
 
     document.querySelector('form').addEventListener('reset', function(e) {

@@ -69,8 +69,8 @@
                     <label class="me-2" style="width: 120px;">Harga Satuan</label>
                     <input type="number" id="harga_satuan" class="form-control">
                 </div>
-                <div class="mb-3 d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="tambahProduk()">Tambah Produk</button>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProduk()">Tambah Produk</button>
                 </div>
             </div>
         </div>

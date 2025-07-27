@@ -21,7 +21,7 @@ class KartuPersKonsinyasiController extends Controller
     {
         $lokasi = $request->get('lokasi');
         $query = DB::table('t_kartuperskonsinyasi')
-            ->select('id', 'tanggal', 'kode_produk', 'masuk', 'keluar', 'sisa', 'harga_konsinyasi', 'lokasi', 'keterangan')
+            ->select('id', 'no_transaksi', 'tanggal', 'kode_produk', 'masuk', 'keluar', 'sisa', 'harga_konsinyasi', 'lokasi', 'keterangan')
             ->where('kode_produk', $kode_produk);
         if ($lokasi) {
             $query->where('lokasi', $lokasi);

@@ -47,8 +47,10 @@
                 <div class="text-danger ms-2">{{ $message }}</div>
             @enderror
         </div>
-        <button type="submit" class="btn btn-success">Update</button>
-        <a href="{{ route('consignor.index') }}" class="btn btn-secondary">Back</a>
+        <div class="d-flex gap-2">
+            <a href="{{ route('consignor.index') }}" class="btn btn-secondary">Back</a>
+            <button type="submit" class="btn btn-success">Update</button>
+        </div>
     </form>
 </div>
 @endsection

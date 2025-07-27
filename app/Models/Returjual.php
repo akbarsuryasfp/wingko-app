@@ -17,6 +17,7 @@ class Returjual extends Model
         'no_jual',
         'tanggal_returjual',
         'kode_pelanggan',
+        'jenis_retur',
         'total_nilai_retur',
         'keterangan',
     ];
@@ -51,17 +52,25 @@ class Returjual extends Model
 
 class ReturjualDetail extends Model
 {
-    protected $table = 't_returjual_detail'; // Pastikan nama tabel sesuai
-    protected $primaryKey = 'id'; // Ganti jika primary key berbeda
+    protected $table = 't_returjual_detail';
+    protected $primaryKey = 'id';
     public $timestamps = false;
 
     protected $fillable = [
         'no_returjual',
         'kode_produk',
-        'nama_produk',
         'jumlah_retur',
         'harga_satuan',
         'alasan',
         'subtotal',
     ];
+
+    public function returjual()
+    {
+        return $this->belongsTo(Returjual::class, 'no_returjual', 'no_returjual');
+    }
+    public function produk()
+    {
+        return $this->belongsTo(\App\Models\Produk::class, 'kode_produk', 'kode_produk');
+    }
 }

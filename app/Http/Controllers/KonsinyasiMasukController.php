@@ -97,7 +97,8 @@ class KonsinyasiMasukController extends Controller
                     'sisa' => $detail['jumlah_stok'],
                     'harga_konsinyasi' => $detail['harga_titip'],
                     'lokasi' => 'Gudang',
-                    'keterangan' => 'Konsinyasi Masuk'
+                    'keterangan' => 'Konsinyasi Masuk',
+                    'no_transaksi' => $request->no_konsinyasimasuk
                 ]);
             }
         });
@@ -183,7 +184,7 @@ class KonsinyasiMasukController extends Controller
         // Hapus detail lama
         DB::table('t_konsinyasimasuk_detail')->where('no_konsinyasimasuk', $konsinyasi->no_konsinyasimasuk)->delete();
 
-        // Insert detail baru
+        // Insert detail baru dan catat ke kartu stok konsinyasi
         foreach ($details as $d) {
             DB::table('t_konsinyasimasuk_detail')->insert([
                 'no_konsinyasimasuk' => $konsinyasi->no_konsinyasimasuk,
@@ -191,6 +192,26 @@ class KonsinyasiMasukController extends Controller
                 'jumlah_stok' => $d['jumlah_stok'],
                 'harga_titip' => $d['harga_titip'],
                 'subtotal' => $d['subtotal'],
+            ]);
+            // Catat ke kartu stok konsinyasi (barang masuk)
+            $lastStok = DB::table('t_kartuperskonsinyasi')
+                ->where('kode_produk', $d['kode_produk'])
+                ->where('lokasi', 'Gudang')
+                ->orderByDesc('tanggal')
+                ->orderByDesc('id')
+                ->value('sisa');
+            $lastStok = $lastStok ?? 0;
+            $sisaBaru = $lastStok + $d['jumlah_stok'];
+            DB::table('t_kartuperskonsinyasi')->insert([
+                'tanggal' => $request->tanggal_masuk,
+                'kode_produk' => $d['kode_produk'],
+                'masuk' => $d['jumlah_stok'],
+                'keluar' => 0,
+                'sisa' => $sisaBaru,
+                'harga_konsinyasi' => $d['harga_titip'],
+                'lokasi' => 'Gudang',
+                'keterangan' => 'Konsinyasi Masuk (Update)',
+                'no_transaksi' => $konsinyasi->no_konsinyasimasuk
             ]);
         }
 
@@ -205,4 +226,76 @@ class KonsinyasiMasukController extends Controller
         DB::table('t_konsinyasimasuk_detail')->where('no_konsinyasimasuk', $id)->delete();
         return redirect()->route('konsinyasimasuk.index')->with('success', 'Data konsinyasi masuk berhasil dihapus!');
     }
+
+        // Endpoint untuk ambil detail produk konsinyasi masuk (JSON, untuk modal input harga jual)
+public function detailJson($no_konsinyasimasuk)
+{
+    try {
+        $details = DB::table('t_konsinyasimasuk_detail')
+            ->leftJoin('t_produk_konsinyasi', 't_konsinyasimasuk_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->where('t_konsinyasimasuk_detail.no_konsinyasimasuk', $no_konsinyasimasuk)
+            ->select(
+                't_konsinyasimasuk_detail.kode_produk',
+                't_produk_konsinyasi.nama_produk',
+                't_konsinyasimasuk_detail.jumlah_stok',
+                't_konsinyasimasuk_detail.harga_titip',
+                't_konsinyasimasuk_detail.harga_jual',
+                DB::raw('(COALESCE(t_konsinyasimasuk_detail.harga_jual,0) * t_konsinyasimasuk_detail.jumlah_stok) as subtotal')
+            )
+            ->get();
+
+        if ($details->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data detail tidak ditemukan'
+            ], 404);
+        }
+
+        return response()->json($details);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan server',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}    // Endpoint untuk update harga_jual pada detail produk konsinyasi masuk
+
+public function updateHargaJual(Request $request)
+{
+    $request->validate([
+        'no_konsinyasimasuk' => 'required',
+        'kode_produk' => 'required',
+        'harga_jual' => 'required|numeric|min:0',
+    ]);
+
+    try {
+        DB::table('t_konsinyasimasuk_detail')
+            ->where('no_konsinyasimasuk', $request->no_konsinyasimasuk)
+            ->where('kode_produk', $request->kode_produk)
+            ->update(['harga_jual' => $request->harga_jual]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Harga jual berhasil diperbarui'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui harga jual',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+public function getHargaJualKonsinyasi($kode_produk)
+{
+    $harga = \DB::table('t_konsinyasimasuk_detail')
+        ->where('kode_produk', $kode_produk)
+        ->whereNotNull('harga_jual')
+        ->orderByDesc('no_detailkonsinyasimasuk')
+        ->value('harga_jual');
+    return response()->json(['harga_jual' => $harga]);
+}
 }

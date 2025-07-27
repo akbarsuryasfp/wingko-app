@@ -34,6 +34,8 @@ class PesananPenjualanController extends Controller
                 )
                 ->get();
             $psn->details = $details;
+            // Cek apakah sudah ada transaksi penjualan untuk pesanan ini (t_penjualan)
+            $psn->sudah_terjual = DB::table('t_penjualan')->where('no_pesanan', $psn->no_pesanan)->exists();
         }
 
         return view('pesananpenjualan.index', compact('pesanan'));

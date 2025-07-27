@@ -95,7 +95,7 @@
             @php $grandTotal += $d->subtotal; @endphp
             @endforeach
             <tr>
-                <td colspan="5" class="text-end fw-bold">Grand Total</td>
+                <td colspan="5" class="text-end fw-bold">Total Harga</td>
                 <td class="fw-bold">Rp{{ number_format($grandTotal,0,',','.') }}</td>
             </tr>
         </tbody>

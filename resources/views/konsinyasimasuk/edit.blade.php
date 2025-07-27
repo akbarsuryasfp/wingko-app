@@ -12,7 +12,7 @@
             </ul>
         </div>
     @endif
-    <form action="{{ route('konsinyasimasuk.update', $konsinyasi->no_surattitipjual) }}" method="POST">
+    <form action="{{ route('konsinyasimasuk.update', $konsinyasi->no_surattitipjual) }}" method="POST" id="form-edit-konsinyasi">
         @csrf
         @method('PUT')
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -24,10 +24,11 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Surat Titip Jual</label>
-                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $konsinyasi->no_surattitipjual }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events: none;">
+                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $konsinyasi->no_surattitipjual }}" required>
+                    <input type="hidden" name="no_surattitipjual_lama" value="{{ $konsinyasi->no_surattitipjual }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Nama Consignor</label>
+                    <label class="me-2" style="width: 180px;">Nama Consignor (Pemilik Barang)</label>
                     <select name="kode_consignor" class="form-control" required>
                         <option value="">---Pilih Consignor---</option>
                         @foreach($consignor as $c)
@@ -60,7 +61,7 @@
                     <input type="number" id="jumlah_stok" class="form-control">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga Titip Jual</label>
+                    <label class="me-2" style="width: 120px;">Harga Titip/Produk</label>
                     <input type="number" id="harga_titip" class="form-control">
                 </div>
                 <div class="mb-3">
@@ -71,14 +72,14 @@
 
         <hr>
 
-        <h4 class="text-center">DAFTAR PENERIMAAN PRODUK KONSINYASI</h4>
+        <h4 class="text-center">DAFTAR PRODUK KONSINYASI MASUK</h4>
         <table class="table table-bordered text-center align-middle" id="daftar-produk-titip">
             <thead>
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
                     <th>Jumlah Stok</th>
-                    <th>Harga Titip Jual</th>
+                    <th>Harga Titip/Produk</th>
                     <th>Subtotal</th>
                     <th>Aksi</th>
                 </tr>
@@ -91,7 +92,7 @@
                 <a href="{{ route('konsinyasimasuk.index') }}" class="btn btn-secondary">Back</a>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Titip Jual</label>
+                <label class="mb-0">Total Titip</label>
                 <input type="text" id="total_titip_view" readonly class="form-control" style="width: 160px;">
                 <input type="hidden" id="total_titip" name="total_titip">
                 <button type="submit" class="btn btn-success">Update</button>
@@ -239,6 +240,12 @@
             return false;
         }
         document.getElementById('total_titip').value = daftarProdukTitip.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
+    });
+
+    // Pastikan form action update pakai value lama saat submit
+    document.getElementById('form-edit-konsinyasi').addEventListener('submit', function(e) {
+        const noSuratLama = document.querySelector('input[name="no_surattitipjual_lama"]').value;
+        this.action = this.action.replace(/update\/(.+)$/, 'update/' + encodeURIComponent(noSuratLama));
     });
 </script>
 @endsection

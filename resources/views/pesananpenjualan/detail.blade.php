@@ -51,6 +51,10 @@
                 <td>Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
             @endforeach
+            <tr>
+                <td colspan="4" class="text-end fw-bold">Total Pesanan</td>
+                <td class="fw-bold">Rp{{ number_format($pesanan->total_pesanan,0,',','.') }}</td>
+            </tr>
         </tbody>
     </table>
     <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary">Back</a>
