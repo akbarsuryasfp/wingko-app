@@ -182,6 +182,30 @@ if ($total_retur > 0) {
         'nomor_bukti' => $no_retur_beli,
     ]);
 
+            $sisa_utang = DB::table('t_utang')->where('no_pembelian', $request->kode_pembelian)->value('sisa_utang');
+            $status = ($sisa_utang > 0) ? 'Hutang' : 'Lunas';
+            $kode_akun_debit = $status === 'Hutang'
+                ? JurnalHelper::getKodeAkun('utang_usaha')
+                : JurnalHelper::getKodeAkun('kas_bank');
+            $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
+
+            DB::table('t_jurnal_detail')->insert([
+                [
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_debit,
+                    'debit'            => $total_retur,
+                    'kredit'           => 0,
+                ],
+                [
+                    'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                    'no_jurnal'        => $no_jurnal,
+                    'kode_akun'        => $kode_akun_persediaan,
+                    'debit'            => 0,
+                    'kredit'           => $total_retur,
+                ],
+            ]);
+        }
     // Akun yang digunakan
     $kode_akun_debit      = JurnalHelper::getKodeAkun('retur_pembelian');     // akun penampung retur
     $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');    // akun pengurang persediaan
@@ -203,7 +227,7 @@ if ($total_retur > 0) {
         'debit'            => 0,
         'kredit'           => $total_retur,
     ]);
-}
+
 
         return redirect()->route('returbeli.index')->with('success', 'Data retur pembelian berhasil disimpan.');
     }
@@ -382,6 +406,23 @@ if ($total_retur > 0) {
     $kode_akun_debit      = JurnalHelper::getKodeAkun('retur_pembelian');
     $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
+        DB::table('t_jurnal_detail')->insert([
+            [
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal'        => $no_jurnal,
+                'kode_akun'        => $kode_akun_debit,
+                'debit'            => $total_retur,
+                'kredit'           => 0,
+            ],
+            [
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal'        => $no_jurnal,
+                'kode_akun'        => $kode_akun_persediaan,
+                'debit'            => 0,
+                'kredit'           => $total_retur,
+            ],
+        ]);
+    }
     // Baris jurnal debit: Retur Pembelian
     DB::table('t_jurnal_detail')->insert([
         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
@@ -399,7 +440,7 @@ if ($total_retur > 0) {
         'debit'            => 0,
         'kredit'           => $total_retur,
     ]);
-}
+
 
 
     return redirect()->route('returbeli.index')->with('success', 'Data retur berhasil diupdate.');
