@@ -75,9 +75,6 @@
                                 <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary me-2">
                                  ← Kembali
                                 </a>
-                                <button type="reset" class="btn btn-warning">
-                                   Reset
-                                </button>
                             </div>
                             <div class="col-sm-6 text-end">
                                 <button type="submit" class="btn btn-success">
@@ -349,23 +346,6 @@ document.querySelector('form').addEventListener('submit', function(e) {
         detailJson.value = JSON.stringify(arr);
     }
 });
-document.querySelector('form').addEventListener('reset', function(e) {
-    // Reset dropdown order ke default
-    const orderSelect = document.getElementById('no_order_beli');
-    if (orderSelect) orderSelect.selectedIndex = 0;
 
-    // Kosongkan daftarDetail dan update tabel
-    daftarDetail = [];
-    updateTabel();
-
-    // Kosongkan info supplier
-    document.getElementById('nama_supplier').value = '';
-    document.getElementById('kode_supplier').value = '';
-    document.getElementById('order-detail-info').innerHTML = '';
-
-    // Kosongkan tbody tabel detail (jika ada sisa dari blade)
-    const tbody = document.querySelector('#tabel-detail tbody');
-    if (tbody) tbody.innerHTML = '';
-});
 </script>
 @endsection

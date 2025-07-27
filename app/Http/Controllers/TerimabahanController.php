@@ -237,22 +237,22 @@ public function getDetail($no_order)
         return redirect()->route('terimabahan.index')->with('success', 'Penerimaan bahan berhasil disimpan!');
     }
 
-    public function show($id)
-    {
-        $terima = DB::table('t_terimabahan')
-            ->where('no_terima_bahan', $id)
-            ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
-            ->select('t_terimabahan.*', 't_supplier.nama_supplier')
-            ->first();
+public function show($id)
+{
+    $terima = DB::table('t_terimabahan')
+        ->where('no_terima_bahan', $id)
+        ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
+        ->select('t_terimabahan.*', 't_supplier.nama_supplier')
+        ->first();
 
-        $details = DB::table('t_terimab_detail')
-            ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-            ->where('no_terima_bahan', $id)
-            ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
-            ->get();
+    $details = DB::table('t_terimab_detail')
+        ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+        ->where('no_terima_bahan', $id)
+        ->select('t_terimab_detail.*', 't_bahan.nama_bahan', 't_bahan.satuan')
+        ->get();
 
-        return view('terimabahan.detail', compact('terima', 'details'));
-    }
+    return view('terimabahan.detail', compact('terima', 'details'));
+}
 
 public function getOrderDetail($no_order_beli)
 {

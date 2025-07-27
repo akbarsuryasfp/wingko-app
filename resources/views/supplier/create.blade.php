@@ -102,9 +102,6 @@
                                 <a href="{{ route('supplier.index') }}" class="btn btn-secondary me-2">
                                  ← Kembali
                                 </a>
-                                <button type="reset" class="btn btn-warning">
-                                   Reset
-                                </button>
                             </div>
                             <div class="col-sm-6 text-end">
                                 <button type="submit" class="btn btn-success">
