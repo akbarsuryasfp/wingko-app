@@ -2,134 +2,179 @@
 
 @section('content')
 <div class="container mt-5">
-    <h3>Pembelian Langsung</h3>
-    <form action="{{ route('pembelian.storeLangsung') }}" method="POST">
-        @csrf
-<div class="row">
-    <div class="col-md-6">
-        <div class="form-group row mb-3">
-            <label class="col-sm-4 col-form-label">Kode Pembelian</label>
-            <div class="col-sm-8">
-                <input type="text" class="form-control" name="kode_pembelian" value="{{ $kode_pembelian }}" readonly>
-            </div>
+    <div class="card shadow mb-4">
+        <div class="card-header text-center border-0">
+            <h5 class="m-0 font-weight-bold">Pembelian Langsung</h5>
         </div>
-
-        <div class="form-group row mb-3">
-            <label class="col-sm-4 col-form-label">Tanggal Pembelian</label>
-            <div class="col-sm-8">
-                <input type="date" class="form-control" name="tanggal_pembelian" 
-                       value="{{ date('Y-m-d') }}" required>
-            </div>
+        <div class="card-body">
+            <form action="{{ route('pembelian.storeLangsung') }}" method="POST">
+                @csrf
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        
+                                <div class="card-body">
+    <div class="form-group row mb-2">
+        <label class="col-sm-4 col-form-label">Kode Pembelian</label>
+        <div class="col-sm-8">
+            <input type="text" class="form-control bg-light" name="kode_pembelian" value="{{ $kode_pembelian }}" readonly>
         </div>
-
-<div class="form-group row mb-3">
-    <label class="col-sm-4 col-form-label">Supplier</label>
-    <div class="col-sm-8">
-        <select class="form-control" name="kode_supplier" required>
-            <option value="">--- Pilih Supplier ---</option>
-            @foreach ($suppliers as $sup)
-                <option value="{{ $sup->kode_supplier }}">{{ $sup->nama_supplier }}</option>
-            @endforeach
-        </select>
-    </div>
-</div>
     </div>
 
-    <div class="col-md-6">
-        <div class="form-group row mb-3">
-            <label class="col-sm-4 col-form-label">Jenis Pembayaran</label>
-            <div class="col-sm-8">
-                <select class="form-control" id="metode_bayar" name="metode_bayar" required>
-                    <option value="">---Pilih Pembayaran---</option>
-                    <option value="Tunai">Tunai</option>
-                    <option value="Hutang">Transfer</option>
-                </select>
-            </div>
+    <div class="form-group row mb-2">
+        <label class="col-sm-4 col-form-label">Tanggal Pembelian</label>
+        <div class="col-sm-8">
+            <input type="date" class="form-control" name="tanggal_pembelian" value="{{ date('Y-m-d') }}" required>
         </div>
+    </div>
 
-        <div class="form-group row mb-3">
-            <label class="col-sm-4 col-form-label">No Nota</label>
-            <div class="col-sm-8">
-                <input type="text" class="form-control" name="no_nota">
-            </div>
+    <div class="form-group row mb-2">
+        <label class="col-sm-4 col-form-label">Supplier</label>
+        <div class="col-sm-8">
+            <select class="form-control" name="kode_supplier" required>
+                <option value="">--- Pilih Supplier ---</option>
+                @foreach ($suppliers as $sup)
+                    <option value="{{ $sup->kode_supplier }}">{{ $sup->nama_supplier }}</option>
+                @endforeach
+            </select>
         </div>
     </div>
 </div>
+                         
+                       
+                    </div>
 
-        <h5 class="mt-4">Input Bahan</h5>
-        <table class="table table-bordered" id="bahan_table">
-            <thead>
-                <tr>
-                    <th>Nama Bahan</th>
-                    <th>Jumlah</th>
-                    <th>Harga</th>
-                    <th>Tanggal Expired</th>
-                    <th>Subtotal</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+                    <div class="col-md-6">
+                    
+                            <div class="card-body">
+                                <div class="form-group row mb-2">
+                                    <label class="col-sm-4 col-form-label">Jenis Pembayaran</label>
+                                    <div class="col-sm-8">
+                                        <select class="form-control" id="metode_bayar" name="metode_bayar" required>
+                                            <option value="">---Pilih Pembayaran---</option>
+                                            <option value="Tunai">Tunai</option>
+                                            <option value="Hutang">Transfer</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-        <div class="mb-3">
-    <button type="button" class="btn btn-sm btn-success" id="tambah_bahan">Tambah Bahan</button>
+                                <div class="form-group row mb-2">
+                                    <label class="col-sm-4 col-form-label">No Nota</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" class="form-control" name="no_nota">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                  
+                </div>
 
-    <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalGabungan">
-  Kebutuhan Bahan
-</button>
+                <div class="card mb-2">
+                    <div class="card-header py-1">
+                        <h5 class="m-0">Daftar Pembelian Bahan</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-bordered mb-0" id="bahan_table">
+<thead>
+    <tr class="text-center">
+        <th class="align-middle">Nama Bahan</th>
+        <th class="align-middle">Jumlah</th>
+        <th class="align-middle">Harga</th>
+        <th class="align-middle">Tanggal Expired</th>
+        <th class="align-middle">Subtotal</th>
+        <th class="align-middle">Aksi</th>
+    </tr>
+</thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success ms-2" id="tambah_bahan">Tambah Bahan</button>
+                    <button type="button" class="btn btn-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalGabungan">
+                        Kebutuhan Bahan
+                    </button>
+                </div>
+
+              
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <label class="col-sm-4 col-form-label">Total Harga</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+    <span class="input-group-text">Rp</span>
+    <input type="number" class="form-control bg-light" id="total_harga" name="total_harga" readonly>
 </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <label class="col-sm-4 col-form-label">Diskon</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" id="diskon" name="diskon" value="0" oninput="hitungTotal()">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <label class="col-sm-4 col-form-label">Ongkir</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" id="ongkir" name="ongkir" value="0" oninput="hitungTotal()">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <label class="col-sm-4 col-form-label">Total Pembelian</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control bg-light" id="total_pembelian" name="total_pembelian" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label class="col-sm-4 col-form-label">Total Bayar</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" id="total_bayar" name="total_bayar" value="0" oninput="hitungTotal()">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <label class="col-sm-4 col-form-label">Kurang Bayar</label>
+                            <div class="col-sm-8">
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control bg-light" id="hutang" name="hutang" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2 align-items-center" id="row_jatuh_tempo" style="display: none;">
+                            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+                            <div class="col-sm-8">
+                                <input type="date" class="form-control" name="jatuh_tempo" id="jatuh_tempo">
+                            </div>
+                        </div>
+                    </div>
+             
 
-        <div class="row mb-2">
-            <label class="col-sm-4 col-form-label">Total Harga</label>
-            <div class="col-sm-8">
-                <input type="number" class="form-control" id="total_harga" name="total_harga" readonly>
-            </div>
-        </div>
-        <div class="row mb-2">
-            <label class="col-sm-4 col-form-label">Diskon</label>
-            <div class="col-sm-8">
-                <input type="number" class="form-control" id="diskon" name="diskon" value="0" oninput="hitungTotal()">
-            </div>
-        </div>
-        <div class="row mb-2">
-            <label class="col-sm-4 col-form-label">Ongkir</label>
-            <div class="col-sm-8">
-                <input type="number" class="form-control" id="ongkir" name="ongkir" value="0" oninput="hitungTotal()">
-            </div>
-        </div>
-        <div class="row mb-2">
-            <label class="col-sm-4 col-form-label">Total Pembelian</label>
-            <div class="col-sm-8">
-                <input type="number" class="form-control" id="total_pembelian" name="total_pembelian" readonly>
-            </div>
-        </div>
-        <div class="row mb-3">
-            <label class="col-sm-4 col-form-label">Total Bayar</label>
-            <div class="col-sm-8">
-                <input type="number" class="form-control" id="total_bayar" name="total_bayar" value="0" oninput="hitungTotal()">
-            </div>
-        </div>
-        <div class="row mb-4">
-            <label class="col-sm-4 col-form-label">Kurang Bayar</label>
-            <div class="col-sm-8">
-                <input type="number" class="form-control" id="hutang" name="hutang" readonly>
-            </div>
-        </div>
-        <div class="row mb-2 align-items-center" id="row_jatuh_tempo" style="display: none;">
-            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
-            <div class="col-sm-8">
-                <input type="date" class="form-control" name="jatuh_tempo" id="jatuh_tempo">
-            </div>
-        </div>
+                <input type="hidden" name="status" id="status" value="Proses">
 
-        <input type="hidden" name="status" id="status" value="Proses">
-
-        <div class="d-flex justify-content-between">
-            <a href="{{ route('pembelian.index') }}" class="btn btn-secondary">Kembali</a>
-            <button type="submit" class="btn btn-primary">Simpan</button>
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <a href="{{ route('pembelian.index') }}" class="btn btn-secondary"> ← Kembali</a>
+                    <button type="reset" class="btn btn-warning">Reset</button>
+</div>
+                    <button type="submit" class="btn btn-success">Simpan</button>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 
 <!-- Modal Gabungan -->
@@ -316,16 +361,69 @@ function tambahBahanKeTabel(kode, nama, satuan, jumlah) {
     $jq('#bahan_table tbody').append(`
         <tr data-kode="${kode}">
             <td>${selectHtml}</td>
-            <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah}" min="0" step="0.01"></td>
-            <td><input type="number" name="harga[]" class="form-control harga" value="0" min="0"></td>
+            <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah}" min="0" step="0.01" oninput="updateSubtotal(this)"></td>
+            <td><input type="number" name="harga[]" class="form-control harga" value="0" min="0" oninput="updateSubtotal(this)"></td>
             <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
             <td class="subtotal">0</td>
-            <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
+            <td><button type="button" class="btn btn-danger btn-sm remove" onclick="hapusBahan(this)">X</button></td>
         </tr>
     `);
 
-    updateSubtotal();
+    updateTotalHarga();
 }
+
+function updateSubtotal(inputElement) {
+    const row = $jq(inputElement).closest('tr');
+    const jumlah = parseFloat(row.find('.jumlah').val()) || 0;
+    const harga = parseFloat(row.find('.harga').val()) || 0;
+    const subtotal = Math.round(jumlah * harga); // Round to integer
+    
+    row.find('.subtotal').text(subtotal); // No .toFixed(2)
+    updateTotalHarga();
+}
+
+function updateTotalHarga() {
+    let total = 0;
+    $jq('#bahan_table tbody tr').each(function() {
+        const subtotalText = $jq(this).find('.subtotal').text();
+        total += parseInt(subtotalText) || 0; // Use parseInt instead of parseFloat
+    });
+    
+    $jq('#total_harga').val(total); // No decimal places
+    hitungTotal();
+}
+
+function hitungTotal() {
+    const totalHarga = parseInt($jq('#total_harga').val()) || 0;
+    const diskon = parseInt($jq('#diskon').val()) || 0;
+    const ongkir = parseInt($jq('#ongkir').val()) || 0;
+    const totalBayar = parseInt($jq('#total_bayar').val()) || 0;
+    
+    const totalPembelian = totalHarga - diskon + ongkir;
+    const hutang = totalPembelian - totalBayar;
+    
+    $jq('#total_pembelian').val(totalPembelian);
+    $jq('#hutang').val(hutang > 0 ? hutang : 0);
+    $jq('#row_jatuh_tempo').toggle(hutang > 0);
+    $jq('#status').val(hutang > 0 ? 'Hutang' : 'Lunas');
+}
+
+function hapusBahan(button) {
+    $jq(button).closest('tr').remove();
+    updateTotalHarga();
+}
+
+
+
+// Initialize event listeners when document is ready
+$jq(document).ready(function() {
+    // Event delegation for dynamically added elements
+    $jq('#bahan_table').on('input', '.jumlah, .harga', function() {
+        updateSubtotal(this);
+    });
+    
+    $jq('#diskon, #ongkir, #total_bayar').on('input', hitungTotal);
+});
 
 // Update subtotal ketika jumlah atau harga diubah
 $jq(document).on('input', '.jumlah, .harga', function () {
@@ -354,18 +452,18 @@ function updateSubtotal() {
 
 // Fungsi untuk menghitung total pembelian
 function hitungTotal() {
-    let totalHarga = parseFloat($jq('#total_harga').val()) || 0;
-    let diskon = parseFloat($jq('#diskon').val()) || 0;
-    let ongkir = parseFloat($jq('#ongkir').val()) || 0;
+    let totalHarga = Math.round(parseFloat($jq('#total_harga').val())) || 0;
+    let diskon = Math.round(parseFloat($jq('#diskon').val())) || 0;
+    let ongkir = Math.round(parseFloat($jq('#ongkir').val())) || 0;
+    let totalBayar = Math.round(parseFloat($jq('#total_bayar').val())) || 0;
+    
     let totalPembelian = totalHarga - diskon + ongkir;
-    let totalBayar = parseFloat($jq('#total_bayar').val()) || 0;
     let hutang = totalPembelian - totalBayar;
 
-    $jq('#total_pembelian').val(totalPembelian.toFixed(2));
-    $jq('#hutang').val(hutang > 0 ? hutang.toFixed(2) : 0);
-
-    // Toggle tampilan jatuh tempo
+    $jq('#total_pembelian').val(totalPembelian);
+    $jq('#hutang').val(hutang > 0 ? hutang : 0);
     $jq('#row_jatuh_tempo').toggle(hutang > 0);
+    $jq('#status').val(hutang > 0 ? 'Hutang' : 'Lunas');
 }
 
 // Inisialisasi saat dokumen siap
