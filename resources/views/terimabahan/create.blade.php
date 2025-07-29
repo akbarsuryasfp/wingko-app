@@ -1,97 +1,147 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .card {
+        border-radius: 8px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 20px;
+    }
+    input[readonly], input[readonly]:focus {
+        background-color: #f5f5f5;
+    }
+</style>
+
 <div class="container mt-5">
-    <h3>Input Penerimaan Pembelian Bahan</h3>
-    <form action="{{ route('terimabahan.store') }}" method="POST">
-        @csrf
-        <div class="mb-3 d-flex align-items-center">
-            <label for="no_terima_bahan" class="form-label mb-0" style="width:180px;">Kode Terima Bahan</label>
-            <input type="text" class="form-control" id="no_terima_bahan" name="no_terima_bahan" value="{{ $kode }}" readonly style="width:300px;">
+    <div class="card">
+        <div class="card-body">
+            <h3>Input Penerimaan Pembelian Bahan</h3>
+            <form action="{{ route('terimabahan.store') }}" method="POST">
+                @csrf
+                <div class="mb-3 d-flex align-items-center">
+                    <label for="no_terima_bahan" class="form-label mb-0" style="width:180px;">Kode Terima Bahan</label>
+                    <input type="text" class="form-control" id="no_terima_bahan" name="no_terima_bahan" value="{{ $kode }}" readonly style="width:300px;">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label for="no_order_beli" class="form-label mb-0" style="width:180px;">Kode Order</label>
+                    <select class="form-control" id="no_order_beli" name="no_order_beli" required onchange="ambilDetailOrderBeli()" style="width:300px;">
+                        <option value="">-- Pilih Order Beli --</option>
+                        @foreach($orderbeli as $order)
+                            <option value="{{ $order->no_order_beli }}"
+                                data-kode_supplier="{{ $order->kode_supplier }}"
+                                data-nama_supplier="{{ $order->nama_supplier }}"
+                                {{ (isset($order_selected) && $order_selected->no_order_beli == $order->no_order_beli) ? 'selected' : '' }}>
+                                {{ $order->no_order_beli }} | {{ $order->tanggal_order }} | {{ $order->nama_supplier }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label for="tanggal_terima" class="form-label mb-0" style="width:180px;">Tanggal Terima</label>
+                    <input type="date" class="form-control" id="tanggal_terima" name="tanggal_terima" 
+                           value="{{ date('Y-m-d') }}" required style="width:300px;">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label for="nama_supplier" class="form-label mb-0" style="width:180px;">Supplier</label>
+                    <input type="text" id="nama_supplier" class="form-control" readonly style="width:300px;" value="{{ $order_selected->nama_supplier ?? '' }}">
+                    <input type="hidden" id="kode_supplier" name="kode_supplier" value="{{ $order_selected->kode_supplier ?? '' }}">
+                </div>
+
+                <hr>
+                <h5>DAFTAR PENERIMAAN BAHAN</h5>
+                <table class="table table-bordered" id="tabel-detail">
+                    <thead>
+    <tr class="text-center">
+        <th style="width: 50px;">No</th>
+        <th>Nama Bahan</th>
+        <th>Satuan</th>
+        <th>Jumlah Order</th>
+        <th>Jumlah Masuk</th>
+        <th>Harga Beli</th>
+        <th>Sub Total</th>
+        <th>Tanggal Expired</th>
+        <th style="width: 80px;">Aksi</th>
+    </tr>
+</thead>
+<tbody id="order-details">
+    <!-- Tabel akan diisi oleh JavaScript -->
+</tbody>
+                </table>
+
+                <input type="hidden" name="detail_json" id="detail_json">
+
+                <div class="row mt-4">
+                            <div class="col-sm-6">
+                                <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary me-2">
+                                 ← Kembali
+                                </a>
+                            </div>
+                            <div class="col-sm-6 text-end">
+                                <button type="submit" class="btn btn-success">
+                                     Simpan
+                                </button>
+                            </div>
+                        </div>
+            </form>
+
+            <div id="order-detail-info" class="mb-2" style="font-size: 90%; color: #555;"></div>
         </div>
-        <div class="mb-3 d-flex align-items-center">
-            <label for="no_order_beli" class="form-label mb-0" style="width:180px;">Kode Order</label>
-            <select class="form-control" id="no_order_beli" name="no_order_beli" required onchange="ambilDetailOrderBeli()" style="width:300px;">
-                <option value="">-- Pilih Order Beli --</option>
-                @foreach($orderbeli as $order)
-                    <option value="{{ $order->no_order_beli }}"
-                        data-kode_supplier="{{ $order->kode_supplier }}"
-                        data-nama_supplier="{{ $order->nama_supplier }}"
-                        {{ (isset($order_selected) && $order_selected->no_order_beli == $order->no_order_beli) ? 'selected' : '' }}>
-                        {{ $order->no_order_beli }} | {{ $order->tanggal_order }} | {{ $order->nama_supplier }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-<div class="mb-3 d-flex align-items-center">
-    <label for="tanggal_terima" class="form-label mb-0" style="width:180px;">Tanggal Terima</label>
-    <input type="date" class="form-control" id="tanggal_terima" name="tanggal_terima" 
-           value="{{ date('Y-m-d') }}" required style="width:300px;">
-</div>
-            <div class="mb-3 d-flex align-items-center">
-                <label for="nama_supplier" class="form-label mb-0" style="width:180px;">Supplier</label>
-                <input type="text" id="nama_supplier" class="form-control" readonly style="width:300px;" value="{{ $order_selected->nama_supplier ?? '' }}">
-                <input type="hidden" id="kode_supplier" name="kode_supplier" value="{{ $order_selected->kode_supplier ?? '' }}">
-            </div>
-
-        <hr>
-        <h5>DAFTAR PENERIMAAN BAHAN</h5>
-        <table class="table table-bordered" id="tabel-detail">
-            <thead>
-                <tr>
-                    <th>Nama Bahan</th>
-                    <th>Satuan</th>
-                    <th>Jumlah Order</th>
-                    <th>Jumlah Masuk</th>
-                    <th>Harga Beli</th>
-                    <th>Sub Total</th>
-                    <th>Tanggal Expired</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                    @foreach(($order_details ?? []) as $detail)
-                    <tr>
-                        <td>
-                            <input type="hidden" name="detail[{{ $loop->index }}][kode_bahan]" value="{{ $detail->kode_bahan }}">
-                            {{ $detail->nama_bahan }}
-                        </td>
-                        <td>{{ $detail->satuan }}</td>
-                        <td>
-                            <input type="number" class="form-control" name="detail[{{ $loop->index }}][jumlah_beli]" value="{{ $detail->jumlah_beli }}" readonly>
-                        </td>
-                        <td>
-                            <input type="number" class="form-control" name="detail[{{ $loop->index }}][bahan_masuk]" value="{{ $detail->jumlah_beli }}">
-                        </td>
-            <td>
-                <input type="number" class="form-control" name="detail[{{ $loop->index }}][harga_beli]" value="{{ $detail->harga_beli }}" readonly>
-            </td>
-            <td>
-                <input type="number" class="form-control" value="{{ $detail->jumlah_beli * $detail->harga_beli }}" readonly>
-            </td>
-            <td>
-    <input type="date" class="form-control" name="detail[{{ $loop->index }}][tanggal_exp]">
-</td>
-<td>
-    <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">Hapus</button>
-</td>
-</tr>
-                    @endforeach
-            </tbody>
-        </table>
-
-        <input type="hidden" name="detail_json" id="detail_json">
-
-        <div class="mt-4">
-            <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary">Back</a>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </div>
-    </form>
-
-    <div id="order-detail-info" class="mb-2" style="font-size: 90%; color: #555;"></div>
+    </div>
 </div>
 
 <script>
+
+document.addEventListener('DOMContentLoaded', function () {
+    const dropdown = document.getElementById('no_order_beli');
+    dropdown.addEventListener('change', function () {
+        const orderNo = this.value;
+        if (orderNo) {
+            fetch(`/get-order-detail/${orderNo}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Gagal mengambil detail order');
+                    return response.json();
+                })
+                .then(data => {
+                    const tbody = document.getElementById('order-details');
+                    tbody.innerHTML = '';
+
+                    data.forEach((item, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${item.kode_bahan}</td>
+        <td>${item.nama_bahan}</td>
+        <td>${item.satuan}</td>
+        <td>
+            <input type="text" class="form-control text-center" value="${item.jumlah_beli}" readonly>
+        </td>
+        <td>
+            <input type="number" class="form-control text-center" name="detail[${index}][bahan_masuk]" value="${item.jumlah_beli}">
+        </td>
+        <td>
+            <input type="text" class="form-control text-end" name="detail[${index}][harga_beli]" value="${item.harga_beli}" readonly>
+        </td>
+        <td>
+            <input type="text" class="form-control text-end" value="${item.jumlah_beli * item.harga_beli}" readonly>
+        </td>
+        <td>
+            <input type="date" class="form-control" name="detail[${index}][tanggal_exp]">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">X</button>
+        </td>
+    `;
+    tbody.appendChild(row);
+});
+                })
+                .catch(error => {
+                    alert(error.message);
+                    console.error(error);
+                });
+        }
+    });
+});
+
 let daftarDetail = [];
 
 function tambahDetail() {
@@ -133,23 +183,38 @@ function updateTabel() {
     daftarDetail.forEach((item, idx) => {
         const total = item.bahan_masuk * item.harga_beli;
         const row = `
-            <tr>
-                <td>${item.kode_bahan}</td>
-                <td>${item.nama_bahan}</td>
-                <td>${item.jumlah_order}</td>
-                <td>
-                    <input type="number" class="form-control" min="0" max="${item.sisa}" value="${item.bahan_masuk}" onchange="setBahanMasuk(${idx}, this.value)">
-                    <div style="font-size:11px;color:#888;">Sisa: ${item.sisa}</div>
-                </td>
-                <td>${item.harga_beli}</td>
-                <td>${total}</td>
-                <td>
-                    <input type="date" class="form-control" value="${item.tanggal_exp || ''}" onchange="setTanggalExp(${idx}, this.value)">
-                </td>
-                <td>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="hapusDetail(${idx})">Hapus</button>
-                </td>
-            </tr>
+<tr style="height: 40px;"> <!-- Fixed row height -->
+    <td class="text-center align-middle">${idx + 1}</td>
+    <td class="text-center align-middle">${item.kode_bahan}</td>
+    <td class="text-start align-middle">${item.nama_bahan}</td>
+    <td class="text-center align-middle">
+        <span class="d-block">${new Intl.NumberFormat('id-ID').format(item.jumlah_order)}</span>
+    </td>
+    <td class="text-center align-middle" style="padding-top: 4px; padding-bottom: 4px;">
+        <input type="number" class="form-control form-control-sm text-center py-1" 
+               min="0" max="${item.sisa}" value="${item.bahan_masuk}" 
+               onchange="setBahanMasuk(${idx}, this.value)">
+        <small class="text-muted d-block" style="font-size: 0.75rem; line-height: 1.1;">Sisa: ${new Intl.NumberFormat('id-ID').format(item.sisa)}</small>
+    </td>
+    <td class="text-end align-middle">
+        <span class="d-block">Rp ${new Intl.NumberFormat('id-ID').format(item.harga_beli)}</span>
+    </td>
+    <td class="text-end align-middle">
+        <span class="d-block">Rp ${new Intl.NumberFormat('id-ID').format(total)}</span>
+    </td>
+    <td class="text-center align-middle" style="padding-top: 4px; padding-bottom: 4px;">
+        <input type="date" class="form-control form-control-sm py-1" 
+               value="${item.tanggal_exp || ''}" 
+               onchange="setTanggalExp(${idx}, this.value)">
+    </td>
+    <td class="text-center align-middle">
+        <button type="button" class="btn btn-danger btn-sm py-0 px-2" 
+                style="font-size: 2 rem; line-height: 1.5;" 
+                onclick="hapusDetail(${idx})">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </td>
+</tr>
         `;
         tbody.insertAdjacentHTML('beforeend', row);
         daftarDetail[idx].total = total;
@@ -202,7 +267,7 @@ function ambilDetailOrderBeli() {
     }
 
     // Ambil detail order dan sisa
-    fetch(`/orderbeli/${noOrder}/detail`)
+    fetch(`/get-order-detail/${noOrder}`)
         .then(res => res.json())
         .then(data => {
             // Ambil sisa order
@@ -281,5 +346,6 @@ document.querySelector('form').addEventListener('submit', function(e) {
         detailJson.value = JSON.stringify(arr);
     }
 });
+
 </script>
 @endsection

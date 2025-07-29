@@ -81,11 +81,12 @@ Route::post('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 's
 // Route terima bahan
 Route::get('/terimabahan/laporan', [TerimabahanController::class, 'laporan'])->name('terimabahan.laporan');
 Route::resource('terimabahan', TerimabahanController::class);
-Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimabahanController::class, 'getSisaOrder']);
+Route::get('/terimabahan/sisa-order/{no_order_beli}', [TerimaBahanController::class, 'getSisaOrder']);
 Route::get('/terimabahan/{id}/edit', [TerimabahanController::class, 'edit'])->name('terimabahan.edit');
 Route::get('/terimabahan/{no_terima_bahan}/detail', [PembelianController::class, 'detailTerimaBahan']);
 Route::get('/terimabahan/{no_terima_bahan}/data', [PembelianController::class, 'getTerimaBahan']);
-
+Route::get('/terimabahan/sisa-order/{no_order}', [TerimaBahanController::class, 'getSisaOrder']);
+Route::get('/get-order-detail/{no_order_beli}', [TerimaBahanController::class, 'getOrderDetail']);
 
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
@@ -177,6 +178,7 @@ Route::get('/hutang/{no_utang}/bayar', [HutangController::class, 'bayar'])->name
 Route::post('/hutang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('hutang.bayar.store');
 Route::get('hutang/{no_utang}/pembayaran/{no_jurnal}/edit', [HutangController::class, 'editPembayaran'])->name('hutang.editPembayaran');Route::delete('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'hapusPembayaran'])->name('hutang.hapusPembayaran');
 Route::put('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'updatePembayaran'])->name('hutang.bayar.update');
+Route::get('/cetak/{no_utang}', [HutangController::class, 'cetak'])->name('hutang.cetak');
 
 // Route kartu stok
 Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kartustok.bahan');

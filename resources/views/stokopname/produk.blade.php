@@ -14,7 +14,7 @@
                 <div class="table-responsive">
                     <table class="table table-bordered text-center align-middle">
                         <thead class="table-light">
-                            <tr>
+                          <tr class="text-center align-middle">
                                 <th>No</th>
                                 <th>Kode Produk</th>
                                 <th>Nama Produk</th>

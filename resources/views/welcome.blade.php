@@ -136,27 +136,30 @@ $reminder = DB::table('t_kartupersbahan')
 
 
 @php
-
-// Ambil stok kadaluarsa produk per batch (kode_produk + tanggal_exp)
 $reminderProduk = DB::table('t_kartupersproduk')
     ->select(
         't_kartupersproduk.kode_produk',
         't_produk.nama_produk',
         't_kartupersproduk.tanggal_exp',
+        't_kartupersproduk.lokasi',
         DB::raw('SUM(masuk) - SUM(keluar) as stok')
     )
     ->join('t_produk', 't_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
     ->whereNotNull('t_kartupersproduk.tanggal_exp')
-    ->groupBy('t_kartupersproduk.kode_produk', 't_kartupersproduk.tanggal_exp', 't_produk.nama_produk')
+    ->groupBy('t_kartupersproduk.kode_produk', 't_kartupersproduk.tanggal_exp', 't_produk.nama_produk', 't_kartupersproduk.lokasi')
     ->havingRaw('stok > 0')
     ->get();
 
-$kadaluarsaProduk = collect($reminderProduk)->filter(fn($r) => Carbon::parse($r->tanggal_exp)->isPast());
-$hampirProduk = collect($reminderProduk)->filter(function ($r) {
-    $diff = Carbon::today()->diffInDays(Carbon::parse($r->tanggal_exp), false);
-    return $diff > 0 && $diff <= 6;
-});
-$groupedProduk = $kadaluarsaProduk->groupBy('nama_produk');
+$kadaluarsaProduk = collect($reminderProduk)
+    ->filter(fn($r) => Carbon::parse($r->tanggal_exp)->isPast() && $r->lokasi === 'Gudang'); // Filter lokasi gudang
+
+$hampirProduk = collect($reminderProduk)
+    ->filter(function ($r) {
+        $diff = Carbon::today()->diffInDays(Carbon::parse($r->tanggal_exp), false);
+        return $diff > 0 && $diff <= 6 && $r->lokasi === 'Gudang'; // Filter lokasi gudang
+    });
+
+$groupedProduk = $kadaluarsaProduk->groupBy('lokasi');
 @endphp
 
 <div class="row g-3 mt-2">
@@ -166,20 +169,30 @@ $groupedProduk = $kadaluarsaProduk->groupBy('nama_produk');
         <div class="card border-danger shadow-sm">
             <div class="card-body text-center">
                 <h5 class="card-title text-danger">
-                    {{ $kadaluarsaProduk->count() }} Produk Kadaluarsa
+                    @if ($groupedProduk->isEmpty())
+                    <div>Tidak ada produk kadaluarsa di gudang</div>
+                    @else
+                    @foreach ($groupedProduk as $lokasi => $items)
+                    <div>
+                        <b>{{ $items->sum('stok') }}</b> Produk Kadaluarsa di <b>{{ $lokasi }}</b>
+                    </div>
+                    @endforeach
+                    @endif
                 </h5>
                 <button class="btn btn-outline-danger btn-sm mt-2" onclick="toggleBox('kadaluarsaProdukTable')">
                     Lihat Daftar
                 </button>
-                
-                
                 <div id="kadaluarsaProdukTable" class="mt-3 d-none">
-                    <div class="d-flex justify-content-end mb-2">
+                    @if ($groupedProduk->isEmpty())
+                    <div class="text-muted mb-3">Tidak ada produk kadaluarsa di gudang</div>
+                    @else
+                    @foreach ($groupedProduk as $lokasi => $items)
+                    <div class="table-responsive mb-4">
+                                            <div class="d-flex justify-content-end mb-2">
 <a href="{{ route('penyesuaian.exp', ['tipe' => 'produk']) }}" class="btn btn-danger btn-sm">
     Penyesuaian
 </a>
                     </div>
-                    <div class="table-responsive">
                         <table class="table table-sm table-bordered align-middle">
                             <thead class="table-danger text-center">
                                 <tr>
@@ -190,25 +203,24 @@ $groupedProduk = $kadaluarsaProduk->groupBy('nama_produk');
                                 </tr>
                             </thead>
                             <tbody>
-                            @php $no = 1; @endphp
-                            @forelse ($groupedProduk as $nama => $items)
-                                @foreach ($items as $i => $item)
-                                    <tr>
-                                        @if ($i == 0)
-                                            <td class="text-center" rowspan="{{ $items->count() }}">{{ $no }}</td>
-                                            <td rowspan="{{ $items->count() }}">{{ $nama }}</td>
-                                            @php $no++; @endphp
-                                        @endif
-                                        <td>{{ \Carbon\Carbon::parse($item->tanggal_exp)->format('d M Y') }}</td>
-                                        <td class="text-center">{{ $item->stok }}</td>
-                                    </tr>
+                                @foreach ($items as $index => $item)
+                                <tr>
+                                    <td class="text-center">{{ $index + 1 }}</td>
+                                    <td>{{ $item->nama_produk }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_exp)->format('d M Y') }}</td>
+                                    <td class="text-center">{{ $item->stok }}</td>
+                                </tr>
                                 @endforeach
-                            @empty
-                                <tr><td colspan="4" class="text-center text-muted">Tidak ada</td></tr>
-                            @endforelse
+                                @if ($items->isEmpty())
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Tidak ada</td>
+                                </tr>
+                                @endif
                             </tbody>
                         </table>
                     </div>
+                    @endforeach
+                    @endif
                 </div>
             </div>
         </div>

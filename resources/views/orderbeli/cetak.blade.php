@@ -30,23 +30,25 @@
         .company-name {
             font-weight: bold;
             font-size: 16px;
+            margin-bottom: 5px;
         }
 
         .company-address {
             font-size: 11px;
-            margin-top: 4px;
+            margin-bottom: 10px;
         }
 
         .title {
             text-align: center;
             font-weight: bold;
-            margin: 20px 0 10px;
+            margin: 10px 0;
             font-size: 14px;
+            text-decoration: underline;
         }
 
         .info-table {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             font-size: 12px;
         }
 
@@ -58,7 +60,7 @@
         .order-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
 
         .order-table th,
@@ -66,6 +68,7 @@
             border: 1px solid #000;
             padding: 5px 6px;
             font-size: 11px;
+            text-align: center;
         }
 
         .order-table th {
@@ -86,6 +89,11 @@
         }
 
         .clear { clear: both; }
+
+        hr {
+            border: 0.5px solid #000;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -96,7 +104,7 @@
         <div class="company-address">
             Jl. Tumpang XIV, RT.02/RW.09, Gajahmungkur, Kec. Gajahmungkur, Kota Semarang, Jawa Tengah
         </div>
-        <hr style="border: 1px solid #000; margin-top: 10px; margin-bottom: 20px;">
+        <hr>
     </div>
 
     <div class="title">SURAT ORDER PEMBELIAN</div>
@@ -119,9 +127,9 @@
             <tr>
                 <th>No</th>
                 <th>Nama Barang</th>
-                <th>Harga</th>
-                <th>Jumlah Order</th>
                 <th>Satuan</th>
+                <th>Jumlah Order</th>
+                <th>Harga</th>
                 <th>Sub Total</th>
             </tr>
         </thead>
@@ -133,12 +141,12 @@
                     $grandTotal += $subTotal; 
                 @endphp
                 <tr>
-                    <td style="text-align:center">{{ $i + 1 }}</td>
+                    <td>{{ $i + 1 }}</td>
                     <td>{{ $d->nama_bahan }}</td>
-                    <td style="text-align:right">Rp {{ number_format($d->harga_beli, 0, ',', '.') }}</td>
-                    <td style="text-align:center">{{ $d->jumlah_beli }}</td>
-                    <td style="text-align:center">{{ $d->satuan }}</td>
-                    <td style="text-align:right">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
+                    <td>{{ $d->satuan }}</td>
+                    <td>{{ $d->jumlah_beli }}</td>
+                    <td>Rp {{ number_format($d->harga_beli, 0, ',', '.') }}</td>
+                    <td>Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -154,8 +162,8 @@
             <td style="text-align:right">Rp {{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
         </tr>
         <tr>
-            <td>Sisa</td>
-            <td style="text-align:right">Rp {{ number_format($grandTotal - ($order->uang_muka ?? 0), 0, ',', '.') }}</td>
+            <td><strong>Sisa</strong></td>
+            <td style="text-align:right"><strong>Rp {{ number_format($grandTotal - ($order->uang_muka ?? 0), 0, ',', '.') }}</strong></td>
         </tr>
     </table>
 

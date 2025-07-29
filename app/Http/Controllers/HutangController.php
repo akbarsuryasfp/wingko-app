@@ -39,17 +39,30 @@ class HutangController extends Controller
         return redirect()->route('hutang.index')->with('success', 'Data hutang berhasil ditambahkan.');
     }
 
-    public function index()
-    {
-        try {
-            $hutangs = \DB::table('t_utang')
-                ->where('sisa_utang', '>', 0) // hanya hutang yang belum lunas
-                ->get();
-        } catch (\Exception $e) {
-            dd($e->getMessage());
+public function index(Request $request)
+{
+    try {
+        $query = \DB::table('t_utang')
+            ->join('t_supplier', 't_utang.kode_supplier', '=', 't_supplier.kode_supplier')
+            ->select('t_utang.*', 't_supplier.nama_supplier')
+            ->where('t_utang.sisa_utang', '>', 0);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('t_utang.no_utang', 'like', "%{$search}%")
+                  ->orWhere('t_supplier.nama_supplier', 'like', "%{$search}%");
+            });
         }
-        return view('hutang.index', compact('hutangs'));
+
+        $hutangs = $query->get();
+    } catch (\Exception $e) {
+        dd($e->getMessage());
     }
+
+    return view('hutang.index', compact('hutangs'));
+}
+
 
     public function detail($no_utang)
     {
@@ -264,4 +277,5 @@ class HutangController extends Controller
 
         return redirect()->route('hutang.detail', $no_utang)->with('success', 'Pembayaran berhasil diupdate.');
     }
+    
 }
