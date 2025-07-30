@@ -28,15 +28,16 @@
         <div class="alert alert-success text-center">{{ session('success') }}</div>
     @endif
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            {{-- Header --}}
-            <div class="row align-items-end mb-3">
+
+<div class="row align-items-end mb-3">
     <div class="col-md-6 col-12 text-md-start text-center mb-2 mb-md-0">
         <h4 class="mb-0 fw-semibold">📋 Daftar Hutang</h4>
     </div>
     <div class="col-md-6 col-12 text-md-end text-center">
         <form method="GET" action="{{ route('hutang.index') }}" class="d-inline-flex gap-2 flex-wrap justify-content-end w-100">
+<a href="{{ route('hutang.laporan', request()->all()) }}" class="btn btn-sm btn-success" target="_blank">
+    <i class="bi bi-file-earmark-pdf"></i> Cetak Laporan
+</a>
             <input type="text" name="search"
                    class="form-control form-control-sm"
                    placeholder="Cari No. Utang/Supplier"
@@ -45,8 +46,15 @@
             <button type="submit" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-search"></i> Cari
             </button>
+                                                        @if(request('search'))
+        <a href="{{ route('hutang.index', array_merge(request()->except('search'))) }}"
+           class="btn btn-sm btn-outline-danger" title="Reset">
+            <i class="bi bi-x"></i>
+        </a>
+        @endif
         </form>
     </div>
+</div>
 </div>
 
 

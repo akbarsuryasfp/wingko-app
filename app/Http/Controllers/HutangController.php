@@ -277,5 +277,26 @@ public function index(Request $request)
 
         return redirect()->route('hutang.detail', $no_utang)->with('success', 'Pembayaran berhasil diupdate.');
     }
-    
-}
+
+
+public function laporanPdf(Request $request)
+{
+    $query = \DB::table('t_utang')
+        ->join('t_supplier', 't_utang.kode_supplier', '=', 't_supplier.kode_supplier')
+        ->select('t_utang.*', 't_supplier.nama_supplier')
+        ->where('t_utang.sisa_utang', '>', 0); // Samakan dengan index
+
+    // Filter/search jika ada
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('t_utang.no_utang', 'like', "%{$search}%")
+              ->orWhere('t_supplier.nama_supplier', 'like', "%{$search}%");
+        });
+    }
+
+    $hutangs = $query->orderBy('t_utang.no_utang', 'desc')->get();
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('hutang.cetak', compact('hutangs'));
+    return $pdf->stream('laporan_hutang.pdf');
+}}

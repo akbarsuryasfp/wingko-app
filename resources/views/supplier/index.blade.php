@@ -73,18 +73,20 @@
                 <table class="table table-bordered table-sm text-center align-middle mb-0 table-fixed-height">
                     <thead class="table-light">
                         <tr>
+                            <th style="width: 10px;">No</th>
                             <th style="width: 110px;">Kode Supplier</th>
                             <th style="width: 150px;">Nama Supplier</th>
                             <th style="width: 210px;">Alamat</th>
                             <th style="width: 110px;">No. Telp</th>
                             <th style="width: 170px;">No. Rekening</th>
                             <th style="width: 240px;">Keterangan</th>
-                            <th style="width: 80px;">Aksi</th>
+                            <th style="width: 70px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($supplier as $item)
                             <tr>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $item->kode_supplier }}</td>
                                 <td class="text-start">{{ $item->nama_supplier }}</td>
                                 <td class="text-start">{{ $item->alamat }}</td>

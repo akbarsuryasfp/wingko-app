@@ -77,6 +77,7 @@
                         <table class="table table-bordered mb-0" id="bahan_table">
 <thead>
     <tr class="text-center">
+        <th class="align-middle">No</th>
         <th class="align-middle">Nama Bahan</th>
         <th class="align-middle">Jumlah</th>
         <th class="align-middle">Harga</th>
@@ -334,6 +335,7 @@ $jq('#tambah_bahan').click(function () {
 
     $jq('#bahan_table tbody').append(`
         <tr>
+        <td class="text-center align-middle"></td>
             <td>${selectHtml}</td>
             <td><input type="number" name="jumlah[]" class="form-control jumlah" value="1" min="0" step="0.01"></td>
             <td><input type="number" name="harga[]" class="form-control harga" value="0" min="0"></td>
@@ -342,6 +344,7 @@ $jq('#tambah_bahan').click(function () {
             <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
         </tr>
     `);
+    updateNoUrut(); // <-- Tambahkan ini
 });
 
 // Fungsi untuk menambah bahan ke tabel dari modal
@@ -360,6 +363,7 @@ function tambahBahanKeTabel(kode, nama, satuan, jumlah) {
     // Tambahkan baris baru ke tabel
     $jq('#bahan_table tbody').append(`
         <tr data-kode="${kode}">
+        <td class="text-center align-middle"></td>
             <td>${selectHtml}</td>
             <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah}" min="0" step="0.01" oninput="updateSubtotal(this)"></td>
             <td><input type="number" name="harga[]" class="form-control harga" value="0" min="0" oninput="updateSubtotal(this)"></td>
@@ -368,8 +372,13 @@ function tambahBahanKeTabel(kode, nama, satuan, jumlah) {
             <td><button type="button" class="btn btn-danger btn-sm remove" onclick="hapusBahan(this)">X</button></td>
         </tr>
     `);
-
     updateTotalHarga();
+    updateNoUrut(); // <-- Tambahkan ini
+}
+function updateNoUrut() {
+    $jq('#bahan_table tbody tr').each(function(i) {
+        $jq(this).find('td:first').text(i + 1);
+    });
 }
 
 function updateSubtotal(inputElement) {
@@ -411,6 +420,7 @@ function hitungTotal() {
 function hapusBahan(button) {
     $jq(button).closest('tr').remove();
     updateTotalHarga();
+        updateNoUrut();
 }
 
 
@@ -443,10 +453,10 @@ function updateSubtotal() {
         let jumlah = parseFloat($jq(this).find('.jumlah').val()) || 0;
         let harga = parseFloat($jq(this).find('.harga').val()) || 0;
         let subtotal = jumlah * harga;
-        $jq(this).find('.subtotal').text(subtotal.toFixed(2));
+        $jq(this).find('.subtotal').text(Math.round(subtotal)); // tanpa .00
         total += subtotal;
     });
-    $jq('#total_harga').val(total.toFixed(2));
+    $jq('#total_harga').val(Math.round(total)); // tanpa .00
     hitungTotal();
 }
 

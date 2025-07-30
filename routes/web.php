@@ -115,7 +115,7 @@ Route::get('/pembelian/detail-terima-bahan/{no_terima_bahan}', [PembelianControl
 
 Route::get('/pembelian/{no_pembelian}', [PembelianController::class, 'show'])->name('pembelian.show');
 Route::get('/pembelian/{no_pembelian}/detail-json', [\App\Http\Controllers\PembelianController::class, 'getDetailPembelian']);
-
+Route::get('/pembelian/laporan', [PembelianController::class, 'laporanPdf'])->name('pembelian.laporan');
 Route::resource('pembelian', PembelianController::class);
 
 // Route bayar consignor
@@ -163,9 +163,6 @@ Route::get('/hpp/input/{no_detail}', [HppController::class, 'create'])->name('hp
 Route::post('/hpp/simpan', [HppController::class, 'store'])->name('hpp.store');
 Route::get('/hpp/edit/{no_detail}', [HppController::class, 'edit'])->name('hpp.edit');
 Route::put('/hpp/update/{no_detail}', [HppController::class, 'update'])->name('hpp.update');
-Route::get('/hpp/laporan', [App\Http\Controllers\HppController::class, 'laporan'])->name('hpp.laporan');
-Route::get('/hpp/laporan/pdf', [App\Http\Controllers\HppController::class, 'laporanPdf'])->name('hpp.laporan.pdf');
-
 // Route karyawan
 Route::resource('karyawan', KaryawanController::class);
 
@@ -178,7 +175,8 @@ Route::get('/hutang/{no_utang}/bayar', [HutangController::class, 'bayar'])->name
 Route::post('/hutang/{no_utang}/bayar', [HutangController::class, 'bayarStore'])->name('hutang.bayar.store');
 Route::get('hutang/{no_utang}/pembayaran/{no_jurnal}/edit', [HutangController::class, 'editPembayaran'])->name('hutang.editPembayaran');Route::delete('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'hapusPembayaran'])->name('hutang.hapusPembayaran');
 Route::put('hutang/{no_utang}/pembayaran/{no_jurnal}', [HutangController::class, 'updatePembayaran'])->name('hutang.bayar.update');
-Route::get('/cetak/{no_utang}', [HutangController::class, 'cetak'])->name('hutang.cetak');
+Route::get('hutang/laporan', [HutangController::class, 'laporanPdf'])->name('hutang.laporan');
+Route::get('hutang/laporan/pdf', [HutangController::class, 'laporanPdf'])->name('hutang.laporan.pdf');
 
 // Route kartu stok
 Route::get('/kartustok/bahan', [KartuStokController::class, 'bahan'])->name('kartustok.bahan');
@@ -189,6 +187,7 @@ Route::get('/kartustok/laporan-bahan', [KartuStokController::class, 'laporanBaha
 Route::get('/kartustok/laporan-produk', [KartuStokController::class, 'laporanProduk'])->name('kartustok.laporan_produk');
 
 // Route kas keluar
+Route::get('/kaskeluar/laporan', [KasKeluarController::class, 'laporan'])->name('kaskeluar.laporan');
 Route::resource('kaskeluar', KaskeluarController::class);
 
 // Route piutang custom (letakkan sebelum resource)
@@ -258,6 +257,7 @@ Route::put('/{no_transaksi}', [TransferProdukController::class, 'update'])->name
 Route::delete('/{no_transaksi}', [TransferProdukController::class, 'destroy'])->name('transferproduk.destroy');
 Route::get('/transferproduk/get-products', [TransferProdukController::class, 'getProductsByLocation']);
 Route::get('/transfer/fifo-hpp', [TransferProdukController::class, 'calculateFifoHpp']);
+Route::get('transferproduk/laporan/pdf', [TransferProdukController::class, 'laporanPdf'])->name('transferproduk.laporan.pdf');
 
 // Route transaksi penjualan produk konsinyasi masuk
 Route::resource('transaksikonsinyasimasuk', App\Http\Controllers\TransaksiKonsinyasiMasukController::class);

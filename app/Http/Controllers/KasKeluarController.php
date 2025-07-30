@@ -11,16 +11,13 @@ class KasKeluarController extends Controller
 // In your KasKeluarController.php
 public function index(Request $request)
 {
-    // Set default date range
-    $startDate = $request->filled('tanggal_mulai') 
-        ? $request->tanggal_mulai 
-        : Carbon::now()->startOfMonth()->format('Y-m-d');
+    // Ambil filter dari request
+$startDate = $request->input('tanggal_awal', date('Y-m-01'));
+$endDate = $request->input('tanggal_akhir', date('Y-m-d'));
+    $filterPenerima = $request->filter_penerima;
+    $search = $request->search;
 
-    $endDate = $request->filled('tanggal_selesai') 
-        ? $request->tanggal_selesai 
-        : Carbon::now()->format('Y-m-d');
-
-    // Main query with filters
+    // Ambil data jurnal umum dengan nomor bukti diawali BKK
     $queryResults = DB::table('t_jurnal_umum as ju')
         ->join('t_jurnal_detail as jd', function($join) {
             $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
@@ -47,25 +44,19 @@ public function index(Request $request)
         ->orderBy('ju.tanggal', 'desc')
         ->get();
 
-    // Process the data for the view
+    // Proses dan filter data
     $kaskeluar = [];
     foreach ($queryResults as $row) {
-        // Clean nomor_bukti (remove scientific notation if present)
         $row->nomor_bukti = preg_replace('/\.\d+E\+\d+/', '', $row->nomor_bukti);
-        
         $keterangan = trim($row->keterangan);
-        
-        // Initialize default values
         $row->keterangan_teks = $keterangan;
         $row->penerima = '-';
 
-        // Handle special cases first
+        // Ambil penerima dari format keterangan
         if (str_contains(strtolower($keterangan), 'upah lembur')) {
             $row->keterangan_teks = 'Upah Lembur';
             $row->penerima = 'Karyawan';
-        }
-        // Case 1: Format "no_referensi | keterangan | penerima"
-        elseif (str_contains($keterangan, '|')) {
+        } elseif (str_contains($keterangan, '|')) {
             $parts = array_map('trim', explode('|', $keterangan));
             if (count($parts) >= 3) {
                 $row->keterangan_teks = $parts[1];
@@ -74,20 +65,41 @@ public function index(Request $request)
                 $row->keterangan_teks = $parts[0];
                 $row->penerima = $parts[1];
             }
-        }
-        // Case 2: Format "Keterangan Penerima" (last word is recipient)
-        elseif (preg_match('/^(.*?)\s+([^\s]+)$/', $keterangan, $matches)) {
+        } elseif (preg_match('/^(.*?)\s+([^\s]+)$/', $keterangan, $matches)) {
             $row->keterangan_teks = trim($matches[1]);
             $row->penerima = trim($matches[2]);
         }
 
-        // Format currency
         $row->jumlah_rupiah = 'Rp ' . number_format($row->jumlah, 0, ',', '.');
+
+        // Filter penerima jika ada
+        if ($filterPenerima && stripos($row->penerima, $filterPenerima) === false) {
+            continue;
+        }
+
+        // Filter search jika ada
+        if ($search) {
+            if (
+                stripos($row->keterangan_teks, $search) === false &&
+                stripos($row->penerima, $search) === false
+            ) {
+                continue;
+            }
+        }
+
         $kaskeluar[] = $row;
     }
 
-    return view('kaskeluar.index', compact('kaskeluar', 'startDate', 'endDate'));
+    return view('kaskeluar.index', compact(
+        'kaskeluar',
+        'startDate',
+        'endDate',
+        'filterPenerima',
+        'search'
+    ));
 }
+
+
     public function create()
     {
 
@@ -260,4 +272,90 @@ DB::table('t_jurnal_detail')
 
         return redirect()->route('kaskeluar.index')->with('success', 'Kas keluar berhasil dihapus.');
     }
+    public function show($id)
+{
+    // Tidak digunakan
+    abort(404);
+}
+
+public function laporan(Request $request)
+{
+    $startDate = $request->input('start_date', date('Y-m-01'));
+    $endDate = $request->input('end_date', date('Y-m-d'));
+    $filterPenerima = $request->filter_penerima;
+    $search = $request->search;
+
+    $queryResults = DB::table('t_jurnal_umum as ju')
+        ->join('t_jurnal_detail as jd', function($join) {
+            $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
+                 ->where('jd.kredit', '>', 0)
+                 ->where('jd.kode_akun', '=', JurnalHelper::getKodeAkun('kas_bank'));
+        })
+        ->where('ju.jenis_jurnal', 'umum')
+        ->where('ju.nomor_bukti', 'like', 'BKK%')
+        ->whereDate('ju.tanggal', '>=', $startDate)
+        ->whereDate('ju.tanggal', '<=', $endDate)
+        ->where(function($query) {
+            $query->whereNotNull('ju.keterangan')
+                  ->where('ju.keterangan', '<>', '')
+                  ->where('ju.keterangan', 'not like', '%Pembayaran utang%')
+                  ->where('ju.keterangan', 'not like', '%Uang muka%');
+        })
+        ->select([
+            'ju.no_jurnal',
+            'ju.tanggal',
+            'ju.nomor_bukti',
+            'ju.keterangan',
+            'jd.kredit as jumlah'
+        ])
+        ->orderBy('ju.tanggal', 'asc')
+        ->get();
+
+    $kaskeluar = [];
+    foreach ($queryResults as $row) {
+        $row->nomor_bukti = preg_replace('/\.\d+E\+\d+/', '', $row->nomor_bukti);
+        $keterangan = trim($row->keterangan);
+        $row->keterangan_teks = $keterangan;
+        $row->penerima = '-';
+
+        if (str_contains(strtolower($keterangan), 'upah lembur')) {
+            $row->keterangan_teks = 'Upah Lembur';
+            $row->penerima = 'Karyawan';
+        } elseif (str_contains($keterangan, '|')) {
+            $parts = array_map('trim', explode('|', $keterangan));
+            if (count($parts) >= 3) {
+                $row->keterangan_teks = $parts[1];
+                $row->penerima = $parts[2];
+            } elseif (count($parts) == 2) {
+                $row->keterangan_teks = $parts[0];
+                $row->penerima = $parts[1];
+            }
+        } elseif (preg_match('/^(.*?)\s+([^\s]+)$/', $keterangan, $matches)) {
+            $row->keterangan_teks = trim($matches[1]);
+            $row->penerima = trim($matches[2]);
+        }
+
+        $row->jumlah_rupiah = $row->jumlah;
+
+        if ($filterPenerima && stripos($row->penerima, $filterPenerima) === false) {
+            continue;
+        }
+        if ($search) {
+            if (
+                stripos($row->keterangan_teks, $search) === false &&
+                stripos($row->penerima, $search) === false
+            ) {
+                continue;
+            }
+        }
+        $kaskeluar[] = $row;
+    }
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kaskeluar.laporan', [
+        'kaskeluar' => $kaskeluar,
+        'start_date' => $startDate,
+        'end_date' => $endDate
+    ]);
+    return $pdf->stream('laporan-pengeluaran-kas-'.date('Ymd').'.pdf');
+}
 }

@@ -163,28 +163,29 @@
     </div>
 </div>
 
-<div class="row mt-2">
-    <div class="col-md-6 mb-1">
-        <a href="{{ route('orderbeli.index') }}" class="btn btn-secondary btn-sm me-1">
-            <i class="fas fa-arrow-left me-1"></i>← Kembali
-        </a>
-        <button type="reset" class="btn btn-warning btn-sm">
-            Reset
-        </button>
-    </div>
+<div class="row">
+                    <div class="col-md-6 mb-2">
+                        <a href="{{ route('orderbeli.index') }}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i> ← Kembali
+                        </a>
+                        <button type="reset" class="btn btn-warning">
+                             Reset
+                        </button>
+                    </div>
     
-    <div class="col-md-6 text-md-end mb-1">
+    <div class="col-md-6 text-md-end mb-2">
         <div class="d-flex align-items-center justify-content-md-end gap-1">
             <label class="mb-0 small">Total:</label>
-<div class="input-group input-group-sm" style="width: 150px;">
+<div class="input-group input-group-sm" style="width: 180px;">
     <span class="input-group-text">Rp</span>
-    <input type="text" id="total_order" name="total_order" readonly 
-           class="form-control text-end" 
-           value="${new Intl.NumberFormat('id-ID').format(totalOrder)}">
+    <input type="text" id="total_order" name="total_order" readonly
+           class="form-control text-end fw-bold"
+           style="font-size:1.25em;"
+           value="0">
 </div>
-            <button type="submit" class="btn btn-success btn-sm py-1">
-                <i class="fas fa-save me-1"></i>Update
-            </button>
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-1"></i> Update
+        </button>
             <input type="hidden" name="status" value="Baru">
         </div>
     </div>

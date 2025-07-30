@@ -36,7 +36,7 @@ class JurnalHelper
         'overhead'            => '5030', // Overhead Pabrik
         'beban_lain'          => '5040', // Beban Lain-lain
         'diskon_pembelian'    => '5050', // Diskon Pembelian
-        'ongkos_kirim'        => '5060', // Ongkos Kirim
+        'ongkos_kirim'      => '5060', // Ongkos Kirim
         'pajak'               => '5070', // Pajak
         // tambahkan jika ada akun baru di t_akun
     ];

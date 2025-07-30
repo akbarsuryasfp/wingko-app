@@ -51,10 +51,10 @@
                         ]) }}"
                         class="btn btn-sm btn-success"
                         target="_blank">
-                            <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
+                            <i class="bi bi-file-earmark-pdf"></i> Cetak Laporan
                         </a>
                         <a href="{{ route('returbeli.create') }}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-plus-circle"></i> Tambah Retur
+                            <i class="bi bi-plus-circle"></i> Tambah Retur Pembelian
                         </a>
                     </div>
                 </div>
@@ -93,7 +93,13 @@
                                style="max-width: 250px;">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-search"></i> Cari
-                        </button>
+                            </button>
+                                            @if(request('search'))
+        <a href="{{ route('returbeli.index', array_merge(request()->except('search'))) }}"
+           class="btn btn-sm btn-outline-danger" title="Reset">
+            <i class="bi bi-x"></i>
+        </a>
+        @endif
                     </form>
                 </div>
             </div>
@@ -162,18 +168,18 @@
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
-                                            @if($retur->jenis_pengembalian === 'barang' && $retur->status === 'menunggu_terima_barang')
-                                                <a href="{{ route('returbeli.terimabarang', $retur->no_retur_beli) }}" class="btn btn-primary btn-sm">
-                                                    Terima Barang
-                                                </a>
-                                            @elseif($retur->jenis_pengembalian === 'uang' && $retur->status === 'menunggu_pengembalian')
-                                                <form action="{{ route('returbeli.kasretur', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-success btn-sm">
-                                                        <i class="bi bi-check2-circle"></i> Pengembalian Uang
-                                                    </button>
-                                                </form>
-                                            @endif
+@if($retur->jenis_pengembalian === 'barang' && $retur->status === 'menunggu_terima_barang')
+    <a href="{{ route('returbeli.terimabarang', $retur->no_retur_beli) }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-box-seam"></i>
+    </a>
+@elseif($retur->jenis_pengembalian === 'uang' && $retur->status === 'menunggu_pengembalian')
+    <form action="{{ route('returbeli.kasretur', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
+        @csrf
+        <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-cash-coin"></i> 
+        </button>
+    </form>
+@endif
                                         @endif
                                     </div>
                                 </td>

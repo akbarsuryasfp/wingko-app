@@ -1,106 +1,127 @@
+
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h4 class="mb-4">Form Transfer Produk</h4>
-
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+<div class="container py-2">
+    <div class="card shadow-sm">
+        <div class="card-header bg-white border-bottom-0">
+            <h4 class="mb-0 fw-semibold">Form Transfer Produk</h4>
         </div>
-    @endif
+        <div class="card-body">
+            @if ($errors->any())
+                <div class="alert alert-danger py-2">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
-    <form action="{{ route('transferproduk.store') }}" method="POST">
-        @csrf
+            <form action="{{ route('transferproduk.store') }}" method="POST">
+                @csrf
 
-        {{-- Header Form --}}
-        <div class="row mb-3 g-3">
-            <div class="col-md-3">
-                <label class="form-label">No Transaksi</label>
-                <input type="text" name="no_transaksi" class="form-control" value="{{ $kode_otomatis }}" readonly>
-            </div>
-<div class="col-md-3">
-    <label class="form-label">Tanggal</label>
-    <input type="date" name="tanggal" class="form-control" 
-           value="{{ date('Y-m-d') }}" required>
-</div>
-            <div class="col-md-3">
-                <label class="form-label">Lokasi Asal</label>
-                <select name="lokasi_asal" class="form-control" id="lokasi-asal" required>
-                    <option value="Gudang" {{ old('lokasi_asal', $lokasiAsal) == 'Gudang' ? 'selected' : '' }}>Gudang</option>
-                    <option value="Toko 1" {{ old('lokasi_asal', $lokasiAsal) == 'Toko 1' ? 'selected' : '' }}>Toko 1</option>
-                    <option value="Toko 2" {{ old('lokasi_asal', $lokasiAsal) == 'Toko 2' ? 'selected' : '' }}>Toko 2</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Lokasi Tujuan</label>
-                <select name="lokasi_tujuan" class="form-control" id="lokasi-tujuan" required>
-                    <option value="">-- Pilih Lokasi Tujuan --</option>
-                    @if(old('lokasi_asal', $lokasiAsal) == 'Gudang')
-                        <option value="Toko 1">Toko 1</option>
-                        <option value="Toko 2">Toko 2</option>
-                    @else
-                        <option value="Gudang">Gudang</option>
-                    @endif
-                </select>
-            </div>
-        </div>
-
-        <hr>
-
-        {{-- List Produk --}}
-        <table class="table table-bordered align-middle" id="produk-table">
-            <thead class="table-light">
-                <tr>
-                    <th style="width:22%">Produk</th>
-                    <th style="width:12%">Jumlah Kirim</th>
-                    <th style="width:12%">Satuan</th>
-                    <th style="width:18%">Tanggal Exp</th>
-                    <th style="width:10%">Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="produk-list">
-                <tr class="produk-item">
-                    <td>
-                        <select name="produk_id[]" class="form-control produk-select" required>
-                            <option value="">-- Pilih Produk --</option>
-                            @foreach ($produk as $item)
-                                <option value="{{ $item->kode_produk }}"
-                                    data-satuan="{{ $item->satuan }}"
-                                    data-exp="{{ $item->tanggal_exp }}">
-                                    {{ $item->nama_produk }} ({{ $item->stok }} {{ $item->satuan }})
-                                </option>
-                            @endforeach
+                {{-- Header Form --}}
+                <div class="row mb-2 align-items-center">
+                    <label class="col-sm-2 col-form-label">No Transaksi</label>
+                    <div class="col-sm-4">
+                        <input type="text" name="no_transaksi" class="form-control bg-light" value="{{ $kode_otomatis }}" readonly>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-sm-2 col-form-label">Tanggal</label>
+                    <div class="col-sm-4">
+                        <input type="date" name="tanggal" class="form-control" value="{{ date('Y-m-d') }}" required>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-sm-2 col-form-label">Lokasi Asal</label>
+                    <div class="col-sm-4">
+                        <select name="lokasi_asal" class="form-select" id="lokasi-asal" required>
+                            <option value="Gudang" {{ old('lokasi_asal', $lokasiAsal) == 'Gudang' ? 'selected' : '' }}>Gudang</option>
+                            <option value="Toko 1" {{ old('lokasi_asal', $lokasiAsal) == 'Toko 1' ? 'selected' : '' }}>Toko 1</option>
+                            <option value="Toko 2" {{ old('lokasi_asal', $lokasiAsal) == 'Toko 2' ? 'selected' : '' }}>Toko 2</option>
                         </select>
-                    </td>
-                    <td>
-                        <input type="number" name="jumlah[]" class="form-control" placeholder="Jumlah" required>
-                    </td>
-                    <td>
-                        <input type="text" name="satuan[]" class="form-control" readonly placeholder="Satuan">
-                    </td>
-                    <td>
-                        <input type="date" name="tanggal_exp[]" class="form-control" placeholder="Tanggal Exp">
-                    </td>
-<td>
-    <button type="button" class="btn btn-danger w-30 remove-produk" title="Hapus">
-        <i class="bi bi-trash"></i>
-    </button>
-</td>
-                </tr>
-            </tbody>
-        </table>
-        <button type="button" class="btn btn-sm btn-secondary mb-3" id="tambah-produk">+ Tambah Produk</button>
-        <br>
-        <button type="submit" class="btn btn-primary">Simpan Transfer</button>
-    </form>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <label class="col-sm-2 col-form-label">Lokasi Tujuan</label>
+                    <div class="col-sm-4">
+                        <select name="lokasi_tujuan" class="form-select" id="lokasi-tujuan" required>
+                            <option value="">-- Pilih Lokasi Tujuan --</option>
+                            @if(old('lokasi_asal', $lokasiAsal) == 'Gudang')
+                                <option value="Toko 1">Toko 1</option>
+                                <option value="Toko 2">Toko 2</option>
+                            @else
+                                <option value="Gudang">Gudang</option>
+                            @endif
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <div>
+                    <h5 class="fw-semibold">Daftar Produk</h5>
+                </div>
+                <div class="table-responsive mb-2">
+                    <table class="table table-bordered table-sm align-middle" id="produk-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width:5%;">No</th>
+                                <th class="text-center" style="width:30%;">Produk</th>
+                                <th class="text-center" style="width:12%;">Jumlah Kirim</th>
+                                <th class="text-center" style="width:12%;">Satuan</th>
+                                <th class="text-center" style="width:18%;">Tanggal Exp</th>
+                                <th class="text-center" style="width:5%;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="produk-list">
+                            <tr class="produk-item">
+                                <td class="text-center">1</td>
+                                <td>
+                                    <select name="produk_id[]" class="form-select produk-select" required>
+                                        <option value="">-- Pilih Produk --</option>
+                                        @foreach ($produk as $item)
+                                            <option value="{{ $item->kode_produk }}"
+                                                data-satuan="{{ $item->satuan }}"
+                                                data-exp="{{ $item->tanggal_exp }}">
+                                                {{ $item->nama_produk }} ({{ $item->stok }} {{ $item->satuan }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td class="text-center">
+                                    <input type="number" name="jumlah[]" class="form-control text-center" placeholder="Jumlah" min="1" required>
+                                </td>
+                                <td class="text-center">
+                                    <input type="text" name="satuan[]" class="form-control bg-light text-center" readonly placeholder="Satuan">
+                                </td>
+                                <td class="text-center">
+                                    <input type="date" name="tanggal_exp[]" class="form-control text-center" readonly placeholder="Tanggal Exp">
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-danger btn-sm remove-produk" title="Hapus">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-start mb-2">
+                    <button type="button" class="btn btn-sm btn-success" id="tambah-produk">
+                        <i class="bi bi-plus"></i> Tambah Produk
+                    </button>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ route('transferproduk.index') }}" class="btn btn-secondary">← Kembali</a>
+                    <button type="submit" class="btn btn-primary">Simpan Transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
-{{-- Script --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const produkList = document.getElementById('produk-list');
@@ -112,78 +133,92 @@ document.addEventListener('DOMContentLoaded', function () {
         // Update destination options based on origin
         const origin = this.value;
         let destinationOptions = '<option value="">-- Pilih Lokasi Tujuan --</option>';
-        
         if (origin === 'Gudang') {
             destinationOptions += '<option value="Toko 1">Toko 1</option>';
             destinationOptions += '<option value="Toko 2">Toko 2</option>';
         } else {
             destinationOptions += '<option value="Gudang">Gudang</option>';
         }
-        
         lokasiTujuanSelect.innerHTML = destinationOptions;
-        
-        // Reload products based on new origin location
-        fetchProductsByLocation(origin);
     });
 
-    // Function to fetch products by location
-    function fetchProductsByLocation(location) {
-        fetch(`/transferproduk/get-products?location=${location}`)
-            .then(response => response.json())
-            .then(data => {
-                // Update all product select dropdowns
-                const productSelects = document.querySelectorAll('.produk-select');
-                productSelects.forEach(select => {
-                    const currentValue = select.value;
-                    let options = '<option value="">-- Pilih Produk --</option>';
-                    
-                    data.forEach(product => {
-                        options += `<option value="${product.kode_produk}" 
-                                   data-satuan="${product.satuan}"
-                                   data-exp="${product.tanggal_exp}">
-                                   ${product.nama_produk} (${product.stok} ${product.satuan})
-                                   </option>`;
-                    });
-                    
-                    select.innerHTML = options;
-                    if (currentValue) {
-                        select.value = currentValue;
-                    }
-                });
-            });
-    }
-
-    // Rest of your existing script...
+    // Tambah produk
     document.getElementById('tambah-produk').addEventListener('click', function () {
-        const firstItem = produkList.querySelector('.produk-item');
-        const clone = firstItem.cloneNode(true);
+        const rowCount = produkList.querySelectorAll('tr').length + 1;
+        const produkOptions = `@foreach ($produk as $item)
+            <option value="{{ $item->kode_produk }}" data-satuan="{{ $item->satuan }}" data-exp="{{ $item->tanggal_exp }}">
+                {{ $item->nama_produk }} ({{ $item->stok }} {{ $item->satuan }})
+            </option>
+        @endforeach`;
 
-        clone.querySelectorAll('input').forEach(input => input.value = '');
-        clone.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+        const newRow = document.createElement('tr');
+        newRow.classList.add('produk-item');
+        newRow.innerHTML = `
+            <td class="text-center">${rowCount}</td>
+            <td>
+                <select name="produk_id[]" class="form-select produk-select" required>
+                    <option value="">-- Pilih Produk --</option>
+                    ${produkOptions}
+                </select>
+            </td>
+            <td class="text-center">
+                <input type="number" name="jumlah[]" class="form-control text-center" min="1" required>
+            </td>
+            <td class="text-center">
+                <input type="text" name="satuan[]" class="form-control bg-light text-center" readonly>
+            </td>
+            <td class="text-center">
+                <input type="date" name="tanggal_exp[]" class="form-control text-center" readonly>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-danger btn-sm remove-produk" title="Hapus">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </td>
+        `;
+        produkList.appendChild(newRow);
 
-        produkList.appendChild(clone);
+        // Event satuan otomatis
+        newRow.querySelector('.produk-select').addEventListener('change', function() {
+            const satuan = this.options[this.selectedIndex].getAttribute('data-satuan') || '';
+            const exp = this.options[this.selectedIndex].getAttribute('data-exp') || '';
+            newRow.querySelector('input[name="satuan[]"]').value = satuan;
+            newRow.querySelector('input[name="tanggal_exp[]"]').value = exp;
+        });
+
+        // Event hapus baris
+        newRow.querySelector('.remove-produk').addEventListener('click', function() {
+            newRow.remove();
+            // Update nomor urut
+            produkList.querySelectorAll('tr').forEach((tr, i) => {
+                tr.querySelector('td').innerText = i + 1;
+            });
+        });
     });
 
-    produkList.addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-produk')) {
+    // Event satuan otomatis untuk baris pertama
+    produkList.querySelectorAll('.produk-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            const satuan = this.options[this.selectedIndex].getAttribute('data-satuan') || '';
+            const exp = this.options[this.selectedIndex].getAttribute('data-exp') || '';
+            this.closest('tr').querySelector('input[name="satuan[]"]').value = satuan;
+            this.closest('tr').querySelector('input[name="tanggal_exp[]"]').value = exp;
+        });
+    });
+
+    // Event hapus baris untuk baris pertama
+    produkList.querySelectorAll('.remove-produk').forEach(function(btn) {
+        btn.addEventListener('click', function() {
             const items = produkList.querySelectorAll('.produk-item');
             if (items.length > 1) {
-                e.target.closest('.produk-item').remove();
+                btn.closest('tr').remove();
+                produkList.querySelectorAll('tr').forEach((tr, i) => {
+                    tr.querySelector('td').innerText = i + 1;
+                });
             } else {
                 alert('Minimal satu produk harus ada.');
             }
-        }
-    });
-
-    produkList.addEventListener('change', function (e) {
-        if (e.target.classList.contains('produk-select')) {
-            const selected = e.target.selectedOptions[0];
-            const satuan = selected.getAttribute('data-satuan') || '';
-            const exp = selected.getAttribute('data-exp') || '';
-            const produkItem = e.target.closest('.produk-item');
-            produkItem.querySelector('input[name="satuan[]"]').value = satuan;
-            produkItem.querySelector('input[name="tanggal_exp[]"]').value = exp;
-        }
+        });
     });
 });
 </script>
