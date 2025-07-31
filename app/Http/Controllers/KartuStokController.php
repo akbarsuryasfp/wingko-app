@@ -159,4 +159,45 @@ class KartuStokController extends Controller
 
         return view('kartustok.laporan_produk', compact('produkList', 'tanggal'));
     }
+
+    public function laporanBahanPdf()
+    {
+        $bahanList = \DB::table('t_bahan')->select('kode_bahan','nama_bahan','satuan','stokmin')->get();
+        $tanggal = date('Y-m-d');
+
+        $stokAkhirList = \DB::table('t_kartupersbahan')
+            ->select('kode_bahan', 'harga', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+            ->groupBy('kode_bahan', 'harga')
+            ->havingRaw('stok > 0')
+            ->get();
+
+        foreach ($bahanList as $bahan) {
+            $bahan->stok_akhir = $stokAkhirList->where('kode_bahan', $bahan->kode_bahan)->values();
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_bahan_pdf', compact('bahanList', 'tanggal'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Laporan_Stok_Bahan_Baku.pdf');
+    }
+public function laporanProdukPdf()
+{
+    $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();
+    $tanggal = date('Y-m-d');
+
+    $stokAkhirList = \DB::table('t_kartupersproduk')
+        ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+        ->groupBy('kode_produk', 'lokasi', 'hpp')
+        ->havingRaw('stok > 0')
+        ->get();
+
+    foreach ($produkList as $produk) {
+        $produk->stok_akhir = $stokAkhirList->where('kode_produk', $produk->kode_produk)->values();
+    }
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_produk_pdf', compact('produkList', 'tanggal'))
+        ->setPaper('a4', 'landscape');
+
+    return $pdf->stream('Laporan_Stok_Akhir_Produk.pdf');
+}
 }

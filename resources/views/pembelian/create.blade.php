@@ -205,18 +205,8 @@
                     $jq('#nama_supplier').val(response.terimaBahan.nama_supplier);
                     $jq('#tanggal_terima').val(response.terimaBahan.tanggal_terima);
 
-                    // Ambil uang muka dari response (jika ada)
-// Di dalam success: function(response) { ... }
-let totalHarga = 0; // deklarasi sekali di sini
-response.details.forEach(function (item) {
-    totalHarga += item.bahan_masuk * item.harga_beli;
-});
-let uangMuka = response.terimaBahan.sisa_uang_muka || 0;
-let totalPembelian = totalHarga - (parseFloat($jq('#diskon').val()) || 0) + (parseFloat($jq('#ongkir').val()) || 0);
-if (uangMuka > totalPembelian) uangMuka = totalPembelian;
-$jq('#uang_muka').val(uangMuka);
-
- let html = `
+                    let totalHarga = 0;
+let html = `
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -231,6 +221,7 @@ $jq('#uang_muka').val(uangMuka);
     <tbody>
 `;
 
+// Loop subtotal
 response.details.forEach(function (item, idx) {
     let subtotal = item.bahan_masuk * item.harga_beli;
     totalHarga += subtotal;
@@ -263,6 +254,14 @@ $jq('#detail_bahan').html(html);
 
                     // Isi total harga
                     $jq('#total_harga').val(totalHarga);
+
+                    // Ambil uang muka dari response (jika ada)
+                    let uangMuka = response.terimaBahan.sisa_uang_muka || 0;
+                    let diskon = parseFloat($jq('#diskon').val()) || 0;
+                    let ongkir = parseFloat($jq('#ongkir').val()) || 0;
+                    let totalPembelian = totalHarga - diskon + ongkir;
+                    if (uangMuka > totalPembelian) uangMuka = totalPembelian;
+                    $jq('#uang_muka').val(uangMuka);
 
                     // Hitung total pembelian
                     hitungTotal();

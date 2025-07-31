@@ -180,7 +180,7 @@ if ($total_debet > 0 || $total_kredit > 0) {
     $no_jurnal = JurnalHelper::generateNoJurnal();
 
     $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
-    $kode_akun_beban = JurnalHelper::getKodeAkun('beban_lain');
+    $kode_akun_beban = JurnalHelper::getKodeAkun('beban_kerugian');
     $kode_akun_pendapatan = JurnalHelper::getKodeAkun('pendapatan_lain');
 
     DB::table('t_jurnal_umum')->insert([
@@ -418,7 +418,7 @@ public function storeProduk(Request $request)
             $no_jurnal = JurnalHelper::generateNoJurnal();
 
             $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_produk');
-            $kode_akun_beban = JurnalHelper::getKodeAkun('beban_lain');
+            $kode_akun_beban = JurnalHelper::getKodeAkun('beban_kerugian');
             $kode_akun_pendapatan = JurnalHelper::getKodeAkun('pendapatan_lain');
 
             DB::table('t_jurnal_umum')->insert([
