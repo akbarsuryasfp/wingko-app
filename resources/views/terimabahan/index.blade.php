@@ -43,17 +43,13 @@
             </div>
             <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
                 <div class="d-flex justify-content-md-end justify-content-center gap-2 flex-wrap">
-                    <a href="{{ route('terimabahan.laporan', [
-                        'tanggal_mulai' => $tanggal_mulai,
-                        'tanggal_selesai' => $tanggal_selesai,
-                        'search' => request('search')
-                    ]) }}"
+<a href="{{ route('terimabahan.laporan', request()->all()) }}"
                     class="btn btn-sm btn-success"
                     target="_blank">
                         <i class="bi bi-file-earmark-pdf"></i> Cetak Laporan
                     </a>
                     <a href="{{ route('terimabahan.create') }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> Tambah Penerimaan
+                        <i class="bi bi-plus-circle"></i> Tambah Penerimaan Bahan
                     </a>
                 </div>
             </div>
@@ -91,7 +87,13 @@
                            style="max-width: 250px;">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-search"></i> Cari
-                    </button>
+                        </button>
+                                                            @if(request('search'))
+        <a href="{{ route('terimabahan.index', array_merge(request()->except('search'))) }}"
+           class="btn btn-sm btn-outline-danger" title="Reset">
+            <i class="bi bi-x"></i>
+        </a>
+        @endif
                 </form>
             </div>
         </div>

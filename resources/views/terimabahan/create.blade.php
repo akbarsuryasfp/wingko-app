@@ -75,6 +75,7 @@
                                 <a href="{{ route('terimabahan.index') }}" class="btn btn-secondary me-2">
                                  ← Kembali
                                 </a>
+                                
                             </div>
                             <div class="col-sm-6 text-end">
                                 <button type="submit" class="btn btn-success">

@@ -51,6 +51,7 @@
                <table class="table table-bordered table-sm text-center align-middle mb-0 table-fixed-height">
                     <thead class="table-light">
                         <tr>
+                            <th style="width: 10px;">No</th>
                             <th style="width: 100px;">Kode Produk</th>
                             <th style="width: 220px;">Nama Produk</th>
                             <th style="width: 90px;">Satuan</th>
@@ -62,6 +63,7 @@
                     <tbody>
                         @forelse($produk as $item)
                             <tr>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $item->kode_produk }}</td>
                                 <td class="text-start">{{ $item->nama_produk }}</td>
                                 <td>{{ $item->satuan }}</td>

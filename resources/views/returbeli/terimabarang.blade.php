@@ -16,7 +16,8 @@
         <h5>Detail Barang Retur</h5>
         <table class="table">
             <thead>
-                <tr>
+                <tr class="text-center align-middle">
+                    <th>No</th>
                     <th>Nama Bahan</th>
                     <th>Jumlah Terima</th>
                     <th>Harga</th>
@@ -26,6 +27,7 @@
             <tbody>
                 @foreach($retur->details as $detail)
                 <tr>
+                    <td class="text-center align-middle">{{ $loop->iteration }}</td>
                     <td>
                         <input type="hidden" name="kode_bahan[]" value="{{ $detail->kode_bahan }}">
                         {{ $detail->nama_bahan }}

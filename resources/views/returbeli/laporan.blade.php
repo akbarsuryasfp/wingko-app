@@ -17,18 +17,19 @@
     <table>
         <thead>
             <tr>
-                <th>No</th>
-                <th>Kode Retur</th>
-                <th>Kode Pembelian</th>
-                <th>Tanggal Retur</th>
-                <th>Supplier</th>
-                <th>Keterangan</th>
+                <th width="4%">No</th>
+                <th width="12%">Kode Retur</th>
+                <th width="12%">Kode Pembelian</th>
+                <th width="12%">Tanggal Retur</th>
+                <th width="18%">Nama Supplier</th>
+                <th width="5%">Jenis Pengembalian</th>
+                <th width="30%">Keterangan</th>
             </tr>
         </thead>
         <tbody>
             @php $no = 1; @endphp
-            @forelse ($returList as $retur)
-                @foreach($retur->details as $index => $detail)
+@forelse ($returList->sortBy('tanggal_retur_beli') as $retur)
+    @foreach($retur->details as $index => $detail)
                     <tr>
                         @if($index === 0)
                             <td rowspan="{{ $retur->details->count() }}">{{ $no++ }}</td>
@@ -36,7 +37,8 @@
                             <td rowspan="{{ $retur->details->count() }}">{{ $retur->no_pembelian }}</td>
                             <td rowspan="{{ $retur->details->count() }}">{{ $retur->tanggal_retur_beli }}</td>
                             <td rowspan="{{ $retur->details->count() }}">{{ $retur->nama_supplier }}</td>
-                        @endif
+                                            <td rowspan="{{ $retur->details->count() }}">{{ $retur->jenis_pengembalian ?? '-' }}</td>
+                            @endif
                         <td>
                             <b>{{ $detail->nama_bahan }}</b> ({{ $detail->jumlah_retur }}) {{ $detail->alasan }}
                         </td>

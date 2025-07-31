@@ -71,17 +71,18 @@
                 <div class="table-responsive">
                     <table class="table table-sm" id="detail_table">
                         <thead>
-                            <tr class="text-center">
-                                <th style="width: 50px">No</th>
-                                <th>Nama Bahan</th>
-                                <th style="width: 100px">Satuan</th>
-                                <th style="width: 100px">Jumlah Terima</th>
-                                <th style="width: 100px">Jumlah Retur</th>
-                                <th style="width: 120px">Harga/Satuan</th>
-                                <th style="width: 120px">Subtotal</th>
-                                <th>Alasan</th>
-                                <th style="width: 50px">Aksi</th>
-                            </tr>
+<tr class="text-center align-middle">
+    <th style="width: 50px; vertical-align: middle;">No</th>
+    <th style="vertical-align: middle;">Nama Bahan</th>
+    <th style="width: 100px; vertical-align: middle;">Satuan</th>
+    <th style="width: 100px; vertical-align: middle;">Jumlah Terima</th>
+    <th style="width: 100px; vertical-align: middle;">Jumlah Retur</th>
+    <th style="width: 120px; vertical-align: middle;">Harga/Satuan</th>
+    <th style="width: 120px; vertical-align: middle;">Subtotal</th>
+    <th style="vertical-align: middle;">Alasan</th>
+    <th style="width: 50px; vertical-align: middle;">Aksi</th>
+</tr>
+
                         </thead>
                         <tbody>
                             <!-- Data bahan akan diisi otomatis oleh JS -->
@@ -138,10 +139,14 @@ jQuery(document).ready(function() {
                                 <input type="number" name="jumlah_retur[]" class="form-control jumlah" max="${item.jumlah}" min="0" value="0" required oninput="cekRetur(this, ${item.jumlah})">
                             </td>
                             <td><input type="number" name="harga_beli[]" class="form-control harga" value="${item.harga_beli}" readonly></td>
-                            <td><input type="number" name="total[]" class="form-control" value="0" readonly></td>
-                            <td><input type="text" name="alasan[]" class="form-control"></td>
-                            <td><button type="button" class="btn btn-danger" onclick="this.closest('tr').remove()">Hapus</button></td>
-                        </tr>
+                            <td>
+    <input type="number" name="total[]" class="form-control" value="0" readonly style="min-width:140px;">
+</td>                            <td><input type="text" name="alasan[]" class="form-control"></td>
+                            <td>
+    <button type="button" class="btn btn-danger btn-sm btn-hapus-baris" title="Hapus">
+        <i class="bi bi-x"></i>
+    </button>
+</td>                        </tr>
                     `);
                 });
                 updateSubtotal();
@@ -172,12 +177,13 @@ jQuery(document).ready(function() {
                                 <input type="number" name="jumlah_retur[]" class="form-control jumlah" max="${item.jumlah}" min="0" value="0" required oninput="cekRetur(this, ${item.jumlah})">
                             </td>
                             <td><input type="number" name="harga_beli[]" class="form-control harga" value="${item.harga_beli}" readonly></td>
-                            <td><input type="number" name="total[]" class="form-control" value="0" readonly></td>
-                            <td><input type="text" name="alasan[]" class="form-control"></td>
                             <td>
-                <button type="button" class="btn btn-danger btn-sm btn-hapus-baris">
-                    <i class="bi bi-trash"></i> Hapus
-                </button>
+    <input type="number" name="total[]" class="form-control" value="0" readonly style="min-width:140px;">
+</td>                            <td><input type="text" name="alasan[]" class="form-control"></td>
+                            <td>
+<button type="button" class="btn btn-danger btn-sm btn-hapus-baris" title="Hapus">
+    <i class="bi bi-x"></i>
+</button>
             </td>                        </tr>
                     `);
                 });
@@ -265,12 +271,10 @@ function updateSubtotal() {
     $('#total_retur').val(total);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.btn-hapus-baris').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            this.closest('tr').remove();
-        });
-    });
+jQuery(document).on('click', '.btn-hapus-baris', function() {
+    jQuery(this).closest('tr').remove();
+    updateSubtotal();
 });
+
 </script>
 @endsection

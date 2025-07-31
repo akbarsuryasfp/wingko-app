@@ -85,7 +85,7 @@
                 {{-- Hidden Input dan Tombol --}}
                 <input type="hidden" name="kode_akun" value="201">
                 <div class="d-flex justify-content-end mt-4 gap-2">
-                    <a href="{{ route('hutang.detail', $hutang->no_utang) }}" class="btn btn-outline-secondary px-4 py-2">← Kembali</a>
+                    <a href="{{ route('hutang.detail', $hutang->no_utang) }}" class="btn btn-secondary px-4 py-2">← Kembali</a>
                     <button type="submit" class="btn btn-primary px-4 py-2">Simpan Pembayaran</button>
                 </div>
             </form>

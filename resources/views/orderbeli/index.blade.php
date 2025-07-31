@@ -37,7 +37,7 @@
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
                     <a href="{{ route('orderbeli.create') }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> Tambah Order
+                        <i class="bi bi-plus-circle"></i> Tambah Permintaan Pembelian
                     </a>
                 </div>
             </div>
@@ -81,7 +81,13 @@
                                style="max-width: 250px;">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-search"></i> Cari
-                        </button>
+                            </button>
+                                            @if(request('search'))
+        <a href="{{ route('orderbeli.index', array_merge(request()->except('search'))) }}"
+           class="btn btn-sm btn-outline-danger" title="Reset">
+            <i class="bi bi-x"></i>
+        </a>
+        @endif
                     </form>
                 </div>
             </div>

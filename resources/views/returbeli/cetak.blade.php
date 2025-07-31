@@ -10,8 +10,8 @@
         }
 
         body {
-            font-family: Cambria, Helvetica, sans-serif;
-            font-size: 12px;
+            font-family: Arial, sans-serif;  /* Changed font */
+            font-size: 13px;  /* Slightly larger font */
             color: #000;
             margin: 0 auto;
             width: 100%;
@@ -19,39 +19,34 @@
 
         .header {
             text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .logo {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #d9d2cb;
-            margin: 0 auto 8px auto;
+            margin-bottom: 15px;  /* Increased margin */
         }
 
         .company-name {
             font-weight: bold;
-            font-size: 16px;
+            font-size: 18px;  /* Larger company name */
+            margin-bottom: 5px;
         }
 
         .company-address {
-            font-size: 11px;
-            margin-top: 2px;
+            font-size: 12px;  /* Slightly larger address */
+            margin-top: 3px;
         }
 
         hr {
             border: 1px solid #000;
-            margin: 10px 0 16px;
+            margin: 12px 0 18px;  /* Adjusted margins */
         }
 
         .title {
             text-align: center;
             font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 10px;
+            font-size: 16px;  /* Larger title */
+            margin-bottom: 12px;
+            text-decoration: underline;  /* Added underline */
         }
 
+        /* Rest of the styles remain exactly the same */
         .info-table {
             width: 100%;
             margin-bottom: 12px;
@@ -107,8 +102,8 @@
 </head>
 <body>
 
+    <!-- CONTENT REMAINS EXACTLY THE SAME AS YOUR ORIGINAL -->
     <div class="header">
-        <div class="logo"></div>
         <div class="company-name">WINGKO BABAT PRATAMA</div>
         <div class="company-address">
             Jl. Tumpang XIV, RT.02/RW.09, Gajahmungkur, Kec. Gajahmungkur, Kota Semarang, Jawa Tengah
@@ -177,8 +172,5 @@
     </div>
     @endif
 
-    
 </body>
 </html>
-
-

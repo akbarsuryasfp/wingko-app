@@ -97,6 +97,7 @@
                         <table class="table table-sm table-bordered mb-0">
                             <thead>
                                 <tr class="text-center">
+                                    <th class="align-middle py-1" style="width: 5%">No</th>
                                     <th class="align-middle py-1" style="width: 25%">Nama Bahan</th>
                                     <th class="align-middle py-1" style="width: 10%">Satuan</th>
                                     <th class="align-middle py-1" style="width: 10%">Jumlah</th>
@@ -108,6 +109,7 @@
                             <tbody>
                                 @foreach($details as $detail)
                                 <tr>
+                                    <td class="text-center">{{ $loop->iteration }}</td>
                                     <td class="ps-2 align-middle">{{ $detail->nama_bahan }}</td>
                                     <td class="text-center align-middle">{{ $detail->satuan }}</td>
                                     <td class="text-center align-middle">{{ $detail->bahan_masuk }}</td>

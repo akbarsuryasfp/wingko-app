@@ -14,11 +14,13 @@ class ReturBeliController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+
 public function index(Request $request)
 {
     $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
     $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
     $status = $request->status;
+    $search = $request->search;
 
     $query = DB::table('t_returbeli')
         ->leftJoin('t_supplier', 't_returbeli.kode_supplier', '=', 't_supplier.kode_supplier')
@@ -31,6 +33,14 @@ public function index(Request $request)
 
     if ($status) {
         $query->where('t_returbeli.status', $status);
+    }
+
+    // Tambahkan filter search
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('t_returbeli.no_retur_beli', 'like', "%$search%")
+              ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+        });
     }
 
     $returList = $query->get();
@@ -656,17 +666,28 @@ public function laporan(Request $request)
     return view('returbeli.laporan', compact('returList', 'tanggal_mulai', 'tanggal_selesai'));
 }
 
+
 public function laporanPdf(Request $request)
 {
     $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
     $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+    $search = $request->search;
 
-    $returList = \DB::table('t_returbeli')
+    $query = \DB::table('t_returbeli')
         ->join('t_supplier', 't_returbeli.kode_supplier', '=', 't_supplier.kode_supplier')
         ->whereBetween('t_returbeli.tanggal_retur_beli', [$tanggal_mulai, $tanggal_selesai])
         ->select('t_returbeli.*', 't_supplier.nama_supplier')
-        ->orderBy('t_returbeli.tanggal_retur_beli', 'desc')
-        ->get();
+        ->orderBy('t_returbeli.tanggal_retur_beli', 'desc');
+
+    // Tambahkan filter search
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('t_returbeli.no_retur_beli', 'like', "%$search%")
+              ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+        });
+    }
+
+    $returList = $query->get();
 
     // Tambahkan details pada setiap retur
     foreach ($returList as $retur) {

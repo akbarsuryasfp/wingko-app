@@ -93,7 +93,13 @@
                                style="max-width: 250px;">
                         <button type="submit" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-search"></i> Cari
-                        </button>
+                            </button>
+                                            @if(request('search'))
+        <a href="{{ route('pembelian.index', array_merge(request()->except('search'))) }}"
+           class="btn btn-sm btn-outline-danger" title="Reset">
+            <i class="bi bi-x"></i>
+        </a>
+        @endif
                     </form>
                 </div>
             </div>

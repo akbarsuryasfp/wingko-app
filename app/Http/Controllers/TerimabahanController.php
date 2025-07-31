@@ -523,6 +523,21 @@ $terimaBahan->details = $details;
             });
         }
 
+$status = $request->status;
+if ($status == 'selesai') {
+    $query->whereExists(function($q) {
+        $q->select(DB::raw(1))
+          ->from('t_pembelian')
+          ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+    });
+} elseif ($status == 'belum') {
+    $query->whereNotExists(function($q) {
+        $q->select(DB::raw(1))
+          ->from('t_pembelian')
+          ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+    });
+}
+
         $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
         $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
         $query->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
@@ -532,7 +547,7 @@ $terimaBahan->details = $details;
         // Ambil semua detail sekaligus, lalu kelompokkan per no_terima_bahan
         $allDetails = \DB::table('t_terimab_detail')
             ->leftJoin('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-            ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
+            ->select('t_terimab_detail.*', 't_bahan.nama_bahan', 't_bahan.satuan')
             ->whereIn('no_terima_bahan', $terimabahan->pluck('no_terima_bahan')->map(fn($v) => trim((string)$v)))
             ->get()
             ->groupBy(function($item) {
