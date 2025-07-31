@@ -28,8 +28,9 @@ class JurnalHelper
         'prive'               => '3010', // Prive
         'penjualan'           => '4000', // Penjualan
         'pendapatan_lain'     => '4010', // Pendapatan Lain-lain
-        'retur_pembelian'      => '4025', // Retur Pembelian
+        'retur_pembelian'     => '4025', // Retur Pembelian
         'hpp'                 => '5000', // Harga Pokok Penjualan
+        'biaya_listrik'       => '5001', // Biaya Listrik
         'beban_operasional'   => '5010', // Beban Operasional
         'beban_kerugian'      => '5011', // Beban Kerugian
         'upah'                => '5020', // Upah/BTKL
@@ -57,7 +58,7 @@ class JurnalHelper
             'no_jurnal' => $no_jurnal,
             'tanggal' => $tanggal,
             'keterangan' => $keterangan,
-            'nomor_bukti' => 'AUTO-HPP-' . $no_detail,
+            'nomor_bukti' => $no_detail,
         ]);
 
         // 2. Jurnal: 
@@ -102,7 +103,7 @@ class JurnalHelper
 
     public static function generateNoJurnal($i = 1)
     {
-        return 'JU-' . date('YmdHis') . '-' . ($i + 1);
+        return 'JU-' . date('YmdHis') . '-' . ($i);
     }
 
     public static function generateNoJurnalDetail($no_jurnal)

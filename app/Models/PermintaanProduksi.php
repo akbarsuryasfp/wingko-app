@@ -11,14 +11,14 @@ class PermintaanProduksi extends Model
     protected $table = 't_permintaan_produksi';
 
     // Primary key-nya (jika bukan 'id')
-    protected $primaryKey = 'kode_permintaan_produksi';
+    protected $primaryKey = 'no_permintaan_produksi';
 
     // Tidak pakai timestamps (created_at, updated_at)
     public $timestamps = false;
 
     // Kolom yang bisa diisi (fillable)
     protected $fillable = [
-        'kode_permintaan_produksi',
+        'no_permintaan_produksi',
         'tanggal',
         'keterangan',
         'status'
@@ -27,7 +27,7 @@ class PermintaanProduksi extends Model
     // Relasi ke detail (satu permintaan memiliki banyak detail produk)
     public function details()
     {
-        return $this->hasMany(PermintaanProduksiDetail::class, 'kode_permintaan_produksi', 'kode_permintaan_produksi');
+        return $this->hasMany(PermintaanProduksiDetail::class, 'no_permintaan_produksi', 'no_permintaan_produksi');
     }
 
     public $incrementing = false;

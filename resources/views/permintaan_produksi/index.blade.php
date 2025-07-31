@@ -11,17 +11,20 @@
     <table class="table table-bordered table-hover">
         <thead class="table-dark">
             <tr>
+                <th>No</th>
                 <th>Kode</th>
                 <th>Tanggal</th>
                 <th>Keterangan</th>
                 <th>Status</th>
                 <th>Detail</th>
+                <th>Aksi</th> <!-- Tambah kolom aksi -->
             </tr>
         </thead>
         <tbody>
             @foreach ($permintaanProduksi as $item)
                 <tr>
-                    <td>{{ $item->kode_permintaan_produksi }}</td>
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $item->no_permintaan_produksi }}</td>
                     <td>{{ $item->tanggal }}</td>
                     <td>{{ $item->keterangan }}</td>
                     <td>
@@ -40,12 +43,19 @@
                     <td>
                         <button class="btn btn-sm btn-primary btn-toggle-detail" 
                                 type="button"
-                                data-detail="{{ $item->kode_permintaan_produksi }}">
+                                data-detail="{{ $item->no_permintaan_produksi }}">
                             Lihat
                         </button>
                     </td>
+                    <td>
+                        <form action="{{ route('permintaan_produksi.destroy', $item->no_permintaan_produksi) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus permintaan ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
+                        </form>
+                    </td>
                 </tr>
-                <tr class="detail-row" id="detail-{{ $item->kode_permintaan_produksi }}" style="display: none;">
+                <tr class="detail-row" id="detail-{{ $item->no_permintaan_produksi }}" style="display: none;">
                     <td colspan="6" class="p-0">
                         <div class="p-3">
                             <table class="table table-sm table-striped">

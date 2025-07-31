@@ -19,12 +19,12 @@
 
         <div class="mb-3">
             <label for="jadwal">Pilih Jadwal Produksi</label>
-            <select class="form-select" id="jadwal-select" onchange="tampilkanProduk()">
+            <select class="form-select" id="jadwal-select" name="no_jadwal" onchange="tampilkanProduk()">
                 <option value="">-- Pilih Jadwal --</option>
                 @foreach ($jadwal as $j)
-                    <option value="{{ $j->kode_jadwal }}" data-json='@json($j)'
-                        @if(isset($jadwalTerpilih) && $jadwalTerpilih->kode_jadwal == $j->kode_jadwal) selected @endif>
-                        {{ $j->kode_jadwal }} - {{ $j->tanggal_jadwal }}
+                    <option value="{{ $j->no_jadwal }}" data-json='@json($j)'
+                        @if(isset($jadwalTerpilih) && $jadwalTerpilih->no_jadwal == $j->no_jadwal) selected @endif>
+                        {{ $j->no_jadwal }} - {{ $j->tanggal_jadwal }}
                     </option>
                 @endforeach
             </select>
@@ -37,7 +37,6 @@
                     <th>Produk</th>
                     <th>Jumlah Direncanakan</th>
                     <th>Jumlah Aktual</th>
-                    <th>Harga Per Unit</th> <!-- Tambah kolom -->
                     <th>Expired</th>
                 </tr>
             </thead>
@@ -59,25 +58,30 @@
         tbody.innerHTML = '';
         let index = 0;
 
+        // Gabungkan produk dengan kode yang sama
+        const produkMap = {};
+        data.details.forEach(detail => {
+            const kode = detail.kode_produk;
+            if (!produkMap[kode]) {
+                produkMap[kode] = {
+                    nama_produk: detail.produk.nama_produk,
+                    kode_produk: kode,
+                    jumlah: 0
+                };
+            }
+            produkMap[kode].jumlah += detail.jumlah;
+        });
+
         // Ambil tanggal produksi
         const tanggalProduksi = document.querySelector('input[name="tanggal_produksi"]').value;
-        const expiredDate = tambahHari(new Date(tanggalProduksi), 10); // 10 hari ke depan
+        const expiredDate = tambahHari(new Date(tanggalProduksi), 10);
         const expiredStr = expiredDate.toISOString().split('T')[0];
 
-        data.details.forEach(detail => {
-            // Tentukan harga default
-            let hargaDefault = 0;
-            const nama = detail.produk.nama_produk.toLowerCase();
-            if (nama.includes('moaci')) {
-                hargaDefault = 25000;
-            } else if (nama.includes('wingko')) {
-                hargaDefault = 20000;
-            }
-
+        Object.values(produkMap).forEach(detail => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    ${detail.produk.nama_produk}
+                    ${detail.nama_produk}
                     <input type="hidden" name="produk[${index}][kode_produk]" value="${detail.kode_produk}">
                 </td>
                 <td>${detail.jumlah}</td>
@@ -85,12 +89,8 @@
                     <input type="number" name="produk[${index}][jumlah_unit]" value="${detail.jumlah}" class="form-control" required min="1">
                 </td>
                 <td>
-                    <input type="number" name="produk[${index}][harga_per_unit]" class="form-control" value="${hargaDefault}" min="0" required>
-                </td>
-                <td>
                     <input type="date" name="produk[${index}][tanggal_expired]" class="form-control" value="${expiredStr}" required>
                 </td>
-                
             `;
             tbody.appendChild(tr);
             index++;

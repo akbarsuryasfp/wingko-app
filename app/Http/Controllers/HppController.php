@@ -16,7 +16,6 @@ use App\Models\JurnalUmum;
 use App\Models\JurnalDetail;
 use App\Helpers\AkunHelper;
 use App\Helpers\JurnalHelper;
-use PDF;
 
 class HppController extends Controller
 {
@@ -72,18 +71,19 @@ class HppController extends Controller
             ->groupBy('t_produksi_bahan.kode_bahan', 't_bahan.nama_bahan')
             ->get();
 
-        // Ambil estimasi tarif BOP per unit dari HPP bulan sebelumnya
-        // Ambil semua no_detail_produksi HPP bulan lalu
-        $hppBulanLalu = \App\Models\HppPerProduk::whereMonth('tanggal_input', now()->subMonth()->month)->pluck('no_detail_produksi');
+        // Ambil periode bulan sebelumnya
+        $periodeBulanLalu = now()->subMonth()->format('Y-m');
+        // Ambil total overhead realisasi bulan sebelumnya
+        $total_overhead_realisasi = \App\Models\BopRealisasi::where('periode', $periodeBulanLalu . '-01')->sum('jumlah');
+        // Ambil total produksi bulan sebelumnya
+        $total_produksi_bulan_lalu = \App\Models\ProduksiDetail::join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', now()->subMonth()->month)
+            ->whereYear('t_produksi.tanggal_produksi', now()->subMonth()->year)
+            ->sum('t_produksi_detail.jumlah_unit');
 
-        // Hitung total overhead dan total produksi bulan lalu
-        $total_overhead = \App\Models\HppPerProduk::whereIn('no_detail_produksi', $hppBulanLalu)->sum('total_overhead');
-        $total_produksi = \App\Models\ProduksiDetail::whereIn('no_detail_produksi', $hppBulanLalu)->sum('jumlah_unit');
-
-        // Hitung tarif bop per unit
-        $tarif_bop_per_unit = $total_produksi > 0 ? $total_overhead / $total_produksi : 0;
-        $tarif_bop_per_unit = round($tarif_bop_per_unit,2); // bulatkan ke integer
-        // Jika ingin 2 desimal: round($tarif_bop_per_unit, 2);
+        // Hitung tarif bop per unit dari realisasi bulan sebelumnya
+        $tarif_bop_per_unit = $total_produksi_bulan_lalu > 0 ? $total_overhead_realisasi / $total_produksi_bulan_lalu : 0;
+        $tarif_bop_per_unit = round($tarif_bop_per_unit, 2);
 
         // Jika belum ada data, fallback ke 0
         if (!$tarif_bop_per_unit || is_nan($tarif_bop_per_unit)) {
@@ -134,15 +134,16 @@ class HppController extends Controller
             ]);
         }
 
-        // Simpan HPP Overhead
+        // Simpan HPP Overheads
         $total_overhead = 0;
         foreach ($request->overhead as $i => $ov) {
             $no_hpp_bop = 'HO' . $tanggal . '-' . $no_detail . '-' . $ov['kode_bop']. '-' . $i;
             $total_overhead += $ov['biaya'];
+            // Simpan ke model HppOverhead (pastikan modelnya sesuai field baru)
             HppOverhead::create([
                 'no_hpp_bop' => $no_hpp_bop,
                 'no_detail_produksi' => $no_detail,
-                'keterangan' => $ov['kode_bop'],
+                'keterangan' => $ov['kode_bop'], // <-- ganti dari 'kode_bop' ke 'keterangan'
                 'biaya_bop' => $ov['biaya'],
             ]);
         }
@@ -174,16 +175,22 @@ class HppController extends Controller
         // Catat jurnal menggunakan mapping dari JurnalHelper
         JurnalHelper::catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead);
 
-        // Update HPP per produk di t_kartupersproduk
-         DB::table('t_kartupersproduk')
+        // Setelah simpan HppPerProduk
+        $updated = DB::table('t_kartupersproduk')
             ->where('no_transaksi', $no_detail)
             ->update(['hpp' => $hpp_per_produk]);
-    
+
+        // Jika tidak ada baris yang terupdate, lakukan insert (jika memang perlu)
+        if ($updated === 0) {
+            DB::table('t_kartupersproduk')->insert([
+                'no_transaksi' => $no_detail,
+                'hpp' => $hpp_per_produk,
+                // tambahkan kolom lain yang wajib diisi jika ada
+            ]);
+        }
 
         return redirect()->route('hpp.index')->with('success', 'Data HPP berhasil disimpan!');
-
-        
-      } 
+    }
 
     public function edit($no_detail)
     {
@@ -236,7 +243,7 @@ class HppController extends Controller
             HppOverhead::updateOrCreate(
                 [
                     'no_detail_produksi' => $no_detail,
-                    'kode_bop' => $ov['kode_bop'],
+                    'keterangan' => $ov['kode_bop'], // <-- ganti dari 'kode_bop' ke 'keterangan'
                 ],
                 [
                     'biaya_bop' => $ov['biaya'],
@@ -262,8 +269,13 @@ class HppController extends Controller
             'tanggal_input' => now(),
         ]);
 
+        // Update kolom hpp di t_kartupersproduk juga saat edit HPP
+        \DB::table('t_kartupersproduk')
+            ->where('no_transaksi', $no_detail)
+            ->update(['hpp' => $hpp_per_produk]);
+
         // Hapus jurnal lama
-        $nomor_bukti = 'AUTO-HPP-' . $no_detail;
+        $nomor_bukti =  $no_detail;
         $jurnal = JurnalUmum::where('nomor_bukti', $nomor_bukti)->first();
         if ($jurnal) {
             JurnalDetail::where('id_jurnal', $jurnal->id_jurnal)->delete();
@@ -273,142 +285,6 @@ class HppController extends Controller
         // Catat jurnal baru menggunakan mapping dari JurnalHelper
         JurnalHelper::catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead);
 
-        //update hpp 
-        DB::table('t_kartupersproduk')
-            ->where('no_transaksi', $no_detail)
-            ->update(['hpp' => $hpp_per_produk]);
-
         return redirect()->route('hpp.index')->with('success', 'Data HPP berhasil diupdate!');
-    }
-
-    public function laporan(Request $request)
-    {
-        $bulan = $request->input('bulan', date('m'));
-        $tahun = $request->input('tahun', date('Y'));
-
-        $total_bahan = HppBahanBaku::whereHas('produksiDetail.produksi', function($q) use ($bulan, $tahun) {
-                $q->whereMonth('tanggal_produksi', $bulan)
-                  ->whereYear('tanggal_produksi', $tahun);
-            })->sum('total_bahan');
-
-        $total_tk = HppTenagaKerja::whereHas('produksiDetail.produksi', function($q) use ($bulan, $tahun) {
-                $q->whereMonth('tanggal_produksi', $bulan)
-                  ->whereYear('tanggal_produksi', $tahun);
-            })->sum('total_biaya_kerja');
-
-        $total_overhead = HppOverhead::whereHas('produksiDetail.produksi', function($q) use ($bulan, $tahun) {
-                $q->whereMonth('tanggal_produksi', $bulan)
-                  ->whereYear('tanggal_produksi', $tahun);
-            })->sum('biaya_bop');
-
-        $hpp = $total_bahan + $total_tk + $total_overhead;
-
-        // Hitung saldo akhir persediaan bahan baku
-        $firstDay = "$tahun-$bulan-01";
-        $lastDay = date('Y-m-t', strtotime($firstDay));
-
-        // Persediaan awal = saldo sampai sebelum bulan berjalan
-        $nilai_masuk_awal = DB::table('t_kartupersbahan')
-            ->where('tanggal', '<', $firstDay)
-            ->select(DB::raw('SUM(masuk * harga) as total'))
-            ->value('total');
-
-        $nilai_keluar_awal = DB::table('t_kartupersbahan')
-            ->where('tanggal', '<', $firstDay)
-            ->select(DB::raw('SUM(keluar * harga) as total'))
-            ->value('total');
-
-        $persediaan_awal = ($nilai_masuk_awal ?? 0) - ($nilai_keluar_awal ?? 0);
-
-        // Pembelian bahan baku bulan berjalan
-        $pembelian_bahan = DB::table('t_kartupersbahan')
-            ->whereBetween('tanggal', [$firstDay, $lastDay])
-            ->select(DB::raw('SUM(masuk * harga) as total'))
-            ->value('total');
-
-        // Pemakaian bahan baku bulan berjalan
-        $pemakaian_bahan = DB::table('t_kartupersbahan')
-            ->whereBetween('tanggal', [$firstDay, $lastDay])
-            ->select(DB::raw('SUM(keluar * harga) as total'))
-            ->value('total');
-
-        // Persediaan akhir = persediaan awal + pembelian - pemakaian
-        $persediaan_akhir = ($persediaan_awal ?? 0) + ($pembelian_bahan ?? 0) - ($pemakaian_bahan ?? 0);
-
-        return view('hpp.laporan', compact(
-            'bulan',
-            'tahun',
-            'total_bahan',
-            'total_tk',
-            'total_overhead',
-            'hpp',
-            'persediaan_awal',
-            'persediaan_akhir',
-            'pembelian_bahan',
-            'pemakaian_bahan'
-        ));
-    }
-
-    public function laporanPdf(Request $request)
-    {
-        $bulan = $request->input('bulan', date('m'));
-        $tahun = $request->input('tahun', date('Y'));
-
-        $total_bahan = HppBahanBaku::whereHas('produksiDetail.produksi', function($q) use ($bulan, $tahun) {
-                $q->whereMonth('tanggal_produksi', $bulan)
-                  ->whereYear('tanggal_produksi', $tahun);
-            })->sum('total_bahan');
-
-        $total_tk = HppTenagaKerja::whereHas('produksiDetail.produksi', function($q) use ($bulan, $tahun) {
-                $q->whereMonth('tanggal_produksi', $bulan)
-                  ->whereYear('tanggal_produksi', $tahun);
-            })->sum('total_biaya_kerja');
-
-        $total_overhead = HppOverhead::whereHas('produksiDetail.produksi', function($q) use ($bulan, $tahun) {
-                $q->whereMonth('tanggal_produksi', $bulan)
-                  ->whereYear('tanggal_produksi', $tahun);
-            })->sum('biaya_bop');
-
-        // Perhitungan persediaan dan pembelian sama seperti laporan web
-        $firstDay = "$tahun-$bulan-01";
-        $lastDay = date('Y-m-t', strtotime($firstDay));
-
-        $nilai_masuk_awal = DB::table('t_kartupersbahan')
-            ->where('tanggal', '<', $firstDay)
-            ->select(DB::raw('SUM(masuk * harga) as total'))
-            ->value('total');
-        $nilai_keluar_awal = DB::table('t_kartupersbahan')
-            ->where('tanggal', '<', $firstDay)
-            ->select(DB::raw('SUM(keluar * harga) as total'))
-            ->value('total');
-        $persediaan_awal = ($nilai_masuk_awal ?? 0) - ($nilai_keluar_awal ?? 0);
-
-        $pembelian_bahan = DB::table('t_kartupersbahan')
-            ->whereBetween('tanggal', [$firstDay, $lastDay])
-            ->select(DB::raw('SUM(masuk * harga) as total'))
-            ->value('total');
-
-        $pemakaian_bahan = DB::table('t_kartupersbahan')
-            ->whereBetween('tanggal', [$firstDay, $lastDay])
-            ->select(DB::raw('SUM(keluar * harga) as total'))
-            ->value('total');
-
-        $persediaan_akhir = ($persediaan_awal ?? 0) + ($pembelian_bahan ?? 0) - ($pemakaian_bahan ?? 0);
-
-        $bahan_digunakan = ($pembelian_bahan ?? 0) + ($persediaan_awal ?? 0) - ($persediaan_akhir ?? 0);
-        $total_biaya_produksi = $bahan_digunakan + ($total_tk ?? 0) + ($total_overhead ?? 0);
-
-        $pdf = PDF::loadView('hpp.laporan_pdf', compact(
-            'bulan',
-            'tahun',
-            'persediaan_awal',
-            'pembelian_bahan',
-            'persediaan_akhir',
-            'bahan_digunakan',
-            'total_tk',
-            'total_overhead',
-            'total_biaya_produksi'
-        ));
-        return $pdf->download('laporan_hpp_'.$bulan.'_'.$tahun.'.pdf');
     }
 }

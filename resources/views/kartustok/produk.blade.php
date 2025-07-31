@@ -93,6 +93,7 @@
 <script>
 function setSatuanProdukOtomatis() {
     var select = document.getElementById('kode_produk');
+    // Ambil satuan dari atribut data-satuan
     var satuan = select.options[select.selectedIndex].getAttribute('data-satuan') || '';
     document.getElementById('satuan_produk').value = satuan;
 
@@ -110,7 +111,6 @@ function setSatuanProdukOtomatis() {
                 let tbody = '';
                 let saldoQty = 0;
                 let saldoPerRow = [];
-                // Akumulasi stok akhir per harga
                 let stokAkhirMap = {};
                 if (data.length === 0) {
                     tbody = `<tr><td colspan="8" class="text-center">Tidak ada data persediaan.</td></tr>`;
@@ -147,14 +147,14 @@ function setSatuanProdukOtomatis() {
 
                 document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
 
-                // Tampilkan stok akhir per harga
+                // Tampilkan stok akhir per harga (tanpa satuan)
                 let stokAkhirList = '';
                 let adaStok = false;
                 Object.entries(stokAkhirMap).forEach(([h, v]) => {
                     let sisa = v.masuk - v.keluar;
                     if (sisa > 0) {
                         adaStok = true;
-                        stokAkhirList += `<li><b>${sisa}</b> ${satuan} dengan harga <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b>/${satuan}</li>`;
+                        stokAkhirList += `<li><b>${sisa}</b> dengan harga <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b></li>`;
                     }
                 });
                 if (!adaStok) stokAkhirList = `<li>0</li>`;

@@ -63,9 +63,15 @@ public function index(Request $request)
         $transfer->details = $details;
     }
 
+<<<<<<< Updated upstream
     return view('transferproduk.index', compact('transfers', 'listLokasi'));
 }
+=======
+        return view('transferproduk.index', compact('transfers'));
+    }
+>>>>>>> Stashed changes
 
+    // Tampilkan form create
     // Tampilkan form create
     public function create()
     {
@@ -255,7 +261,10 @@ public function edit($no_transaksi)
     public function update(Request $request, $no_transaksi)
     {
         $request->validate([
+            'no_transaksi' => 'required',
             'tanggal' => 'required|date',
+            'lokasi_asal' => 'required',
+            'lokasi_tujuan' => 'required|different:lokasi_asal',
             'lokasi_asal' => 'required',
             'lokasi_tujuan' => 'required|different:lokasi_asal',
             'produk_id' => 'required|array',
