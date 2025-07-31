@@ -23,7 +23,8 @@
                             <option value="{{ $psn->no_pesanan }}"
                                 data-tanggal="{{ $psn->tanggal_pesanan }}"
                                 data-pelanggan="{{ $psn->nama_pelanggan }}"
-                                data-kodepelanggan="{{ $psn->kode_pelanggan }}">
+                                data-kodepelanggan="{{ $psn->kode_pelanggan }}"
+                                data-uangmuka="{{ $psn->uang_muka ?? 0 }}">
                                 {{ $psn->no_pesanan }}
                             </option>
                         @endforeach
@@ -112,7 +113,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" id="total_harga" name="total_harga" class="form-control" readonly>
+                            <input type="text" id="total_harga" name="total_harga" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -121,7 +122,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" id="diskon" name="diskon" class="form-control" value="0" min="0" oninput="hitungTotalLain()">
+                            <input type="number" id="diskon" name="diskon" class="form-control" min="0" oninput="hitungTotalLain()">
                         </div>
                     </div>
                 </div>
@@ -130,7 +131,16 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" id="total_jual" name="total_jual" class="form-control" readonly>
+                            <input type="text" id="total_jual" name="total_jual" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2 row align-items-center">
+                    <label class="col-sm-4 col-form-label">Uang Muka (DP)</label>
+                    <div class="col-sm-8">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" id="uang_muka" name="uang_muka" class="form-control" min="0" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -139,7 +149,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" id="total_bayar" name="total_bayar" class="form-control" value="0" min="0" oninput="hitungTotalLain()">
+                            <input type="number" id="total_bayar" name="total_bayar" class="form-control" min="0" oninput="hitungTotalLain()">
                         </div>
                     </div>
                 </div>
@@ -148,7 +158,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" id="kembalian" name="kembalian" class="form-control" readonly>
+                            <input type="text" id="kembalian" name="kembalian" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -157,7 +167,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" id="piutang" class="form-control" readonly>
+                            <input type="text" id="piutang" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                         <input type="hidden" name="piutang" id="piutang_hidden">
                     </div>
@@ -197,6 +207,7 @@
             document.getElementById('tanggal_pesanan').value = '';
             document.getElementById('nama_pelanggan').value = '';
             document.getElementById('kode_pelanggan').value = '';
+            document.getElementById('uang_muka').value = 0;
             daftarProduk = [];
             updateTabel();
             return;
@@ -205,6 +216,10 @@
         const tanggal = selected.getAttribute('data-tanggal') || '';
         const pelanggan = selected.getAttribute('data-pelanggan') || '';
         const kodePelanggan = selected.getAttribute('data-kodepelanggan') || '';
+        // Ambil uang muka dari data attribute jika ada
+        let uangMuka = selected.getAttribute('data-uangmuka');
+        if (typeof uangMuka === 'undefined' || uangMuka === null) uangMuka = 0;
+        document.getElementById('uang_muka').value = uangMuka;
         // Format tanggal pesanan ke dd-mm-yyyy jika ada
         if (tanggal) {
             const tglObj = new Date(tanggal);
@@ -236,14 +251,16 @@
         }
     });
 
+    // Format Rp tanpa spasi dan dengan titik ribuan
     function formatRupiah(angka, showPrefix = false) {
         if (angka === '' || angka === null || typeof angka === 'undefined') return '';
-        // Remove all non-digit
         angka = angka.toString().replace(/[^\d]/g, '');
         if (!angka) return '';
-        const formatted = parseInt(angka, 10).toLocaleString('id-ID');
-        return showPrefix ? 'Rp ' + formatted : formatted;
-}
+        let intVal = parseInt(angka, 10);
+        if (isNaN(intVal)) return '';
+        let formatted = intVal.toLocaleString('id-ID');
+        return showPrefix ? 'Rp' + formatted : formatted;
+    }
 
     function updateTabel() {
         const tbody = document.querySelector('#daftar-produk tbody');
@@ -264,12 +281,12 @@
                     <td>${item.nama_produk}</td>
                     <td>${satuan}</td>
                     <td>${item.jumlah}</td>
-                    <td>${formatRupiah(item.harga_satuan, true)}</td>
+                    <td>${formatRupiah(parseInt(item.harga_satuan), true)}</td>
                     <td><div class="input-group input-group-sm"><span class="input-group-text">Rp</span><input type="text" min="0" class="form-control form-control-sm text-center diskon-satuan-input" data-index="${index}" value="${formatRupiah(diskon_satuan)}"></div></td>
                     <td class="subtotal-col">${formatRupiah(item.subtotal, true)}</td>
                 </tr>
             `;
-            tbody.insertAdjacentHTML('beforeend', row);
+            tbody.insertAdjacentHTML('beforeend', row); 
         });
 
         document.getElementById('total_harga').value = formatRupiah(totalHarga);
@@ -324,15 +341,22 @@
         if (totalJual < 0) totalJual = 0;
         document.getElementById('total_jual').value = formatRupiah(totalJual);
 
+        let uangMuka = parseInt((document.getElementById('uang_muka').value || '0').replace(/[^\d]/g, '')) || 0;
+        if (uangMuka < 0) uangMuka = 0;
+
         let totalBayar = parseInt((document.getElementById('total_bayar').value || '0').replace(/[^\d]/g, '')) || 0;
         let kembalian = 0, piutang = 0;
 
-        if (totalBayar > totalJual) {
-            kembalian = totalBayar - totalJual;
+        // DP (uang muka) mengurangi piutang, bukan total bayar
+        let sisaTagihan = totalJual - uangMuka;
+        if (sisaTagihan < 0) sisaTagihan = 0;
+
+        if (totalBayar > sisaTagihan) {
+            kembalian = totalBayar - sisaTagihan;
             piutang = 0;
         } else {
             kembalian = 0;
-            piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
+            piutang = sisaTagihan - totalBayar > 0 ? sisaTagihan - totalBayar : 0;
         }
         document.getElementById('kembalian').value = formatRupiah(kembalian);
         document.getElementById('piutang').value = formatRupiah(piutang);

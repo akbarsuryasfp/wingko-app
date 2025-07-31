@@ -208,7 +208,7 @@ class BayarConsignorController extends Controller
             $total_bayar += $total_penjualan - ($sudah_bayar * ($total_penjualan/$terjual ?: 0));
         }
 
-        // Return HTML tabel identik dengan view
+        // Return HTML tabel identik dengan view, dan total bayar pakai input group
         $html = '<table class="table table-bordered text-center align-middle mt-3">'
             . '<thead>'
             . '<tr>'
@@ -234,12 +234,17 @@ class BayarConsignorController extends Controller
                     . '<td>Rp ' . number_format($p['total_penjualan'],0,',','.') . '</td>'
                     . '</tr>';
             }
-            $html .= '<tr>'
-                . '<td colspan="5" class="text-end fw-bold">Total Bayar</td>'
-                . '<td class="fw-bold">Rp ' . number_format($total_bayar,0,',','.') . '</td>'
-                . '</tr>';
         }
         $html .= '</tbody></table>';
+        // Total Bayar input group (mirip pesananpenjualan)
+        $html .= '<div class="d-flex justify-content-end align-items-center mt-2" style="max-width:400px;margin-left:auto;">'
+            . '<label class="me-2 fw-bold mb-0">Total Bayar</label>'
+            . '<div class="input-group" style="width:220px;">'
+            . '<span class="input-group-text">Rp</span>'
+            . '<input type="text" id="total_bayar_display" class="form-control fw-bold" value="' . number_format($total_bayar,0,',','.') . '" readonly tabindex="-1" style="background:#e9ecef;pointer-events:none;">'
+            . '</div>'
+            . '<input type="hidden" id="total_bayar" name="total_bayar" value="' . $total_bayar . '">' 
+            . '</div>';
 
         return response($html);
     }

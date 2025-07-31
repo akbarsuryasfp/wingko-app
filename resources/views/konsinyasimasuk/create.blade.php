@@ -137,9 +137,16 @@ document.querySelector('select[name="kode_consignor"]').addEventListener('change
     }
 });
 
+
 // Data array untuk detail produk titip
 let produkTitipList = [];
 let produkSatuanMap = {};
+
+// Fungsi hapus produk titip
+function hapusProdukTitip(idx) {
+    produkTitipList.splice(idx, 1);
+    renderTabelProdukTitip();
+}
 
 function tambahProdukTitip() {
     const kode_produk = document.getElementById('kode_produk').value;

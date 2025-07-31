@@ -98,7 +98,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
-                            <a href="{{ route('returjual.cetak', $rj->no_returjual) }}" class="btn btn-success btn-sm" title="Cetak" target="_blank">
+                            <a href="{{ route('returjual.cetak', $rj->no_returjual) }}" class="btn btn-success btn-sm" title="Cetak Nota Retur Penjualan" target="_blank">
                                 <i class="bi bi-printer"></i>
                             </a>
                         </div>

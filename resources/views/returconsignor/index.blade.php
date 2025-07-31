@@ -101,20 +101,27 @@
                     </td>
                     <td class="text-center align-middle">Rp{{ number_format($rc->total_nilai_retur, 0, ',', '.') }}</td>
                     <td>
-                        <div class="d-flex justify-content-center gap-1" style="min-width: 140px;">
-                            <a href="{{ route('returconsignor.show', $rc->no_returconsignor) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{{ route('returconsignor.edit', $rc->no_returconsignor) }}" class="btn btn-warning btn-sm btn-icon-square" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <form action="{{ route('returconsignor.destroy', $rc->no_returconsignor) }}" method="POST" style="display:inline-block; margin:0;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm btn-icon-square" title="Hapus">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
+                        <div class="d-flex flex-column gap-1 align-items-center justify-content-center" style="min-width: 140px;">
+                            <div class="d-flex gap-1 mb-1">
+                                <a href="{{ route('returconsignor.show', $rc->no_returconsignor) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ route('returconsignor.edit', $rc->no_returconsignor) }}" class="btn btn-warning btn-sm btn-icon-square" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <form action="{{ route('returconsignor.destroy', $rc->no_returconsignor) }}" method="POST" style="display:inline-block; margin:0;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm btn-icon-square" title="Hapus">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                <a href="{{ route('returconsignor.cetak', $rc->no_returconsignor) }}" class="btn btn-success btn-sm btn-icon-square" title="Cetak Nota Retur Consignor (Pemilik Barang)" target="_blank">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -157,6 +164,8 @@ th.text-center.align-middle, td.text-center.align-middle {
 .btn-warning.btn-icon-square { background: #ffc107; color: #111; border: none; }
 .btn-danger.btn-icon-square { background: #f44336; color: #fff; border: none; }
 .btn-success.btn-icon-square { background: #219653; color: #fff; border: none; }
+/* pastikan icon printer tetap putih di tombol hijau */
+.btn-success.btn-icon-square i { color: #fff; }
 .btn-icon-square i { margin: 0; }
 .btn-icon-square:focus { box-shadow: 0 0 0 2px #aaa; }
 </style>

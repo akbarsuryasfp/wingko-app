@@ -36,6 +36,7 @@
                 <thead>
                     <tr>
                         <th class="text-center">No</th>
+                        <th class="text-center">Kode Produk</th>
                         <th class="text-center">Nama Produk</th>
                         <th class="text-center">Satuan</th>
                         <th class="text-center">Jumlah Terjual</th>
@@ -48,6 +49,7 @@
                     @foreach($header->details as $i => $d)
                     <tr>
                         <td class="text-center">{{ $i+1 }}</td>
+                        <td class="text-center">{{ $d->kode_produk ?? '-' }}</td>
                         <td class="text-center">{{ $d->produk->nama_produk ?? '-' }}</td>
                         <td class="text-center">{{ $d->produk->satuan ?? '-' }}</td>
                         <td class="text-center">{{ $d->jumlah_terjual }}</td>
@@ -59,7 +61,7 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th colspan="4" class="text-end">Total Bayar</th>
+                        <th colspan="6" class="text-end">Total Bayar</th>
                         <th class="text-center">Rp{{ number_format($total,0,',','.') }}</th>
                     </tr>
                 </tfoot>

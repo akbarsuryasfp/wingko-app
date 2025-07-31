@@ -67,7 +67,10 @@
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <label class="mb-0">Total Retur</label>
-                        <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
+                        <div class="input-group" style="width: 180px;">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_nilai_retur_view" readonly class="form-control fw-bold" tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+                        </div>
                         <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
                         <button type="submit" class="btn btn-success">Update</button>
                     </div>
@@ -83,7 +86,7 @@
     }
 
     function formatRupiah(angka) {
-        return 'Rp' + Number(angka).toLocaleString('id-ID');
+        return Number(angka).toLocaleString('id-ID');
     }
 
     function updateTabelRetur() {
@@ -110,12 +113,12 @@
                                 onchange="updateJumlahRetur(${index}, this.value)">
                             <small class="text-muted">Maks: ${max}</small>
                         </td>
-                        <td>${formatRupiah(item.harga_satuan)}</td>
+                        <td>Rp${formatRupiah(item.harga_satuan)}</td>
                         <td>
                             <input type="text" class="form-control form-control-sm" value="${item.alasan || ''}" 
                                 onchange="updateAlasanRetur(${index}, this.value)">
                         </td>
-                        <td>${formatRupiah(subtotal)}</td>
+                        <td>Rp${formatRupiah(subtotal)}</td>
                         <td>
                             <button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisRetur(${index})" title="Hapus">
                                 <i class="bi bi-trash"></i>
@@ -179,9 +182,9 @@
                                 nama_produk: item.nama_produk,
                                 satuan: item.satuan || '-',
                                 jumlah_retur: existing ? existing.jumlah_retur : 0,
-                                harga_satuan: item.harga_setor,
+                                harga_satuan: existing && existing.harga_satuan !== undefined ? existing.harga_satuan : (item.harga_setor || 0),
                                 alasan: existing ? existing.alasan : '',
-                                subtotal: existing ? existing.subtotal : 0
+                                subtotal: existing && existing.subtotal !== undefined ? existing.subtotal : 0
                             });
                             maxJumlahPerProduk[item.kode_produk] = item.jumlah_setor;
                         });
@@ -197,3 +200,4 @@
     </form>
 </div>
 @endsection
+// Pastikan detailsArray dari backend sudah mengandung harga_satuan, subtotal, jumlah_retur, alasan

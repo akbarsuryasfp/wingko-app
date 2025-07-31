@@ -81,13 +81,17 @@
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <label class="mb-0">Total Retur</label>
-                        <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
+                        <div class="input-group" style="width: 180px;">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="background:#e9ecef;pointer-events:none;">
+                        </div>
                         <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
                         <button type="submit" class="btn btn-success">Submit</button>
                     </div>
                 </div>
 
                 <input type="hidden" name="detail_json" id="detail_json">
+                <input type="hidden" name="from_retur_terima" value="0">
             </form>
         </div>
     </div>
@@ -162,6 +166,7 @@
         updateTabelRetur();
     }
 
+
     function formatRupiah(angka) {
         return 'Rp' + Number(angka).toLocaleString('id-ID');
     }
@@ -188,7 +193,7 @@
                         <td>
                             <input type="number" class="form-control form-control-sm" min="0" max="${max}" value="${item.jumlah_retur}" 
                                 onchange="updateJumlahRetur(${index}, this.value)">
-                            <small class="text-muted">Maks: ${max}</small>
+                            <small class="text-muted">Max Dapat Dinput: ${max}</small>
                         </td>
                         <td>${formatRupiah(item.harga_satuan)}</td>
                         <td>
@@ -207,7 +212,7 @@
             });
         }
 
-        document.getElementById('total_nilai_retur_view').value = formatRupiah(totalRetur);
+        document.getElementById('total_nilai_retur_view').value = totalRetur > 0 ? formatRupiah(totalRetur) : '';
         document.getElementById('total_nilai_retur').value = totalRetur;
         document.getElementById('detail_json').value = JSON.stringify(daftarProdukRetur);
     }

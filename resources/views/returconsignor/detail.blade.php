@@ -46,6 +46,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @php $total = 0; @endphp
                     @foreach($details as $i => $d)
                     <tr>
                         <td class="text-center align-middle">{{ $i+1 }}</td>
@@ -56,8 +57,15 @@
                         <td class="text-center align-middle">{{ $d->alasan }}</td>
                         <td class="text-center align-middle">Rp{{ number_format($d->subtotal,0,',','.') }}</td>
                     </tr>
+                    @php $total += $d->subtotal; @endphp
                     @endforeach
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="6" class="text-end">Total Retur</th>
+                        <th class="text-center">Rp{{ number_format($total,0,',','.') }}</th>
+                    </tr>
+                </tfoot>
             </table>
             <a href="{{ route('returconsignor.index') }}" class="btn btn-secondary">Back</a>
         </div>

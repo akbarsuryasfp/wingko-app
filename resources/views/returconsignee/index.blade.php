@@ -90,9 +90,22 @@
                                         <a href="{{ route('returconsignee.show', $rc->no_returconsignee) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('returconsignee.edit', $rc->no_returconsignee) }}" class="btn btn-warning btn-sm btn-icon-square" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+                                        @php
+                                            $adaTidakTerjual = false;
+                                            if ($rc->details && count($rc->details)) {
+                                                foreach ($rc->details as $detail) {
+                                                    if (strtolower(trim($detail->alasan)) === 'tidak terjual') {
+                                                        $adaTidakTerjual = true;
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        @endphp
+                                        @if(!$adaTidakTerjual)
+                                            <a href="{{ route('returconsignee.edit', $rc->no_returconsignee) }}" class="btn btn-warning btn-sm btn-icon-square" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        @endif
                                         <form action="{{ route('returconsignee.destroy', $rc->no_returconsignee) }}" method="POST" style="display:inline-block; margin:0;">
                                             @csrf
                                             @method('DELETE')

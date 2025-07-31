@@ -65,7 +65,10 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 120px;">Harga Titip/Satuan</label>
-                    <input type="number" id="harga_titip" class="form-control" oninput="formatInputRupiah(this)">
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" id="harga_titip" class="form-control" autocomplete="off">
+                    </div>
                 </div>
                 <div class="mb-3">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProdukTitip()">Tambah Produk</button>
@@ -96,10 +99,14 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Titip</label>
-                <input type="text" id="total_titip_view" readonly class="form-control" style="width: 160px;">
+                <div class="input-group" style="width: 180px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" id="total_titip_view" readonly class="form-control" style="background:#e9ecef;pointer-events:none;">
+                </div>
                 <input type="hidden" id="total_titip" name="total_titip">
                 <button type="submit" class="btn btn-success">Update</button>
             </div>
+
         </div>
 
         <input type="hidden" name="detail_json" id="detail_json">
@@ -109,6 +116,29 @@
 </div>
 
 <script>
+    // Format ribuan otomatis untuk input harga_titip
+    function formatNumberInput(val) {
+        val = String(val).replace(/[^\d]/g, '');
+        if (!val) return '';
+        return val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    function parseNumberInput(val) {
+        return parseInt(String(val).replace(/\D/g, '')) || 0;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const hargaTitipInput = document.getElementById('harga_titip');
+        if (hargaTitipInput) {
+            hargaTitipInput.addEventListener('input', function(e) {
+                const cursor = this.selectionStart;
+                const oldLength = this.value.length;
+                let val = this.value;
+                this.value = formatNumberInput(val);
+                const newLength = this.value.length;
+                this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+            });
+        }
+    });
     // Inisialisasi dari backend
     let daftarProdukTitip = @json($details);
     const allProdukKonsinyasi = @json($produkKonsinyasi);
@@ -149,7 +179,7 @@
         const kode_produk = produkSelect.value;
         const nama_produk = produkSelect.options[produkSelect.selectedIndex]?.dataset.nama || '';
         const jumlah_stok = Number(document.getElementById('jumlah_stok').value);
-        const harga_titip = Number(document.getElementById('harga_titip').value);
+        const harga_titip = parseNumberInput(document.getElementById('harga_titip').value);
 
         if (!kode_produk || isNaN(jumlah_stok) || isNaN(harga_titip) || jumlah_stok <= 0 || harga_titip <= 0) {
             alert("Silakan lengkapi data produk titip dengan benar.");
@@ -205,12 +235,50 @@
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
                     <td><input type="number" class="form-control form-control-sm" value="${item.jumlah_stok}" min="1" onchange="ubahJumlahStok(${index}, this.value)"></td>
-                    <td><input type="number" class="form-control form-control-sm" value="${item.harga_titip}" min="1" onchange="ubahHargaTitip(${index}, this.value)"></td>
+                    <td>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" class="form-control form-control-sm harga-titip-edit" data-idx="${index}" value="${formatNumberInput(item.harga_titip)}" inputmode="numeric" autocomplete="off" style="min-width:90px;">
+                        </div>
+                    </td>
                     <td>${formatRupiah(item.subtotal)}</td>
                     <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisTitip(${index})" title="Hapus"><i class='bi bi-trash'></i></button></td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
+        });
+        // Tambahkan event listener untuk input harga titip di tabel agar live format ribuan
+        document.querySelectorAll('.harga-titip-edit').forEach(input => {
+            input.addEventListener('input', function(e) {
+                const idx = this.dataset.idx;
+                const cursor = this.selectionStart;
+                const oldLength = this.value.length;
+                let val = this.value;
+                this.value = formatNumberInput(val);
+                let newLength = this.value.length;
+                this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+                // Update data
+                const harga = parseNumberInput(this.value);
+                daftarProdukTitip[idx].harga_titip = harga;
+                daftarProdukTitip[idx].subtotal = harga * daftarProdukTitip[idx].jumlah_stok;
+                // Update subtotal kolom
+                this.closest('tr').querySelector('td:nth-child(5)').textContent = formatRupiah(daftarProdukTitip[idx].subtotal);
+                // Update total titip dan field hidden
+                const totalTitip = daftarProdukTitip.reduce((a,b)=>a+(b.subtotal||0),0);
+                document.getElementById('total_titip_view').value = formatRupiah(totalTitip);
+                document.getElementById('total_titip').value = totalTitip;
+                document.getElementById('detail_json').value = JSON.stringify(daftarProdukTitip);
+            });
+            input.addEventListener('blur', function() {
+                if (this.value) {
+                    this.value = formatNumberInput(this.value);
+                }
+            });
+            input.addEventListener('focus', function() {
+                let val = (daftarProdukTitip[this.dataset.idx]?.harga_titip || 0).toString();
+                this.value = val;
+                this.setSelectionRange(this.value.length, this.value.length);
+            });
         });
         document.getElementById('total_titip_view').value = formatRupiah(totalTitip);
         document.getElementById('total_titip').value = totalTitip;

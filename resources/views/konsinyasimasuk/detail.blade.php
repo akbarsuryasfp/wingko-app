@@ -58,7 +58,7 @@
                     </tr>
                     @endforeach
                     <tr>
-                        <td colspan="5" class="text-end fw-bold">Total Titip</td>
+                        <td colspan="6" class="text-end fw-bold">Total Titip</td>
                         <td class="fw-bold text-center">Rp{{ number_format($konsinyasi->total_titip,0,',','.') }}</td>
                     </tr>
                 </tbody>

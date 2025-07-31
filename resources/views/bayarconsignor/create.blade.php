@@ -58,7 +58,7 @@
                 <tbody>
                     @if(isset($produk) && count($produk) === 0)
                         <tr>
-                            <td colspan="5" class="text-center">Data produk tidak ditemukan.</td>
+                            <td colspan="6" class="text-center">Data produk tidak ditemukan.</td>
                         </tr>
                     @elseif(isset($produk))
                         @foreach($produk as $i => $p)
@@ -71,15 +71,18 @@
                             <td>Rp {{ number_format($p['total_penjualan'],0,',','.') }}</td>
                         </tr>
                         @endforeach
-                        <tr>
-                            <td colspan="4" class="text-end fw-bold">Total Bayar</td>
-                            <td class="fw-bold">
-                                Rp {{ number_format(collect($produk)->sum('total_penjualan'),0,',','.') }}
-                            </td>
-                        </tr>
                     @endif
                 </tbody>
             </table>
+            <!-- Total Bayar mirip Total Pesanan -->
+            <div class="d-flex justify-content-end align-items-center mt-2" style="max-width: 400px; margin-left: auto;">
+                <label class="me-2 fw-bold mb-0">Total Bayar</label>
+                <div class="input-group" style="width: 220px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" id="total_bayar_display" class="form-control fw-bold" value="{{ isset($produk) ? number_format(collect($produk)->sum('total_penjualan'),0,',','.') : '' }}" readonly tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+                </div>
+                <input type="hidden" id="total_bayar" name="total_bayar" value="{{ isset($produk) ? collect($produk)->sum('total_penjualan') : '' }}">
+            </div>
         </div>
         <div class="d-flex justify-content-between mt-4 gap-2 flex-wrap">
             <div class="d-flex align-items-center gap-2">

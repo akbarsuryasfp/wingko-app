@@ -68,7 +68,42 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($penerimaanKonsinyasiList as $i => $item)
+@forelse($penerimaanKonsinyasiList as $i => $item)
+    @php
+        $kodeConsignee = $item->kode_consignee;
+        $noKonsinyasiKeluar = $item->no_konsinyasikeluar;
+        $canRetur = false;
+
+
+        $alreadyRetur = false;
+        $adaReturTidakTerjual = false;
+        if ($noKonsinyasiKeluar) {
+            $returList = \App\Models\ReturConsignee::where('no_konsinyasikeluar', $noKonsinyasiKeluar)->get();
+            foreach ($returList as $retur) {
+                $details = \App\Models\ReturConsigneeDetail::where('no_returconsignee', $retur->no_returconsignee)->get();
+                foreach ($details as $d) {
+                    if (strtolower(trim($d->alasan ?? '')) === 'tidak terjual') {
+                        $adaReturTidakTerjual = true;
+                        break 2;
+                    }
+                }
+            }
+            $alreadyRetur = $returList->count() > 0;
+        }
+
+        if ($item->details && count($item->details)) {
+            foreach ($item->details as $d) {
+                $jumlahTerjual = $d->jumlah_terjual ?? 0;
+                $jumlahSetor = $d->jumlah_setor ?? 0;
+                // Tidak perlu cek retur, karena retur langsung ditukar
+                $sisa = $jumlahSetor - $jumlahTerjual;
+                if ($sisa > 0) {
+                    $canRetur = true;
+                    break;
+                }
+            }
+        }
+    @endphp
                         <tr>
                             <td class="text-center align-middle">{{ $i + 1 }}</td>
                             <td class="text-center align-middle">{{ $item->no_penerimaankonsinyasi }}</td>
@@ -94,45 +129,37 @@
                             
                             <td class="text-center align-middle">
     <div class="d-flex justify-content-center gap-1" style="min-width: 180px;">
-        <a href="{{ route('penerimaankonsinyasi.show', $item->no_penerimaankonsinyasi) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
-            <i class="bi bi-eye"></i>
-        </a>
+    <a href="{{ route('penerimaankonsinyasi.show', $item->no_penerimaankonsinyasi) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
+        <i class="bi bi-eye"></i>
+    </a>
+
+
+    @if(!$alreadyRetur && !$adaReturTidakTerjual)
         <a href="{{ route('penerimaankonsinyasi.edit', $item->no_penerimaankonsinyasi) }}" class="btn btn-warning btn-sm btn-icon-square" title="Edit">
             <i class="bi bi-pencil"></i>
         </a>
-@php
-    $kodeConsignee = $item->kode_consignee;
-    $noKonsinyasiKeluar = $item->no_konsinyasikeluar;
-    $canRetur = false;
+    @endif
 
-    // Cek apakah no_konsinyasikeluar sudah ada di t_returconsignee
-    $alreadyRetur = \App\Models\ReturConsignee::where('no_konsinyasikeluar', $noKonsinyasiKeluar)->exists();
+    @if($canRetur && !$adaReturTidakTerjual)
+        <a href="{{ route('returconsignee.createReturTerima', [
+            'no_konsinyasikeluar' => $noKonsinyasiKeluar,
+            'kode_consignee' => $kodeConsignee,
+            'nama_consignee' => $item->consignee->nama_consignee ?? '',
+            'prefill_retur' => 1
+        ]) }}" class="btn btn-dark btn-sm btn-icon-square" title="Retur">
+            <i class="bi bi-arrow-counterclockwise"></i>
+        </a>
+    @endif
 
-    if (!$alreadyRetur && $item->details && count($item->details)) {
-        foreach ($item->details as $d) {
-            $jumlahTerjual = $d->jumlah_terjual ?? 0;
-            $jumlahSetor = $d->jumlah_setor ?? 0;
-            if ($jumlahSetor > $jumlahTerjual) {
-                $canRetur = true;
-                break;
-            }
-        }
-    }
-@endphp
-@if($canRetur)
-    <a href="{{ route('returconsignee.createReturTerima', ['no_konsinyasikeluar' => $noKonsinyasiKeluar, 'kode_consignee' => $kodeConsignee, 'prefill_retur' => 1]) }}" class="btn btn-dark btn-sm btn-icon-square" title="Retur">
-        <i class="bi bi-arrow-counterclockwise"></i>
-    </a>
-@endif
+    <form action="{{ route('penerimaankonsinyasi.destroy', $item->no_penerimaankonsinyasi) }}" method="POST" style="display:inline-block; margin:0;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="btn btn-danger btn-sm btn-icon-square" title="Hapus">
+            <i class="bi bi-trash"></i>
+        </button>
+    </form>
+</div>
 
-        <form action="{{ route('penerimaankonsinyasi.destroy', $item->no_penerimaankonsinyasi) }}" method="POST" style="display:inline-block; margin:0;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="btn btn-danger btn-sm btn-icon-square" title="Hapus">
-                <i class="bi bi-trash"></i>
-            </button>
-        </form>
-    </div>
 </td>
                         </tr>
                     @empty

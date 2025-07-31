@@ -48,10 +48,8 @@ class ReturConsigneeController extends Controller
     // Form khusus create retur dari penerimaan konsinyasi
 public function createReturTerima(Request $request)
 {
-    $noSudahRetur = ReturConsignee::pluck('no_konsinyasikeluar')->toArray();
-    $konsinyasikeluar = KonsinyasiKeluar::with('consignee')
-        ->whereNotIn('no_konsinyasikeluar', $noSudahRetur)
-        ->get();
+    // Tidak perlu filter, semua konsinyasi keluar bisa diretur berkali-kali
+    $konsinyasikeluar = KonsinyasiKeluar::with('consignee')->get();
     $last = ReturConsignee::orderBy('no_returconsignee', 'desc')->first();
     $newNumber = $last ? intval(substr($last->no_returconsignee, 2)) + 1 : 1;
     $no_returconsignee = 'RC' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
@@ -205,6 +203,7 @@ if ($urlNoKonsinyasi && $prefillRetur) {
         }
 
         DB::transaction(function () use ($request, $details) {
+            // Simpan retur dan detail
             $retur = ReturConsignee::create([
                 'no_returconsignee' => $request->no_returconsignee,
                 'no_konsinyasikeluar' => $request->no_konsinyasikeluar,
@@ -213,6 +212,7 @@ if ($urlNoKonsinyasi && $prefillRetur) {
                 'total_nilai_retur' => $request->total_nilai_retur,
                 'keterangan' => $request->keterangan,
             ]);
+            $fromReturTerima = $request->input('from_retur_terima');
             foreach ($details as $i => $detail) {
                 ReturConsigneeDetail::create([
                     'no_detailreturconsignee' => $request->no_returconsignee . '-' . ($i+1),
@@ -220,11 +220,38 @@ if ($urlNoKonsinyasi && $prefillRetur) {
                     'kode_produk' => $detail['kode_produk'],
                     'jumlah_retur' => $detail['jumlah_retur'],
                     'harga_satuan' => $detail['harga_satuan'],
-                    'alasan' => $detail['alasan'] ?? '',
+                    'alasan' => $detail['alasan'] ?? null,
                     'subtotal' => $detail['subtotal'] ?? ($detail['jumlah_retur'] * $detail['harga_satuan']),
                 ]);
+
+                // Tambah ke kartu stok (t_kartupersproduk) sebagai barang masuk (stok opname)
+                DB::table('t_kartupersproduk')->insert([
+                    'kode_produk' => $detail['kode_produk'],
+                    'tanggal' => $request->tanggal_returconsignee,
+                    'masuk' => $detail['jumlah_retur'],
+                    'keluar' => 0,
+                    'hpp' => $detail['harga_satuan'],
+                    'satuan' => $detail['satuan'] ?? null,
+                    'keterangan' => 'Retur Consignee Masuk',
+                    'no_transaksi' => $request->no_returconsignee,
+                ]);
+
+                // Jika BUKAN dari create_returterima, selalu lakukan barang keluar otomatis (penukaran)
+                if (empty($fromReturTerima) || $fromReturTerima != '1') {
+                    DB::table('t_kartupersproduk')->insert([
+                        'kode_produk' => $detail['kode_produk'],
+                        'tanggal' => $request->tanggal_returconsignee,
+                        'masuk' => 0,
+                        'keluar' => $detail['jumlah_retur'],
+                        'hpp' => $detail['harga_satuan'],
+                        'satuan' => $detail['satuan'] ?? null,
+                        'keterangan' => 'Penukaran Barang Baru (Retur Consignee)',
+                        'no_transaksi' => $request->no_returconsignee,
+                    ]);
+                }
             }
         });
+
         return redirect()->route('returconsignee.index')->with('success', 'Retur Consignee berhasil disimpan!');
     }
 

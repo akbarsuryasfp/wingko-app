@@ -494,21 +494,38 @@
                     document.getElementById('harga_satuan').value = harga ? formatNumberInput(String(parseInt(harga))) : '';
                 });
 
-            // Ambil stok produk
-            let urlStok = '';
-            if (jenis === 'konsinyasi') {
-                urlStok = '/api/stok-produk-konsinyasi/' + encodeURIComponent(kode_produk);
-            } else {
-                urlStok = '/api/stok-produk/' + encodeURIComponent(kode_produk);
-            }
-            fetch(urlStok)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('stok-info').innerText = 'Stok tersedia: ' + (data.stok ?? 0);
-                })
-                .catch(() => {
-                    document.getElementById('stok-info').innerText = 'Stok tersedia: -';
-                });
+            // Ambil stok dari kedua sumber
+            const stokProdukUrl = '/api/stok-produk/' + encodeURIComponent(kode_produk);
+            const stokKonsinyasiUrl = '/api/stok-produk-konsinyasi/' + encodeURIComponent(kode_produk);
+            Promise.all([
+                fetch(stokProdukUrl).then(res => res.json()).catch(() => ({stok: null})),
+                fetch(stokKonsinyasiUrl).then(res => res.json()).catch(() => ({stok_akhir: null}))
+            ]).then(([stokProduk, stokKonsinyasi]) => {
+                let info = '';
+                // Handle stokProduk (bisa object {stok:...} atau array)
+                let stokSendiri = null;
+                if (Array.isArray(stokProduk)) {
+                    stokSendiri = stokProduk.reduce((sum, item) => sum + (parseFloat(item.sisa || item.stok || 0)), 0);
+                } else if (stokProduk && typeof stokProduk.stok !== 'undefined') {
+                    stokSendiri = stokProduk.stok;
+                }
+                // Handle stok konsinyasi: hitung total sisa dari seluruh data (total masuk - keluar)
+                let stokKons = null;
+                if (stokKonsinyasi && typeof stokKonsinyasi.stok_akhir !== 'undefined') {
+                    stokKons = stokKonsinyasi.stok_akhir;
+                } else if (Array.isArray(stokKonsinyasi) && stokKonsinyasi.length > 0) {
+                    stokKons = stokKonsinyasi.reduce((sum, item) => sum + (parseFloat(item.sisa || 0)), 0);
+                }
+                // Only show if stok > 0
+                if (stokSendiri !== null && stokSendiri > 0) {
+                    info += 'Stok Produk Sendiri: ' + stokSendiri + ' ' + satuan + '\n';
+                }
+                if (stokKons !== null && stokKons > 0) {
+                    info += 'Stok Konsinyasi: ' + stokKons + ' ' + satuan;
+                }
+                if (!info) info = 'Stok tersedia: -';
+                document.getElementById('stok-info').innerText = info.trim();
+            });
         } else {
             document.getElementById('harga_satuan').value = '';
             document.getElementById('stok-info').innerText = '';

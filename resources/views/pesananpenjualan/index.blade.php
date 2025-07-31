@@ -64,6 +64,8 @@
                             <th class="text-center align-middle py-1" style="width:120px;">Tanggal Pengiriman</th>
                             <th class="text-center align-middle py-1" style="width:160px;">Pelanggan</th>
                             <th class="text-center align-middle py-1" style="width:120px;">Total Pesanan</th>
+                            <th class="text-center align-middle py-1" style="width:120px;">Uang Muka (DP)</th>
+                            <th class="text-center align-middle py-1" style="width:120px;">Sisa Tagihan</th>
                             <th class="text-center align-middle py-1" style="width:90px;">Aksi</th>
                         </tr>
                     </thead>
@@ -75,24 +77,29 @@
                                 <td class="text-center py-1">{{ $psn->tanggal_pesanan ? \Carbon\Carbon::parse($psn->tanggal_pesanan)->format('d-m-Y') : '-' }}</td>
                                 <td class="text-center py-1">{{ $psn->tanggal_pengiriman ? \Carbon\Carbon::parse($psn->tanggal_pengiriman)->format('d-m-Y') : '-' }}</td>
                                 <td class="text-center py-1">{{ $psn->nama_pelanggan ?? '-' }}</td>
-                                <td class="text-center py-1">Rp {{ number_format($psn->total_pesanan, 0, ',', '.') }}</td>
+                                <td class="text-center py-1">Rp{{ number_format($psn->total_pesanan, 0, '.', '.') }}</td>
+                                <td class="text-center py-1">Rp{{ number_format($psn->uang_muka ?? 0, 0, ',', '.') }}</td>
+                                <td class="text-center py-1">Rp{{ number_format($psn->sisa_tagihan ?? 0, 0, ',', '.') }}</td>
                                 <td class="text-center py-1">
                                     <div class="d-flex justify-content-center gap-1" style="min-width: 120px;">
                                         <a href="{{ route('pesananpenjualan.show', $psn->no_pesanan) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         @if(empty($psn->sudah_terjual) || !$psn->sudah_terjual)
-                                        <a href="{{ route('pesananpenjualan.edit', $psn->no_pesanan) }}" class="btn btn-warning btn-sm btn-icon-square" title="Edit">
+                                        <a href="{{ route('pesananpenjualan.edit', $psn->no_pesanan) }}" class="btn btn-warning btn-sm btn-icon-square ms-1" title="Edit">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <form action="{{ route('pesananpenjualan.destroy', $psn->no_pesanan) }}" method="POST" style="display:inline-block; margin:0;">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm btn-icon-square" title="Hapus">
+                                            <button type="submit" class="btn btn-danger btn-sm btn-icon-square ms-1" title="Hapus">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                         @endif
+                                        <a href="{{ route('pesananpenjualan.cetak', $psn->no_pesanan) }}" class="btn btn-success btn-sm btn-icon-square ms-1" title="Cetak Nota Pesanan" target="_blank">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

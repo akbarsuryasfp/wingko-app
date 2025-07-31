@@ -56,21 +56,65 @@ function renderTabelProduk() {
     let tbody = document.querySelector('#tabel-produk-konsinyasi tbody');
     tbody.innerHTML = '';
     produkKonsinyasi.forEach((item, idx) => {
+        let hargaJualStr = '';
+        if (item.harga_jual !== undefined && item.harga_jual !== null && item.harga_jual !== '') {
+            // Only show integer part, no decimals
+            hargaJualStr = formatNumberInput(String(parseInt(item.harga_jual)));
+        }
         tbody.innerHTML += `
         <tr>
             <td class="text-center">${idx+1}</td>
-            <td class="text-center">${item.no_konsinyasimasuk || '-'}</td>
-            <td class="text-center">${item.nama_produk || '-'}</td>
-            <td class="text-center">${item.satuan || '-'}</td>
-            <td class="text-center">${item.jumlah_stok}</td>
-            <td class="text-center">Rp${parseInt(item.harga_titip).toLocaleString('id-ID')}</td>
+            <td class="text-center">${item.no_konsinyasimasuk || '-'}<\/td>
+            <td class="text-center">${item.nama_produk || '-'}<\/td>
+            <td class="text-center">${item.satuan || '-'}<\/td>
+            <td class="text-center">${item.jumlah_stok}<\/td>
+            <td class="text-center">Rp${parseInt(item.harga_titip).toLocaleString('id-ID')}<\/td>
             <td class="text-center">
-                <input type="number" class="form-control form-control-sm text-center" value="${item.harga_jual ?? ''}" min="0"
-                    onchange="onHargaJualChange(${idx}, this.value)">
-            </td>
-            <td class="text-center"></td>
-        </tr>`;
+                <div class="input-group">
+                    <span class="input-group-text">Rp<\/span>
+                    <input type="text" class="form-control form-control-sm text-center harga-jual-edit" data-idx="${idx}" value="${hargaJualStr}" autocomplete="off" inputmode="numeric">
+                <\/div>
+            <\/td>
+            <td class="text-center"><\/td>
+        <\/tr>`;
     });
+    // Tambahkan event listener untuk input harga jual agar live format ribuan
+    document.querySelectorAll('.harga-jual-edit').forEach(input => {
+        input.addEventListener('input', function(e) {
+            const idx = this.dataset.idx;
+            const cursor = this.selectionStart;
+            const oldLength = this.value.length;
+            let val = this.value;
+            // Only allow integer input, no decimals
+            this.value = formatNumberInput(val);
+            let newLength = this.value.length;
+            this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+            // Update data
+            const harga = parseNumberInput(this.value);
+            produkKonsinyasi[idx].harga_jual = harga;
+        });
+        input.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = formatNumberInput(this.value);
+            }
+        });
+        input.addEventListener('focus', function() {
+            const idx = this.dataset.idx;
+            let val = produkKonsinyasi[idx].harga_jual !== undefined && produkKonsinyasi[idx].harga_jual !== null && produkKonsinyasi[idx].harga_jual !== '' ? String(parseInt(produkKonsinyasi[idx].harga_jual)) : '';
+            this.value = val;
+            this.setSelectionRange(this.value.length, this.value.length);
+        });
+    });
+// Helper format ribuan
+function formatNumberInput(val) {
+    val = String(val).replace(/[^\d]/g, '');
+    if (!val) return '';
+    // Only show integer, no decimals or trailing zeros
+    return val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+function parseNumberInput(val) {
+    return parseInt(String(val).replace(/\D/g, '')) || 0;
+}
 
     // Tambahkan tombol simpan di bawah tabel
     let table = document.getElementById('tabel-produk-konsinyasi');

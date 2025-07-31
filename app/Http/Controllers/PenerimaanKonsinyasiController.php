@@ -146,22 +146,33 @@ class PenerimaanKonsinyasiController extends Controller
             'metode_pembayaran' => 'required',
             'keterangan' => 'nullable',
             'detail' => 'required|array',
+            'total_terima' => 'required|numeric',
         ]);
         DB::beginTransaction();
         try {
             $header = PenerimaanKonsinyasi::findOrFail($id);
+            foreach ($request->detail as $d) {
+                $detail = PenerimaanKonsinyasiDetail::where('no_detailpenerimaankonsinyasi', $d['no_detailpenerimaankonsinyasi'])->first();
+                if ($detail) {
+                    $jumlah_setor = isset($d['jumlah_setor']) ? (int)$d['jumlah_setor'] : $detail->jumlah_setor;
+                    $harga_satuan = isset($d['harga_satuan']) ? (int)$d['harga_satuan'] : $detail->harga_satuan;
+                    $jumlah_terjual = max(0, min((int)$d['jumlah_terjual'], $jumlah_setor));
+                    // Ambil subtotal dari form jika ada, jika tidak hitung ulang
+                    $subtotal = isset($d['subtotal']) ? (int)$d['subtotal'] : ($jumlah_terjual * $harga_satuan);
+                    $detail->update([
+                        'jumlah_terjual' => $jumlah_terjual,
+                        'subtotal' => $subtotal,
+                        'jumlah_setor' => $jumlah_setor,
+                        'harga_satuan' => $harga_satuan,
+                    ]);
+                }
+            }
             $header->update([
                 'tanggal_terima' => $request->tanggal_terima,
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'keterangan' => $request->keterangan,
-                // total_terima tetap dari input (readonly di form)
                 'total_terima' => $request->total_terima,
             ]);
-            // Update detail: hanya update jumlah_terjual
-            foreach ($request->detail as $d) {
-                PenerimaanKonsinyasiDetail::where('no_detailpenerimaankonsinyasi', $d['no_detailpenerimaankonsinyasi'])
-                    ->update(['jumlah_terjual' => $d['jumlah_terjual']]);
-            }
             DB::commit();
             return redirect()->route('penerimaankonsinyasi.index')->with('success', 'Data berhasil diupdate');
         } catch (\Exception $e) {
@@ -175,7 +186,35 @@ class PenerimaanKonsinyasiController extends Controller
         DB::beginTransaction();
         try {
             $header = PenerimaanKonsinyasi::findOrFail($id);
+            // Hapus detail penerimaan konsinyasi
             PenerimaanKonsinyasiDetail::where('no_penerimaankonsinyasi', $header->no_penerimaankonsinyasi)->delete();
+
+            // Cari dan hapus retur consignee yang terhubung, hanya yang input dari create_returterima (alasan semua detailnya 'Tidak Terjual')
+            $returConsignees = \App\Models\ReturConsignee::where('no_konsinyasikeluar', $header->no_konsinyasikeluar)->get();
+            foreach ($returConsignees as $retur) {
+                $allTidakTerjual = true;
+                $details = \App\Models\ReturConsigneeDetail::where('no_returconsignee', $retur->no_returconsignee)->get();
+                if ($details->count() == 0) {
+                    $allTidakTerjual = false;
+                } else {
+                    foreach ($details as $d) {
+                        $alasan = strtolower(trim($d->alasan ?? ''));
+                        // Hanya hapus jika semua alasan persis 'tidak terjual'
+                        if ($alasan !== 'tidak terjual') {
+                            $allTidakTerjual = false;
+                            break;
+                        }
+                    }
+                }
+                if ($allTidakTerjual) {
+                    // Hapus detail retur
+                    \App\Models\ReturConsigneeDetail::where('no_returconsignee', $retur->no_returconsignee)->delete();
+                    // Hapus retur
+                    $retur->delete();
+                }
+            }
+
+            // Hapus header penerimaan konsinyasi
             $header->delete();
             DB::commit();
             return redirect()->route('penerimaankonsinyasi.index')->with('success', 'Data berhasil dihapus');
@@ -233,10 +272,12 @@ class PenerimaanKonsinyasiController extends Controller
             return response()->json(['success' => false, 'msg' => 'Data tidak ditemukan']);
         }
         $produkList = $konsinyasi->details->map(function($d) {
+            // Tidak perlu cek retur, karena retur langsung ditukar
             return [
                 'kode_produk' => $d->kode_produk,
                 'nama_produk' => $d->produk ? $d->produk->nama_produk : '',
                 'jumlah_setor' => $d->jumlah_setor,
+                'jumlah_retur' => 0, // selalu 0, tidak mengurangi maksimal
                 'satuan' => $d->satuan,
                 'harga_satuan' => $d->harga_setor,
             ];

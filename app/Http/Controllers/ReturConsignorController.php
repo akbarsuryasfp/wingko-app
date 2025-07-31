@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\ReturConsignor;
@@ -13,6 +14,18 @@ use App\Models\Produk;
 
 class ReturConsignorController extends Controller
 {
+    /**
+     * Cetak nota retur consignor (pemilik barang) per transaksi
+     */
+    public function cetak($no_returconsignor)
+    {
+        $returconsignor = \App\Models\ReturConsignor::with(['consignor', 'konsinyasimasuk'])->where('no_returconsignor', $no_returconsignor)->firstOrFail();
+        $details = \App\Models\ReturConsignorDetail::where('no_returconsignor', $no_returconsignor)
+            ->join('t_produk_konsinyasi', 't_returconsignor_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->select('t_returconsignor_detail.*', 't_produk_konsinyasi.nama_produk', 't_produk_konsinyasi.satuan')
+            ->get();
+        return view('returconsignor.cetak', compact('returconsignor', 'details'));
+    }
     /**
      * Cetak laporan retur consignor (keseluruhan)
      */
@@ -123,7 +136,12 @@ class ReturConsignorController extends Controller
                 ->where('kode_produk', $detail['kode_produk'])
                 ->where('no_batch', $request->no_konsinyasimasuk)
                 ->sum('jumlah');
-            $maks_retur = max(0, ($jumlah_stok - $keluar));
+            $retur_sebelumnya = \DB::table('t_returconsignor_detail')
+                ->join('t_returconsignor', 't_returconsignor_detail.no_returconsignor', '=', 't_returconsignor.no_returconsignor')
+                ->where('t_returconsignor.no_konsinyasimasuk', $request->no_konsinyasimasuk)
+                ->where('t_returconsignor_detail.kode_produk', $detail['kode_produk'])
+                ->sum('t_returconsignor_detail.jumlah_retur');
+            $maks_retur = max(0, ($jumlah_stok - $keluar - $retur_sebelumnya));
             if ($detail['jumlah_retur'] > $maks_retur) {
                 return back()->withErrors(['Jumlah retur untuk produk ' . $detail['kode_produk'] . ' melebihi batas retur (' . $maks_retur . ')'])->withInput();
             }
@@ -220,7 +238,13 @@ class ReturConsignorController extends Controller
                 ->where('kode_produk', $detail['kode_produk'])
                 ->where('no_batch', $request->no_konsinyasimasuk)
                 ->sum('jumlah');
-            $maks_retur = max(0, ($jumlah_stok - $keluar));
+            $retur_sebelumnya = \DB::table('t_returconsignor_detail')
+                ->join('t_returconsignor', 't_returconsignor_detail.no_returconsignor', '=', 't_returconsignor.no_returconsignor')
+                ->where('t_returconsignor.no_konsinyasimasuk', $request->no_konsinyasimasuk)
+                ->where('t_returconsignor_detail.kode_produk', $detail['kode_produk'])
+                ->where('t_returconsignor_detail.no_returconsignor', '!=', $no_returconsignor)
+                ->sum('t_returconsignor_detail.jumlah_retur');
+            $maks_retur = max(0, ($jumlah_stok - $keluar - $retur_sebelumnya));
             if ($detail['jumlah_retur'] > $maks_retur) {
                 return back()->withErrors(['Jumlah retur untuk produk ' . $detail['kode_produk'] . ' melebihi batas retur (' . $maks_retur . ')'])->withInput();
             }

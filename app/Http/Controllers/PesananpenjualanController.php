@@ -121,6 +121,8 @@ class PesananPenjualanController extends Controller
             'tanggal_pengiriman' => 'nullable|date',
             'kode_pelanggan' => 'required',
             'total_pesanan' => 'required|numeric',
+            'uang_muka' => 'nullable|numeric',
+            'sisa_tagihan' => 'nullable|numeric',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json',
             // 'status' => 'required', // validasi status dihapus
@@ -133,6 +135,8 @@ class PesananPenjualanController extends Controller
                 'tanggal_pengiriman' => $request->tanggal_pengiriman,
                 'kode_pelanggan' => $request->kode_pelanggan,
                 'total_pesanan' => $request->total_pesanan,
+                'uang_muka' => $request->uang_muka ?? 0,
+                'sisa_tagihan' => $request->sisa_tagihan ?? 0,
                 'keterangan' => $request->keterangan,
                 // 'status' => $request->status, // simpan status dihapus
             ]);
@@ -202,6 +206,8 @@ class PesananPenjualanController extends Controller
             'tanggal_pengiriman' => 'nullable|date',
             'kode_pelanggan' => 'required',
             'total_pesanan' => 'required|numeric',
+            'uang_muka' => 'nullable|numeric',
+            'sisa_tagihan' => 'nullable|numeric',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json',
             // 'status' => 'required', // validasi status dihapus
@@ -213,6 +219,8 @@ class PesananPenjualanController extends Controller
                 'tanggal_pengiriman' => $request->tanggal_pengiriman,
                 'kode_pelanggan' => $request->kode_pelanggan,
                 'total_pesanan' => $request->total_pesanan,
+                'uang_muka' => $request->uang_muka ?? 0,
+                'sisa_tagihan' => $request->sisa_tagihan ?? 0,
                 'keterangan' => $request->keterangan,
             ]);
 
@@ -338,7 +346,8 @@ class PesananPenjualanController extends Controller
             ->where('t_pesanan_detail.no_pesanan', $no_pesanan)
             ->select(
                 't_pesanan_detail.*',
-                't_produk.nama_produk'
+                't_produk.nama_produk',
+                't_produk.satuan'
             )
             ->get();
 

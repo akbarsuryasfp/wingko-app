@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Penjualan;
+use App\Models\KartuPersKonsinyasi;
 
 
 class PenjualanController extends Controller
@@ -64,10 +65,13 @@ class PenjualanController extends Controller
             ->toArray();
 
         // Ambil daftar pesanan pelanggan dari t_pesanan yang belum pernah dipakai di penjualan
+        // dan statusnya masih aktif (misal: status = 'open' atau null)
         $pesanan = DB::table('t_pesanan')
             ->join('t_pelanggan', 't_pesanan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
             ->whereNotIn('t_pesanan.no_pesanan', $usedPesanan)
+            //->where(function($q){ $q->whereNull('t_pesanan.status')->orWhere('t_pesanan.status', 'open'); }) // jika ada kolom status
             ->select('t_pesanan.*', 't_pelanggan.nama_pelanggan')
+            ->orderBy('t_pesanan.no_pesanan', 'asc')
             ->get();
 
         // Ambil detail pesanan dari t_pesanan_detail untuk setiap pesanan
@@ -122,9 +126,12 @@ class PenjualanController extends Controller
     public function store(Request $request)
     {
         \Log::info('PenjualanController@store - request data', $request->all());
+        // Debug: log input mentah
+        \Log::debug('PenjualanController@store - RAW INPUT', $request->all());
 
         // Mapping agar field 'total' selalu ada
         $input = $request->all();
+        \Log::debug('PenjualanController@store - input sebelum mapping', $input);
         // Bersihkan format Rp dan titik pada field total_harga, diskon, total_jual, total_bayar, kembalian, piutang
         foreach (['total_harga', 'diskon', 'total_jual', 'total_bayar', 'kembalian', 'piutang', 'total'] as $field) {
             if (!empty($input[$field])) {
@@ -148,33 +155,33 @@ class PenjualanController extends Controller
         if (!empty($input['piutang']) && $input['piutang'] > 0 && empty($input['tanggal_jatuh_tempo'])) {
             $input['tanggal_jatuh_tempo'] = null;
         }
+        \Log::debug('PenjualanController@store - input setelah mapping', $input);
         $request->replace($input);
 
         try {
+            \Log::debug('PenjualanController@store - sebelum validasi', $request->all());
             $rules = [
                 'no_jual' => 'required|unique:t_penjualan,no_jual',
                 'tanggal_jual' => 'required|date',
                 'kode_pelanggan' => 'required',
                 'total' => 'required|numeric',
-                'metode_pembayaran' => 'required|in:tunai,kredit,non tunai',
+                'metode_pembayaran' => 'required|in:tunai,non tunai', // hanya tunai dan non tunai
                 'status_pembayaran' => 'required|in:lunas,belum lunas',
                 'keterangan' => 'nullable|string|max:100',
             ];
-            // detail_json hanya wajib jika bukan pesanan
             if ($request->jenis_penjualan !== 'pesanan') {
                 $rules['detail_json'] = 'required|json';
             }
-            // tanggal_jatuh_tempo hanya wajib jika piutang > 0
             if (($request->piutang ?? 0) > 0) {
                 $rules['tanggal_jatuh_tempo'] = 'required|date';
             }
             $request->validate($rules);
-            \Log::info('PenjualanController@store - validasi sukses');
+            \Log::info('PenjualanController@store - validasi sukses', $request->all());
 
             $status_pembayaran = ($request->piutang == 0) ? 'lunas' : 'belum lunas';
 
             DB::transaction(function () use ($request, $status_pembayaran) {
-                // Insert ke t_penjualan (tanpa kolom 'tanggal_jatuh_tempo', hanya ke t_piutang jika ada piutang)
+                \Log::debug('PenjualanController@store - sebelum insert t_penjualan', $request->all());
                 DB::table('t_penjualan')->insert([
                     'no_jual' => $request->no_jual,
                     'tanggal_jual' => $request->tanggal_jual,
@@ -192,11 +199,24 @@ class PenjualanController extends Controller
                     'keterangan' => $request->keterangan,
                 ]);
 
-                // Jika pesanan, ambil detail dari t_pesanan_detail
-                // Selalu ambil detail dari input user (detail_json), baik pesanan maupun langsung
+                \Log::debug('PenjualanController@store - setelah insert t_penjualan', ['no_jual' => $request->no_jual]);
                 $details = json_decode($request->detail_json, true);
+                \Log::debug('PenjualanController@store - detail_json', $details);
                 foreach ($details as $i => $detail) {
-                    // Insert langsung ke t_penjualan_detail dari input user
+                    // Deteksi jenis produk (sendiri/konsinyasi) jika belum ada di detail
+                    $jenis = isset($detail['jenis']) ? $detail['jenis'] : null;
+                    if (!$jenis) {
+                        $isProdukSendiri = DB::table('t_produk')->where('kode_produk', $detail['kode_produk'])->exists();
+                        $isKonsinyasi = DB::table('t_produk_konsinyasi')->where('kode_produk', $detail['kode_produk'])->exists();
+                        if ($isProdukSendiri) {
+                            $jenis = 'sendiri';
+                        } else if ($isKonsinyasi) {
+                            $jenis = 'konsinyasi';
+                        } else {
+                            $jenis = 'sendiri'; // fallback
+                        }
+                    }
+                    \Log::debug('PenjualanController@store - sebelum insert t_penjualan_detail', ['no_jual' => $request->no_jual, 'detail' => $detail]);
                     DB::table('t_penjualan_detail')->insert([
                         'no_detailjual' => $request->no_jual . '-' . ($i+1),
                         'no_jual' => $request->no_jual,
@@ -205,10 +225,111 @@ class PenjualanController extends Controller
                         'harga_satuan' => $detail['harga_satuan'],
                         'diskon_produk' => isset($detail['diskon_satuan']) ? $detail['diskon_satuan'] : 0,
                         'subtotal' => $detail['subtotal'],
+                        // 'jenis' => $jenis, // jika ingin simpan ke detail, tambahkan kolom di DB
                     ]);
+
+                    \Log::debug('PenjualanController@store - setelah insert t_penjualan_detail', ['no_jual' => $request->no_jual, 'detail' => $detail]);
+                    if ($jenis === 'sendiri') {
+                        
+                        // FIFO HPP: Ambil batch masuk tertua, split insert jika perlu
+                        $qtyKeluar = $detail['jumlah'];
+                        $kode_produk = $detail['kode_produk'];
+                        $tanggal_jual = $request->tanggal_jual;
+                        $no_jual = $request->no_jual;
+                        $logDetail = [];
+                        // Ambil batch masuk (stok masuk, sisa > 0), urutkan dari paling awal
+                        $batches = DB::table('t_kartupersproduk')
+                            ->where('kode_produk', $kode_produk)
+                            ->where('lokasi', 'Gudang')
+                            ->where('masuk', '>', 0)
+                            ->orderBy('tanggal', 'asc')
+                            ->orderBy('id', 'asc')
+                            ->get();
+                        $qtySisa = $qtyKeluar;
+                        foreach ($batches as $batch) {
+                            // Hitung sisa batch: masuk - keluar untuk batch ini
+                            $keluarBatch = DB::table('t_kartupersproduk')
+                                ->where('kode_produk', $kode_produk)
+                                ->where('lokasi', 'Gudang')
+                                ->where('tanggal', '>=', $batch->tanggal)
+                                ->where('id', '>=', $batch->id)
+                                ->where('masuk', 0)
+                                ->sum('keluar');
+                            $sisaBatch = $batch->masuk - $keluarBatch;
+                            if ($sisaBatch <= 0) continue;
+                            $ambil = min($qtySisa, $sisaBatch);
+                            // Pastikan field hpp ada pada batch, jika tidak ada fallback ke 0
+                            $hppBatch = property_exists($batch, 'hpp') ? $batch->hpp : (isset($batch->hpp) ? $batch->hpp : 0);
+                            DB::table('t_kartupersproduk')->insert([
+                                'tanggal' => $tanggal_jual,
+                                'kode_produk' => $kode_produk,
+                                'masuk' => 0,
+                                'keluar' => $ambil,
+                                'hpp' => $hppBatch,
+                                'lokasi' => 'Gudang',
+                                'keterangan' => 'Penjualan',
+                                'no_transaksi' => $no_jual
+                            ]);
+                            $logDetail[] = ['batch_id' => $batch->id, 'keluar' => $ambil, 'hpp' => $hppBatch];
+                            $qtySisa -= $ambil;
+                            if ($qtySisa <= 0) break;
+                        }
+                        if ($qtySisa > 0) {
+                            // Jika stok batch tidak cukup, tetap insert keluar dengan hpp 0 (atau bisa error)
+                            DB::table('t_kartupersproduk')->insert([
+                                'tanggal' => $tanggal_jual,
+                                'kode_produk' => $kode_produk,
+                                'masuk' => 0,
+                                'keluar' => $qtySisa,
+                                'hpp' => 0,
+                                'lokasi' => 'Gudang',
+                                'keterangan' => 'Penjualan (stok minus)',
+                                'no_transaksi' => $no_jual
+                            ]);
+                            $logDetail[] = ['batch_id' => null, 'keluar' => $qtySisa, 'hpp' => 0];
+                        }
+                        \Log::debug('PenjualanController@store - FIFO HPP insert t_kartupersproduk', ['no_jual' => $no_jual, 'detail' => $detail, 'fifo' => $logDetail]);
+                    } else if ($jenis === 'konsinyasi') {
+                        $lastStok = DB::table('t_kartuperskonsinyasi')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->where('lokasi', 'Gudang')
+                            ->orderByDesc('tanggal')
+                            ->orderByDesc('id')
+                            ->value('sisa');
+                        $lastStok = $lastStok ?? 0;
+                        $sisaBaru = $lastStok - $detail['jumlah'];
+                        // Ambil harga_konsinyasi dari batch masuk tertua (FIFO), fallback ke harga_titip jika tidak ada
+                        $batchKonsinyasi = DB::table('t_kartuperskonsinyasi')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->where('lokasi', 'Gudang')
+                            ->where('masuk', '>', 0)
+                            ->orderBy('tanggal', 'asc')
+                            ->orderBy('id', 'asc')
+                            ->first();
+                        $hargaKonsinyasi = $batchKonsinyasi && property_exists($batchKonsinyasi, 'harga_konsinyasi') ? $batchKonsinyasi->harga_konsinyasi : null;
+                        if ($hargaKonsinyasi === null) {
+                            $hargaKonsinyasi = DB::table('t_konsinyasimasuk_detail')
+                                ->where('kode_produk', $detail['kode_produk'])
+                                ->orderByDesc('no_detailkonsinyasimasuk')
+                                ->value('harga_titip');
+                        }
+                        \Log::debug('PenjualanController@store - sebelum insert t_kartuperskonsinyasi', ['no_jual' => $request->no_jual, 'detail' => $detail, 'harga_konsinyasi' => $hargaKonsinyasi]);
+                        DB::table('t_kartuperskonsinyasi')->insert([
+                            'tanggal' => $request->tanggal_jual,
+                            'kode_produk' => $detail['kode_produk'],
+                            'masuk' => 0,
+                            'keluar' => $detail['jumlah'],
+                            'sisa' => $sisaBaru,
+                            'harga_konsinyasi' => $hargaKonsinyasi,
+                            'lokasi' => 'Gudang',
+                            'keterangan' => 'Penjualan',
+                            'no_transaksi' => $request->no_jual
+                        ]);
+                        \Log::debug('PenjualanController@store - setelah insert t_kartuperskonsinyasi', ['no_jual' => $request->no_jual, 'detail' => $detail, 'harga_konsinyasi' => $hargaKonsinyasi]);
+                    }
                 }
 
-                // Jika penjualan dari pesanan, update total_pesanan di t_pesanan agar index selalu up-to-date
+                \Log::debug('PenjualanController@store - selesai semua detail, sebelum update pesanan/piutang', ['no_jual' => $request->no_jual]);
                 if ($request->jenis_penjualan === 'pesanan' && $request->no_pesanan) {
                     $total_pesanan = 0;
                     foreach ($details as $detail) {
@@ -223,15 +344,14 @@ class PenjualanController extends Controller
                     ]);
                 }
 
-                // Insert ke t_piutang jika ada piutang
                 if ($request->piutang > 0) {
+                    \Log::debug('PenjualanController@store - sebelum insert t_piutang', ['no_jual' => $request->no_jual, 'piutang' => $request->piutang]);
                     $last = DB::table('t_piutang')->where('no_piutang', 'like', 'PI%')->orderBy('no_piutang', 'desc')->first();
                     if ($last && preg_match('/PI(\d+)/', $last->no_piutang, $match)) {
                         $nextNumber = (int)$match[1] + 1;
                     } else {
                         $nextNumber = 1;
                     }
-                    // Pastikan tidak duplikat
                     do {
                         $no_piutang = 'PI' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
                         $exists = DB::table('t_piutang')->where('no_piutang', $no_piutang)->exists();
@@ -247,7 +367,9 @@ class PenjualanController extends Controller
                         'status_piutang' => ($request->piutang ?? 0) > 0 ? 'belum lunas' : 'lunas',
                         'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo ?? null,
                     ]);
+                    \Log::debug('PenjualanController@store - setelah insert t_piutang', ['no_jual' => $request->no_jual]);
                 }
+                \Log::debug('PenjualanController@store - END TRANSACTION', ['no_jual' => $request->no_jual]);
             });
 
             \Log::info('PenjualanController@store - transaksi sukses');
@@ -321,7 +443,7 @@ class PenjualanController extends Controller
             'total_bayar' => 'required|numeric',
             'kembalian' => 'required|numeric',
             'piutang' => 'required|numeric',
-            'metode_pembayaran' => 'required|in:tunai,non tunai',
+            'metode_pembayaran' => 'required|in:tunai,non tunai', // hanya tunai dan non tunai
             'status_pembayaran' => 'nullable',
             'keterangan' => 'nullable|string|max:255',
             'detail_json' => 'required|json'
@@ -463,6 +585,10 @@ class PenjualanController extends Controller
         DB::transaction(function () use ($no_jual) {
             // Hapus piutang terkait sebelum menghapus penjualan
             DB::table('t_piutang')->where('no_jual', $no_jual)->delete();
+
+            // Hapus semua transaksi keluar konsinyasi yang terkait penjualan ini
+            DB::table('t_kartuperskonsinyasi')->where('no_transaksi', $no_jual)->delete();
+
             DB::table('t_penjualan_detail')->where('no_jual', $no_jual)->delete();
             DB::table('t_penjualan')->where('no_jual', $no_jual)->delete();
         });

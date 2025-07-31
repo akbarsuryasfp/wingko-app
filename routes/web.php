@@ -100,6 +100,9 @@ Route::get('/returjual/cetak-laporan', [ReturJualController::class, 'cetakLapora
 // Route retur penjualan
 Route::resource('returjual', ReturJualController::class);
 Route::get('/returjual/{no_returjual}/cetak', [ReturJualController::class, 'cetak'])->name('returjual.cetak');
+
+// Route cetak retur consignor (pemilik barang)
+Route::get('/returconsignor/{no_returconsignor}/cetak', [\App\Http\Controllers\ReturConsignorController::class, 'cetak'])->name('returconsignor.cetak');
 Route::get('/returjual/filter-penjualan', [\App\Http\Controllers\ReturJualController::class, 'filterPenjualan'])->name('returjual.filter-penjualan');
 Route::get('/returjual/detail-penjualan/{no_jual}', [ReturJualController::class, 'getDetailPenjualan']);
 

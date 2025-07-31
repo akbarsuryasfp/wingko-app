@@ -142,14 +142,14 @@
                     <td>
                         <input type="number" class="form-control form-control-sm" min="0" max="${max}" value="${item.jumlah_retur}" 
                             onchange="updateJumlahRetur(${index}, this.value)">
-                        <small class="text-muted">Maks: ${max}</small>
+                        <small class="text-muted">Max Dapat Diinput: ${max}</small>
                     </td>
-                    <td>${formatRupiah(item.harga_satuan)}</td>
+                    <td>Rp ${formatRupiah(item.harga_satuan)}</td>
                     <td>
                         <input type="text" class="form-control form-control-sm" value="${item.alasan || ''}" 
                             onchange="updateAlasanRetur(${index}, this.value)">
                     </td>
-                    <td>${formatRupiah(subtotal)}</td>
+                    <td>Rp ${formatRupiah(subtotal)}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisRetur(${index})" title="Hapus">
                             <i class="bi bi-trash"></i>

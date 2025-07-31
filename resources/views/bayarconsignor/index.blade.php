@@ -53,6 +53,7 @@
                     <tr>
                         <th class="text-center align-middle" style="width: 5%;">No</th>
                         <th class="text-center align-middle">No Bayar Consignor</th>
+                        <th class="text-center align-middle">Kode Produk</th>
                         <th class="text-center align-middle">Tanggal Bayar</th>
                         <th class="text-center align-middle">Nama Consignor (Pemilik Barang)</th>
                         <th class="text-center align-middle">Jumlah Terjual & Nama Produk</th>
@@ -72,6 +73,13 @@
                         <tr>
                             <td class="text-center align-middle">{{ $no++ }}</td>
                             <td class="text-center align-middle">{{ $row->no_bayarconsignor }}</td>
+                            <td class="text-center align-middle">
+                                @if(count($row->details) > 0)
+                                    {{ collect($row->details)->pluck('kode_produk')->implode(', ') }}
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td class="text-center align-middle">{{ \Carbon\Carbon::parse($row->tanggal_bayar)->format('d-m-Y') }}</td>
                             <td class="text-center align-middle">{{ $consignor->nama_consignor ?? '-' }}</td>
                             <td class="text-center align-middle">
@@ -85,7 +93,7 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if (\Route::has('bayarconsignor.cetak'))
-                                <a href="{{ route('bayarconsignor.cetak', $row->no_bayarconsignor) }}" class="btn btn-success btn-sm me-1" title="Cetak" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
+                                <a href="{{ route('bayarconsignor.cetak', $row->no_bayarconsignor) }}" class="btn btn-success btn-sm me-1" title="Cetak Bukti Pembayaran Consignor (Pemilik Barang)" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
                                     <i class="bi bi-printer"></i>
                                 </a>
                                 @endif

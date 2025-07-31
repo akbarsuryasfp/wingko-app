@@ -66,7 +66,10 @@
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <label class="mb-0">Total Retur</label>
-                        <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
+                        <div class="input-group" style="width: 180px;">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="background:#e9ecef;pointer-events:none;">
+                        </div>
                         <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
                         <button type="submit" class="btn btn-success">Update</button>
                     </div>
@@ -107,7 +110,7 @@
                         <td>
                             <input type="number" class="form-control form-control-sm" min="0" max="${max}" value="${item.jumlah_retur}" 
                                 onchange="updateJumlahRetur(${index}, this.value)">
-                            <small class="text-muted">Maks: ${max}</small>
+                            <small class="text-muted">Max Dapat Diinput: ${max}</small>
                         </td>
                         <td>${formatRupiah(item.harga_satuan)}</td>
                         <td>
@@ -126,7 +129,7 @@
             });
         }
 
-        document.getElementById('total_nilai_retur_view').value = formatRupiah(totalRetur);
+        document.getElementById('total_nilai_retur_view').value = totalRetur > 0 ? formatRupiah(totalRetur) : '';
         document.getElementById('total_nilai_retur').value = totalRetur;
         document.getElementById('detail_json').value = JSON.stringify(daftarProdukRetur);
     }

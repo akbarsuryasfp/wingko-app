@@ -82,7 +82,7 @@
                     <label class="me-2" style="width: 120px;">Diskon/Satuan</label>
                     <div class="input-group">
                         <span class="input-group-text">Rp</span>
-                        <input type="text" id="diskon_satuan" class="form-control" value="0" min="0" autocomplete="off">
+                        <input type="text" id="diskon_satuan" class="form-control" min="0" autocomplete="off">
                     </div>
                 </div>
                 <div class="mb-3">
@@ -110,21 +110,41 @@
             <tbody></tbody>
         </table>
 
-        <div class="d-flex justify-content-between mt-4">
-            <div>
-                <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary" title="Kembali">
-                    Back
-                </a>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Pesanan</label>
-                <div class="input-group" style="width: 180px;">
-                    <span class="input-group-text">Rp</span>
-                    <input type="text" id="total_pesanan_display" readonly class="form-control" tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+        <div class="row mt-4 justify-content-start">
+            <div class="col-md-6">
+                <div class="mb-2 row align-items-center">
+                    <label class="col-sm-4 col-form-label">Total Pesanan</label>
+                    <div class="col-sm-8">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_pesanan_display" readonly class="form-control" tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+                        </div>
+                        <input type="hidden" id="total_pesanan" name="total_pesanan">
+                    </div>
                 </div>
-                <input type="hidden" id="total_pesanan" name="total_pesanan">
-                <button type="submit" class="btn btn-success">Update</button>
+                <div class="mb-2 row align-items-center">
+                    <label class="col-sm-4 col-form-label">Uang Muka (DP)</label>
+                    <div class="col-sm-8">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                        <input type="text" id="uang_muka" name="uang_muka" class="form-control" autocomplete="off" value="{{ old('uang_muka', $pesanan->uang_muka ?? '') }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2 row align-items-center">
+                    <label class="col-sm-4 col-form-label">Sisa Tagihan</label>
+                    <div class="col-sm-8">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                        <input type="text" id="sisa_tagihan" name="sisa_tagihan" class="form-control" readonly tabindex="-1" style="background:#e9ecef;pointer-events:none;" value="{{ old('sisa_tagihan', $pesanan->sisa_tagihan ?? '') }}">
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-end mt-3" style="min-height:40px;">
+            <a href="{{ route('pesananpenjualan.index') }}" class="btn btn-secondary" title="Kembali">Back</a>
+            <button type="submit" class="btn btn-success">Update</button>
         </div>
 
         <input type="hidden" name="detail_json" id="detail_json">
@@ -152,30 +172,66 @@
 
     // Helper format ribuan
     function formatNumberInput(val) {
-        val = String(val).replace(/[^\d]/g, '');
-        if (!val) return '';
-        return val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        // Hilangkan format ribuan, hanya kembalikan angka murni
+        val = String(val).replace(/\D/g, '');
+        return val;
     }
     function parseNumberInput(val) {
-        return parseInt(String(val).replace(/\D/g, '')) || 0;
+        // Ambil semua digit, lalu parse ke integer
+        val = String(val).replace(/\D/g, '');
+        return val ? parseInt(val, 10) : 0;
     }
 
-    // Live format ribuan untuk input harga_satuan dan diskon_satuan
-    function addLiveRibuanFormat(inputId) {
+    // Format ribuan hanya saat blur agar input tetap lancar
+    function addBlurRibuanFormat(inputId) {
         const input = document.getElementById(inputId);
         if (!input) return;
-        input.addEventListener('input', function(e) {
-            const cursor = this.selectionStart;
-            const oldLength = this.value.length;
-            let val = this.value;
-            this.value = formatNumberInput(val);
-            // Kembalikan posisi kursor
-            const newLength = this.value.length;
-            this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+        input.addEventListener('blur', function(e) {
+            let val = parseNumberInput(this.value);
+            this.value = val ? val.toLocaleString('id-ID') : '';
+        });
+        input.addEventListener('focus', function(e) {
+            // Hilangkan format ribuan saat fokus agar mudah edit
+            this.value = parseNumberInput(this.value) || '';
         });
     }
-    addLiveRibuanFormat('harga_satuan');
-    addLiveRibuanFormat('diskon_satuan');
+    addBlurRibuanFormat('harga_satuan');
+    addBlurRibuanFormat('diskon_satuan');
+    addBlurRibuanFormat('uang_muka');
+    // Format ulang uang muka dan sisa tagihan saat halaman dibuka (untuk value awal)
+    window.addEventListener('DOMContentLoaded', function() {
+        var uangMukaInput = document.getElementById('uang_muka');
+        if (uangMukaInput) {
+            // Ubah ke integer/bulat jika ada value
+            if (uangMukaInput.value) {
+                uangMukaInput.value = parseInt(uangMukaInput.value, 10) || 0;
+            }
+        }
+        var sisaTagihanInput = document.getElementById('sisa_tagihan');
+        if (sisaTagihanInput) {
+            if (sisaTagihanInput.value) {
+                sisaTagihanInput.value = parseInt(sisaTagihanInput.value, 10) || 0;
+            }
+        }
+        updateTabel();
+    });
+    // Pastikan value uang_muka dan sisa_tagihan yang dikirim ke backend adalah numerik (tanpa titik)
+    document.querySelector('form').addEventListener('submit', function(e) {
+        // Pastikan value uang_muka dan sisa_tagihan yang dikirim ke backend adalah numerik (tanpa titik)
+        var uangMukaInput = document.getElementById('uang_muka');
+        if (uangMukaInput) {
+            uangMukaInput.value = parseNumberInput(uangMukaInput.value);
+        }
+        var sisaTagihanInput = document.getElementById('sisa_tagihan');
+        if (sisaTagihanInput) {
+            sisaTagihanInput.value = parseNumberInput(sisaTagihanInput.value);
+        }
+        if (daftarProduk.length === 0) {
+            alert('Minimal 1 produk harus ditambahkan!');
+            e.preventDefault();
+            return false;
+        }
+    });
 
     function tambahProduk() {
         const produkSelect = document.getElementById('kode_produk');
@@ -216,7 +272,7 @@
 
     function formatRupiah(angka) {
         if (!angka && angka !== 0) return '';
-        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
+        return 'Rp' + parseFloat(angka).toLocaleString('id-ID');
     }
 
     function updateJumlah(index, input) {
@@ -266,7 +322,7 @@
                     <td>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" min="0" class="form-control text-center diskon-inline" value="${formatNumberInput(item.diskon_satuan)}" data-index="${index}">
+                            <input type="text" min="0" class="form-control text-center diskon-inline" value="${item.diskon_satuan}" data-index="${index}">
                         </div>
                     </td>
                     <td class="subtotal-col">${formatRupiah(item.subtotal)}</td>
@@ -285,59 +341,98 @@
         document.getElementById('total_pesanan').value = totalPesanan;
         document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
 
-        // Tambahkan event listener untuk input jumlah dan diskon/satuan inline hanya sekali
-        if (!window._inlineListener) {
-            document.addEventListener('input', function(e) {
-                // Jumlah
-                if (e.target && e.target.classList.contains('jumlah-inline')) {
-                    const idx = parseInt(e.target.getAttribute('data-index'));
-                    let val = parseFloat(e.target.value);
-                    if (isNaN(val) || val <= 0) val = 1;
-                    daftarProduk[idx].jumlah = val;
-                    let harga = parseFloat(daftarProduk[idx].harga_satuan) || 0;
-                    let diskon = parseFloat(daftarProduk[idx].diskon_satuan) || 0;
-                    daftarProduk[idx].subtotal = val * (harga - diskon);
-                    if (daftarProduk[idx].subtotal < 0) daftarProduk[idx].subtotal = 0;
-                    // Update subtotal cell only
-                    const row = e.target.closest('tr');
-                    if (row) {
-                        const subtotalCell = row.querySelector('.subtotal-col');
-                        if (subtotalCell) subtotalCell.textContent = formatRupiah(daftarProduk[idx].subtotal);
-                    }
-                    // Update total pesanan
-                    let total = daftarProduk.reduce((sum, item) => sum + item.subtotal, 0);
-                    document.getElementById('total_pesanan_display').value = total > 0 ? formatNumberInput(total) : '';
-                    document.getElementById('total_pesanan').value = total;
-                    document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
-                }
-                // Diskon
-                if (e.target && e.target.classList.contains('diskon-inline')) {
-                    const idx = parseInt(e.target.getAttribute('data-index'));
-                    // Gunakan parseNumberInput agar titik ribuan tidak error
-                    let val = parseNumberInput(e.target.value);
-                    if (isNaN(val) || val < 0) val = 0;
-                    daftarProduk[idx].diskon_satuan = val;
-                    let harga = parseFloat(daftarProduk[idx].harga_satuan) || 0;
-                    let jumlah = parseFloat(daftarProduk[idx].jumlah) || 0;
-                    daftarProduk[idx].subtotal = jumlah * (harga - val);
-                    if (daftarProduk[idx].subtotal < 0) daftarProduk[idx].subtotal = 0;
-                    // Update subtotal cell only
-                    const row = e.target.closest('tr');
-                    if (row) {
-                        const subtotalCell = row.querySelector('.subtotal-col');
-                        if (subtotalCell) subtotalCell.textContent = formatRupiah(daftarProduk[idx].subtotal);
-                    }
-                    // Update total pesanan
-                    let total = daftarProduk.reduce((sum, item) => sum + item.subtotal, 0);
-                    document.getElementById('total_pesanan_display').value = total > 0 ? formatNumberInput(total) : '';
-                    document.getElementById('total_pesanan').value = total;
-                    document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
-                    // Format input value
-                    e.target.value = formatNumberInput(val);
-                }
-            });
-            window._inlineListener = true;
+        // Hitung sisa tagihan (total pesanan - uang muka)
+        const uangMukaInput = document.getElementById('uang_muka');
+        const sisaTagihanInput = document.getElementById('sisa_tagihan');
+        let uangMuka = 0;
+        if (uangMukaInput) {
+            // Jangan parse ulang value input, biarkan angka asli
+            uangMuka = parseNumberInput(uangMukaInput.value);
         }
+        const sisaTagihan = Math.max(totalPesanan - uangMuka, 0);
+        if (sisaTagihanInput) {
+            sisaTagihanInput.value = sisaTagihan;
+        }
+    }
+
+    // Tambahkan event listener untuk input jumlah dan diskon/satuan inline hanya sekali
+    if (!window._inlineListener) {
+        // Batasi input hanya angka dan kontrol pada jumlah-inline dan diskon-inline, tapi izinkan input multi digit
+        document.addEventListener('keydown', function(e) {
+            if ((e.target && (e.target.classList.contains('jumlah-inline') || e.target.classList.contains('diskon-inline')))) {
+                // Izinkan: angka, numpad, backspace, delete, tab, escape, enter, panah, ctrl/cmd+A/C/V/X/Z
+                if (
+                    (e.key >= '0' && e.key <= '9') ||
+                    (e.key >= 'Numpad0' && e.key <= 'Numpad9') ||
+                    ["Backspace","Delete","Tab","Escape","Enter","ArrowLeft","ArrowRight","Home","End"].includes(e.key) ||
+                    (e.ctrlKey || e.metaKey)
+                ) {
+                    return;
+                }
+                // Cegah karakter lain (misal huruf, simbol)
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('blur', function(e) {
+            // Jumlah
+            if (e.target && e.target.classList.contains('jumlah-inline')) {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                let num = parseInt(e.target.value, 10);
+                if (isNaN(num) || num <= 0) num = 1;
+                daftarProduk[idx].jumlah = num;
+                let harga = parseFloat(daftarProduk[idx].harga_satuan) || 0;
+                let diskon = parseFloat(daftarProduk[idx].diskon_satuan) || 0;
+                daftarProduk[idx].subtotal = num * (harga - diskon);
+                if (daftarProduk[idx].subtotal < 0) daftarProduk[idx].subtotal = 0;
+                // Update subtotal cell only
+                const row = e.target.closest('tr');
+                if (row) {
+                    const subtotalCell = row.querySelector('.subtotal-col');
+                    if (subtotalCell) subtotalCell.textContent = formatRupiah(daftarProduk[idx].subtotal);
+                }
+                // Update total pesanan
+                let total = daftarProduk.reduce((sum, item) => sum + item.subtotal, 0);
+                document.getElementById('total_pesanan_display').value = total > 0 ? formatNumberInput(total) : '';
+                document.getElementById('total_pesanan').value = total;
+                document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
+                updateTabel();
+            }
+            // Diskon
+            if (e.target && e.target.classList.contains('diskon-inline')) {
+                const idx = parseInt(e.target.getAttribute('data-index'));
+                let num = parseInt(e.target.value, 10);
+                if (isNaN(num) || num < 0) num = 0;
+                daftarProduk[idx].diskon_satuan = num;
+                let harga = parseFloat(daftarProduk[idx].harga_satuan) || 0;
+                let jumlah = parseFloat(daftarProduk[idx].jumlah) || 0;
+                daftarProduk[idx].subtotal = jumlah * (harga - num);
+                if (daftarProduk[idx].subtotal < 0) daftarProduk[idx].subtotal = 0;
+                // Update subtotal cell only
+                const row = e.target.closest('tr');
+                if (row) {
+                    const subtotalCell = row.querySelector('.subtotal-col');
+                    if (subtotalCell) subtotalCell.textContent = formatRupiah(daftarProduk[idx].subtotal);
+                }
+                // Update total pesanan
+                let total = daftarProduk.reduce((sum, item) => sum + item.subtotal, 0);
+                document.getElementById('total_pesanan_display').value = total > 0 ? formatNumberInput(total) : '';
+                document.getElementById('total_pesanan').value = total;
+                document.getElementById('detail_json').value = JSON.stringify(daftarProduk);
+                updateTabel();
+            }
+        }, true);
+        // Format ribuan pada blur agar input tetap lancar
+        document.addEventListener('blur', function(e) {
+            if (e.target && e.target.classList.contains('diskon-inline')) {
+                let val = e.target.value.replace(/\D/g, '');
+                e.target.value = val ? parseInt(val, 10).toLocaleString('id-ID') : '';
+            }
+            if (e.target && e.target.classList.contains('jumlah-inline')) {
+                let val = e.target.value.replace(/\D/g, '');
+                e.target.value = val ? parseInt(val, 10) : '';
+            }
+        }, true);
+        window._inlineListener = true;
     }
 
     // Inisialisasi tabel saat halaman dibuka
@@ -350,6 +445,21 @@
         const satuan = selected.getAttribute('data-satuan') || '';
         document.getElementById('harga_satuan').value = harga ? formatNumberInput(harga) : '';
         document.getElementById('satuan').value = satuan;
+    });
+
+    // Update sisa tagihan saat uang muka diubah
+    document.getElementById('uang_muka').addEventListener('input', function() {
+        // Ambil total pesanan dan uang muka
+        const total = parseNumberInput(document.getElementById('total_pesanan_display').value);
+        const uangMuka = parseNumberInput(this.value);
+        const sisaTagihan = Math.max(total - uangMuka, 0);
+        document.getElementById('sisa_tagihan').value = sisaTagihan > 0 ? sisaTagihan : '';
+        // Tidak perlu format ribuan
+        this.value = parseNumberInput(this.value);
+    });
+    document.getElementById('uang_muka').addEventListener('blur', function() {
+        // Tidak perlu format ribuan
+        this.value = parseNumberInput(this.value);
     });
 
     // Cegah submit jika belum ada produk

@@ -69,7 +69,10 @@
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 120px;">Harga Setor/Satuan</label>
-                    <input type="number" id="harga_setor" class="form-control">
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" id="harga_setor" class="form-control" autocomplete="off">
+                    </div>
                 </div>
                 <div class="mb-3">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProdukSetor()">Tambah Produk</button>
@@ -102,7 +105,10 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Setor</label>
-                <input type="text" id="total_setor_view" readonly class="form-control" style="width: 160px;">
+                <div class="input-group" style="width: 180px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" id="total_setor_view" readonly class="form-control" style="background:#e9ecef;pointer-events:none;">
+                </div>
                 <input type="hidden" id="total_setor" name="total_setor">
                 <button type="submit" class="btn btn-success">Submit</button>
             </div>
@@ -116,6 +122,7 @@
 
 <script>
 const allProdukKonsinyasi = @json($produkList);
+const produkConsigneeMap = @json($produkConsigneeMap ?? []);
 
 // --- Nomor Surat Otomatis ---
 function getMonthRomawi(month) {
@@ -166,29 +173,37 @@ document.getElementById('kode_produk').addEventListener('change', function() {
     const selected = this.options[this.selectedIndex];
     const satuan = selected?.getAttribute('data-satuan') || '';
     document.getElementById('satuan').value = satuan;
-    // Harga default: Moaci = 20000, Wingko Babat = 25000, selain itu cek data produk
+    // Harga default: Moaci = 25000, Wingko Babat = 20000, selain itu cek data produk
     let harga = '';
     const nama = selected?.textContent?.toLowerCase() || '';
     if (nama.includes('moaci')) {
-        harga = 20000;
-    } else if (nama.includes('wingko babat')) {
         harga = 25000;
+    } else if (nama.includes('wingko babat')) {
+        harga = 20000;
     } else {
         harga = selected?.getAttribute('data-harga_setor')
             || selected?.getAttribute('data-harga_jual')
             || selected?.getAttribute('data-harga_beli')
             || '';
     }
-    document.getElementById('harga_setor').value = harga;
+    document.getElementById('harga_setor').value = harga ? formatNumberInput(harga) : '';
 });
 
 // Data array untuk detail produk setor
 let produkSetorList = [];
 
+function formatNumberInput(val) {
+    val = String(val).replace(/[^\d]/g, '');
+    if (!val) return '';
+    return val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+function parseNumberInput(val) {
+    return parseInt(String(val).replace(/\D/g, '')) || 0;
+}
 function tambahProdukSetor() {
     const kode_produk = document.getElementById('kode_produk').value;
     const jumlah_setor = parseInt(document.getElementById('jumlah_setor').value);
-    const harga_setor = parseFloat(document.getElementById('harga_setor').value);
+    const harga_setor = parseNumberInput(document.getElementById('harga_setor').value);
     const satuan = document.getElementById('satuan').value;
     const produkSelect = document.getElementById('kode_produk');
     const nama_produk = produkSelect.options[produkSelect.selectedIndex]?.text || '';
@@ -208,30 +223,31 @@ function tambahProdukSetor() {
     resetInputProduk();
 }
 
+function formatRupiah(angka) {
+    if (!angka && angka !== 0) return '';
+    return parseInt(angka).toLocaleString('id-ID');
+}
 function renderTabelProdukSetor() {
     const tbody = document.querySelector('#daftar-produk-setor tbody');
     tbody.innerHTML = '';
     let total = 0;
-    function formatRupiah(angka) {
-        if (!angka && angka !== 0) return '';
-        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
-    }
     produkSetorList.forEach((item, idx) => {
-        total += item.subtotal;
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>${item.nama_produk}</td>
             <td>${item.satuan}</td>
-            <td>${item.jumlah_setor}</td>
-            <td>${formatRupiah(item.harga_setor)}</td>
-            <td>${formatRupiah(item.subtotal)}</td>
+            <td><input type="number" class="form-control form-control-sm jumlah-edit" data-idx="${idx}" value="${item.jumlah_setor || ''}" min="1" style="width:100px;"></td>
+            <td><div class="input-group"><span class="input-group-text">Rp</span><input type="text" class="form-control form-control-sm harga-edit" data-idx="${idx}" value="${item.harga_setor ? formatRupiah(item.harga_setor) : ''}" style="width:100px;" inputmode="numeric"></div></td>
+            <td class="subtotal">${formatRupiah(item.subtotal)}</td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusProdukSetor(${idx})" title="Hapus"><i class='bi bi-trash'></i></button></td>
         `;
         tbody.appendChild(tr);
     });
-    document.getElementById('total_setor_view').value = formatRupiah(total);
-    document.getElementById('total_setor').value = total;
+    // Update total setor dan field hidden
+    const totalSetor = produkSetorList.reduce((a,b)=>a+(parseInt(b.subtotal)||0),0);
+    document.getElementById('total_setor_view').value = totalSetor > 0 ? formatRupiah(totalSetor) : '';
+    document.getElementById('total_setor').value = totalSetor;
     document.getElementById('detail_json').value = JSON.stringify(produkSetorList.map(p => ({
         kode_produk: p.kode_produk,
         jumlah_setor: p.jumlah_setor,
@@ -239,18 +255,96 @@ function renderTabelProdukSetor() {
         harga_setor: p.harga_setor,
         subtotal: p.subtotal
     })));
+    // Event listener untuk input jumlah/harga
+    document.querySelectorAll('.jumlah-edit').forEach(input => {
+        input.addEventListener('input', function() {
+            const idx = this.dataset.idx;
+            produkSetorList[idx].jumlah_setor = parseInt(this.value) || '';
+            produkSetorList[idx].subtotal = (parseInt(produkSetorList[idx].jumlah_setor)||0) * (parseInt(produkSetorList[idx].harga_setor)||0);
+            // Update subtotal kolom
+            this.closest('tr').querySelector('.subtotal').textContent = formatRupiah(produkSetorList[idx].subtotal);
+            // Update total setor dan field hidden
+            const totalSetor = produkSetorList.reduce((a,b)=>a+(parseInt(b.subtotal)||0),0);
+            document.getElementById('total_setor_view').value = formatRupiah(totalSetor);
+            document.getElementById('total_setor').value = totalSetor;
+            document.getElementById('detail_json').value = JSON.stringify(produkSetorList.map(p => ({
+                kode_produk: p.kode_produk,
+                jumlah_setor: p.jumlah_setor,
+                satuan: p.satuan,
+                harga_setor: p.harga_setor,
+                subtotal: p.subtotal
+            })));
+        });
+    });
+    document.querySelectorAll('.harga-edit').forEach(input => {
+        input.addEventListener('input', function(e) {
+            // Live format ribuan saat mengetik
+            let cursor = this.selectionStart;
+            let oldLength = this.value.length;
+            let val = this.value.replace(/[^\d]/g, '');
+            // Update data
+            const idx = this.dataset.idx;
+            produkSetorList[idx].harga_setor = parseInt(val) || '';
+            produkSetorList[idx].subtotal = (parseInt(produkSetorList[idx].jumlah_setor)||0) * (parseInt(produkSetorList[idx].harga_setor)||0);
+            // Format value dengan titik ribuan
+            this.value = formatNumberInput(val);
+            let newLength = this.value.length;
+            this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+            // Update subtotal kolom
+            this.closest('tr').querySelector('.subtotal').textContent = formatRupiah(produkSetorList[idx].subtotal);
+            // Update total setor dan field hidden
+            const totalSetor = produkSetorList.reduce((a,b)=>a+(parseInt(b.subtotal)||0),0);
+            document.getElementById('total_setor_view').value = formatRupiah(totalSetor);
+            document.getElementById('total_setor').value = totalSetor;
+            document.getElementById('detail_json').value = JSON.stringify(produkSetorList.map(p => ({
+                kode_produk: p.kode_produk,
+                jumlah_setor: p.jumlah_setor,
+                satuan: p.satuan,
+                harga_setor: p.harga_setor,
+                subtotal: p.subtotal
+            })));
+        });
+        input.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = formatNumberInput(this.value);
+            }
+        });
+        input.addEventListener('focus', function() {
+            let val = (produkSetorList[this.dataset.idx]?.harga_setor || 0).toString();
+            this.value = val;
+            this.setSelectionRange(this.value.length, this.value.length);
+        });
+    });
 }
 
-function hapusProdukSetor(idx) {
-    produkSetorList.splice(idx, 1);
-    renderTabelProdukSetor();
-}
-
-function resetInputProduk() {
-    document.getElementById('kode_produk').value = '';
-    document.getElementById('jumlah_setor').value = '';
-    document.getElementById('harga_setor').value = '';
-    document.getElementById('satuan').value = '';
+// Saat consignee dipilih, auto-populate daftar produk konsinyasi ke tabel
+const consigneeSelect = document.querySelector('select[name="kode_consignee"]');
+if (consigneeSelect) {
+    consigneeSelect.addEventListener('change', function() {
+        updateProdukSelect();
+        const kodeConsignee = this.value;
+        if (!kodeConsignee || !produkConsigneeMap[kodeConsignee]) return;
+        // Reset list produk setor
+        produkSetorList = [];
+        produkConsigneeMap[kodeConsignee].forEach(p => {
+            let harga_setor = '';
+            const nama = (p.nama_produk || '').toLowerCase();
+            if (nama.includes('moaci')) {
+                harga_setor = 25000;
+            } else if (nama.includes('wingko babat')) {
+                harga_setor = 20000;
+            }
+            produkSetorList.push({
+                kode_produk: p.kode_produk,
+                nama_produk: p.nama_produk,
+                jumlah_setor: p.jumlah_setor || '',
+                satuan: p.satuan,
+                harga_setor: harga_setor,
+                subtotal: (parseInt(p.jumlah_setor)||0) * (parseInt(harga_setor)||0)
+            });
+        });
+        renderTabelProdukSetor();
+    });
 }
 
 // Validasi sebelum submit form
@@ -269,6 +363,20 @@ form.addEventListener('submit', function(e) {
         harga_setor: p.harga_setor,
         subtotal: p.subtotal
     })));
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const hargaSetorInput = document.getElementById('harga_setor');
+    if (hargaSetorInput) {
+        hargaSetorInput.addEventListener('input', function(e) {
+            const cursor = this.selectionStart;
+            const oldLength = this.value.length;
+            let val = this.value;
+            this.value = formatNumberInput(val);
+            const newLength = this.value.length;
+            this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+        });
+    }
 });
 </script>
 @endsection

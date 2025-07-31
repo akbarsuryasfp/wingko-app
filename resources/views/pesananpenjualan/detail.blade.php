@@ -27,6 +27,14 @@
                     <td>Rp{{ number_format($pesanan->total_pesanan,0,',','.') }}</td>
                 </tr>
                 <tr>
+                    <th>Uang Muka (DP)</th>
+                    <td>Rp{{ number_format($pesanan->uang_muka ?? 0,0,',','.') }}</td>
+                </tr>
+                <tr>
+                    <th>Sisa Tagihan</th>
+                    <td>Rp{{ number_format($pesanan->sisa_tagihan ?? 0,0,',','.') }}</td>
+                </tr>
+                <tr>
                     <th>Keterangan</th>
                     <td>{{ $pesanan->keterangan ?? '-' }}</td>
                 </tr>
