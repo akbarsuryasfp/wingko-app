@@ -61,7 +61,7 @@
                     @foreach($retur->details as $index => $detail)
                         <tr>
                             @if($index === 0)
-                                <td rowspan="{{ $retur->details->count() }}">{{ $no++ }}</td>
+                                <td>{{ $loop->iteration }}</td>
                                 <td rowspan="{{ $retur->details->count() }}">{{ $retur->no_retur_beli }}</td>
                                 <td rowspan="{{ $retur->details->count() }}">{{ $retur->no_pembelian }}</td>
                                 <td rowspan="{{ $retur->details->count() }}">{{ $retur->tanggal_retur_beli }}</td>

@@ -27,10 +27,13 @@
                     </select>
                 </div>
                 <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#modalKekurangan">
-                Kekurangan Bahan
+                    Kekurangan Bahan
                 </button>
                 <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalStokMin">
-                Stok Minimal
+                    Stok Minimal
+                </button>
+                <button type="button" class="btn btn-info ms-2" data-bs-toggle="modal" data-bs-target="#prediksiModal">
+                    Prediksi Kebutuhan
                 </button>
             </div>
 
@@ -128,6 +131,27 @@
   </div>
 </div>
 
+<!-- Modal Prediksi Kebutuhan -->
+<div class="modal fade" id="prediksiModal" tabindex="-1" aria-labelledby="prediksiModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="prediksiModalLabel">Kebutuhan Produksi</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="prediksiTab" role="tablist">
+          <!-- Akan diisi via JS -->
+        </ul>
+        <div class="tab-content" id="prediksiTabContent">
+          <!-- Akan diisi via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
     // Ambil data detail dari backend (array of detail order)
 
@@ -169,7 +193,6 @@
         let totalOrder = 0;
 
         daftarBahan.forEach((item, index) => {
-            // Hitung ulang subtotal agar selalu akurat
             item.jumlah_beli = parseFloat(item.jumlah_beli) || 0;
             item.harga_beli = parseFloat(item.harga_beli) || 0;
             item.total = item.jumlah_beli * item.harga_beli;
@@ -182,9 +205,11 @@
                     <td>${item.nama_bahan}</td>
                     <td>${item.satuan}</td>
                     <td>
-    <input type="number" class="form-control form-control-sm" value="${item.jumlah_beli}" min="1" onchange="ubahJumlahOrder(${index}, this.value)">
-</td>
-                    <td>${item.harga_beli}</td>
+                        <input type="number" class="form-control form-control-sm" value="${item.jumlah_beli}" min="1" onchange="ubahJumlahOrder(${index}, this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm" value="${item.harga_beli}" min="0" onchange="ubahHargaOrder(${index}, this.value)">
+                    </td>
                     <td>${item.total}</td>
                     <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})">X</button></td>
                 </tr>
@@ -196,6 +221,20 @@
         document.getElementById('detail_json').value = JSON.stringify(daftarBahan);
     }
 
+    function ubahJumlahOrder(index, value) {
+        value = parseFloat(value) || 0;
+        daftarBahan[index].jumlah_beli = value;
+        daftarBahan[index].total = value * (parseFloat(daftarBahan[index].harga_beli) || 0);
+        updateTabel();
+    }
+
+    function ubahHargaOrder(index, value) {
+        value = parseFloat(value) || 0;
+        daftarBahan[index].harga_beli = value;
+        daftarBahan[index].total = (parseFloat(daftarBahan[index].jumlah_beli) || 0) * value;
+        updateTabel();
+    }
+
     // Inisialisasi tabel saat halaman dibuka
     updateTabel();
 
@@ -204,12 +243,6 @@
         stokMinList = @json($stokMinList);
     @endif
 
-    function ubahJumlahOrder(index, value) {
-    value = parseFloat(value) || 0;
-    daftarBahan[index].jumlah_beli = value;
-    daftarBahan[index].total = value * (parseFloat(daftarBahan[index].harga_beli) || 0);
-    updateTabel();
-}
     document.addEventListener('DOMContentLoaded', function() {
         const listStokMin = document.getElementById('listStokMin');
         if (listStokMin && stokMinList.length) {
@@ -231,5 +264,98 @@
             listStokMin.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan di bawah stok minimal</li>';
         }
     });
+
+    // Data prediksi dari controller
+    let bahansPrediksi = [];
+    @if(isset($bahansPrediksi) && count($bahansPrediksi))
+        bahansPrediksi = @json($bahansPrediksi);
+    @endif
+
+    // Kelompokkan bahan berdasarkan frekuensi pembelian
+    function groupByFrekuensi(bahans) {
+        const group = {};
+        bahans.forEach(b => {
+            const freq = b.frekuensi_pembelian || 'Lainnya';
+            if (!group[freq]) group[freq] = [];
+            group[freq].push(b);
+        });
+        return group;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal Prediksi
+        const prediksiTab = document.getElementById('prediksiTab');
+        const prediksiTabContent = document.getElementById('prediksiTabContent');
+        if (prediksiTab && prediksiTabContent && bahansPrediksi.length) {
+            const grouped = groupByFrekuensi(bahansPrediksi);
+            prediksiTab.innerHTML = '';
+            prediksiTabContent.innerHTML = '';
+            let first = true;
+            Object.keys(grouped).forEach((freq, idx) => {
+                // Tab header
+                prediksiTab.innerHTML += `
+                    <li class="nav-item" role="presentation">
+                      <button class="nav-link ${first ? 'active' : ''}" id="tab-${idx}" data-bs-toggle="tab" data-bs-target="#tab-content-${idx}" type="button" role="tab">${freq}</button>
+                    </li>
+                `;
+                // Tab content
+                let rows = '';
+                grouped[freq].forEach((bahan, i) => {
+                    rows += `
+                        <tr>
+                            <td>${i+1}</td>
+                            <td>${bahan.nama_bahan}</td>
+                            <td>${bahan.interval ?? '-'}</td>
+                            <td>${bahan.jumlah_per_order ?? '-'}</td>
+                            <td>${bahan.satuan}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})" data-bs-dismiss='modal'>Pilih</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                prediksiTabContent.innerHTML += `
+                    <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
+                        <table class="table table-bordered mt-3">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Nama Bahan</th>
+                                    <th>Interval</th>
+                                    <th>Jumlah/Order</th>
+                                    <th>Satuan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                first = false;
+            });
+        }
+
+        
+    });
+
+    function isiInputBahan(kode, nama, satuan, jumlah) {
+        let idx = daftarBahan.findIndex(b => b.kode_bahan === kode);
+        if (idx !== -1) {
+            daftarBahan[idx].jumlah_beli += jumlah;
+            daftarBahan[idx].total = daftarBahan[idx].jumlah_beli * (parseFloat(daftarBahan[idx].harga_beli) || 0);
+        } else {
+            daftarBahan.push({
+                kode_bahan: kode,
+                nama_bahan: nama,
+                satuan: satuan,
+                jumlah_beli: jumlah,
+                harga_beli: 0, // default 0, bisa diinput di tabel
+                total: 0
+            });
+        }
+        updateTabel();
+    }
 </script>
 @endsection

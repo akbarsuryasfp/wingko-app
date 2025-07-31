@@ -47,10 +47,13 @@ class BahanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'kode_kategori' => 'required',
-            'nama_bahan' => 'required',
-            'satuan' => 'required',
-            'stokmin' => 'required|integer',
+    'kode_kategori' => 'required',
+    'nama_bahan' => 'required',
+    'satuan' => 'required',
+    'stokmin' => 'nullable|numeric',
+    'frekuensi_pembelian' => 'nullable|string',
+    'interval' => 'nullable|integer',
+    'jumlah_per_order' => 'nullable|numeric',
         ]);
 
         // Generate kode_bahan otomatis
@@ -69,6 +72,10 @@ class BahanController extends Controller
             'nama_bahan' => $request->nama_bahan,
             'satuan' => $request->satuan,
             'stokmin' => $request->stokmin,
+            'frekuensi_pembelian' => $request->frekuensi_pembelian,
+            'interval' => $request->interval,
+            'jumlah_per_order' => $request->jumlah_per_order,
+   
         ]);
 
         return redirect()->route('bahan.index')->with('success', 'Data bahan berhasil ditambahkan.');
@@ -87,7 +94,7 @@ class BahanController extends Controller
             'kode_kategori' => 'required',
             'nama_bahan' => 'required',
             'satuan' => 'required',
-            'stokmin' => 'required|integer',
+            'stokmin' => 'required|numeric',
         ]);
 
         $bahan = Bahan::findOrFail($kode_bahan);

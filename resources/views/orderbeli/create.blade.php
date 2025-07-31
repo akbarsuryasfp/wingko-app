@@ -33,6 +33,9 @@
                 <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalStokMin">
                 Stok Minimal
                 </button>
+    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#prediksiModal">
+        Kebutuhan Produksi
+    </button>
 
             </div>
 
@@ -132,6 +135,28 @@
     </div>
   </div>
 </div>
+<!-- Modal Prediksi Kebutuhan -->
+<div class="modal fade" id="prediksiModal" tabindex="-1" aria-labelledby="prediksiModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="prediksiModalLabel">Prediksi Kebutuhan Bahan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="prediksiTab" role="tablist">
+          <!-- Akan diisi via JS -->
+        </ul>
+        <div class="tab-content" id="prediksiTabContent">
+          <!-- Akan diisi via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
     let daftarBahan = [];
 
@@ -257,6 +282,80 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else if(listStokMin) {
         listStokMin.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan di bawah stok minimal</li>';
+    }
+});
+
+// Data prediksi dari controller
+let bahansPrediksi = [];
+@if(isset($bahansPrediksi) && count($bahansPrediksi))
+    bahansPrediksi = @json($bahansPrediksi);
+@endif
+
+// Kelompokkan bahan berdasarkan frekuensi pembelian
+function groupByFrekuensi(bahans) {
+    const group = {};
+    bahans.forEach(b => {
+        const freq = b.frekuensi_pembelian || 'Lainnya';
+        if (!group[freq]) group[freq] = [];
+        
+        group[freq].push(b);
+    });
+    return group;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal Prediksi
+    const prediksiTab = document.getElementById('prediksiTab');
+    const prediksiTabContent = document.getElementById('prediksiTabContent');
+    if (prediksiTab && prediksiTabContent && bahansPrediksi.length) {
+        const grouped = groupByFrekuensi(bahansPrediksi);
+        prediksiTab.innerHTML = '';
+        prediksiTabContent.innerHTML = '';
+        let first = true;
+        Object.keys(grouped).forEach((freq, idx) => {
+            // Tab header
+            prediksiTab.innerHTML += `
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link ${first ? 'active' : ''}" id="tab-${idx}" data-bs-toggle="tab" data-bs-target="#tab-content-${idx}" type="button" role="tab">${freq}</button>
+                </li>
+            `;
+            // Tab content
+            let rows = '';
+            grouped[freq].forEach((bahan, i) => {
+                rows += `
+                    <tr>
+                        <td>${i+1}</td>
+                        <td>${bahan.nama_bahan}</td>
+                        <td>${bahan.interval ?? '-'}</td>
+                        <td>${bahan.jumlah_per_order ?? '-'}</td>
+                        <td>${bahan.satuan}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})" data-bs-dismiss='modal'>Pilih</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            prediksiTabContent.innerHTML += `
+                <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
+                    <table class="table table-bordered mt-3">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Bahan</th>
+                                <th>Interval</th>
+                                <th>Jumlah/Order</th>
+                                <th>Satuan</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            first = false;
+        });
     }
 });
 </script>

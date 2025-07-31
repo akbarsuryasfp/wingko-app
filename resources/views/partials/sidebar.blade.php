@@ -91,6 +91,11 @@
             <a href="javascript:void(0)" class="nav-link" onclick="toggleSubMenu('submenu-penyesuaian')">
                 <i class="bi bi-sliders"></i><span>Penyesuaian</span>
             </a>
+            <ul id="submenu-konsinyasikeluar" class="nav flex-column ms-3" style="display:none;">
+                <li><a href="{{ route('konsinyasikeluar.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk Konsinyasi Keluar</span></a></li>
+                <li><a href="{{ route('penerimaankonsinyasi.index') }}" class="nav-link"><i class="bi bi-cash-coin"></i><span>Penerimaan Hasil Penjualan Produk Konsinyasi Keluar</span></a></li>
+                <li><a href="{{ route('returconsignee.index') }}" class="nav-link"><i class="bi bi-arrow-return-right"></i><span>Retur dari Consignee (Mitra)</span></a></li>
+            </ul>
             <ul id="submenu-penyesuaian" class="nav flex-column ms-3" style="display:none;">
         <li><a href="{{ route('stokopname.create') }}" class="nav-link"><i class="bi bi-clipboard-check"></i> Stok Opname Bahan</a></li>
         <li><a href="{{ route('stokopname.produk') }}" class="nav-link"><i class="bi bi-clipboard-data"></i> Stok Opname Produk</a></li>            </ul>

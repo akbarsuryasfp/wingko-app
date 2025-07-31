@@ -247,7 +247,7 @@ Route::post('/stokopname/produk/store', [StokOpnameController::class, 'storeProd
 Route::get('/pembelian/laporan/pdf', [PembelianController::class, 'laporanPdf'])->name('pembelian.laporan.pdf');
 
 // Route penyesuaian barang
-Route::get('/penyesuaian/exp', [PenyesuaianBarangController::class, 'index'])->name('penyesuaian.exp');
+Route::get('/penyesuaian/exp/{tipe?}', [PenyesuaianBarangController::class, 'index'])->name('penyesuaian.exp');
 Route::post('/penyesuaian/exp', [PenyesuaianBarangController::class, 'store'])->name('penyesuaian.store');
 
 // Route overhead
