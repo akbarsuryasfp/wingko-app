@@ -8,13 +8,12 @@
         @csrf
 
         <div class="mb-3">
-            <label>Tanggal Jadwal</label>
-            <input type="date" name="tanggal_jadwal" class="form-control" value="{{ date('Y-m-d') }}" required>
+            <label for="tanggal_jadwal">Tanggal Jadwal</label>
+            <input type="date" name="tanggal_jadwal" class="form-control" value="{{ $tanggalJadwal ?? date('Y-m-d') }}" required>
         </div>
-
         <div class="mb-3">
-            <label>Keterangan</label>
-            <input type="text" name="keterangan" class="form-control">
+            <label for="keterangan">Keterangan</label>
+            <input type="text" name="keterangan" class="form-control" value="{{ $keterangan ?? '' }}" readonly>
         </div>
 
         <hr>
@@ -59,7 +58,7 @@
                         <tbody>
                             @foreach ($permintaan as $p)
                             <tr>
-                                <td>{{ $p->kode_permintaan_produksi }}</td>
+                                <td>{{ $p->no_permintaan_produksi }}</td>
                                 <td>{{ $p->tanggal }}</td>
                                 <td>{{ $p->keterangan }}</td>
                                 <td>
@@ -148,12 +147,21 @@
                 </tr>
             </thead>
             <tbody>
-                <script>
-let produkIndex = 0;
+
+
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-primary">Simpan Jadwal</button>
+    </form>
+</div>
+
+<script>
+    let produkIndex = 0;
 let added = {};
 
 function tambahPermintaan(data, type) {
-    let kodeSumber = type === "permintaan" ? data.kode_permintaan_produksi : data.no_pesanan || data.kode_pesanan;
+    let kodeSumber = type === "permintaan" ? data.no_permintaan_produksi : data.no_pesanan || data.kode_pesanan;
 
     let details = data.details || [];
     details.forEach(detail => {
@@ -165,24 +173,24 @@ function tambahPermintaan(data, type) {
         const jumlah = detail.jumlah ?? detail.unit ?? 0;
 
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>
-                ${namaProduk}
-                <input type="hidden" name="produk[${produkIndex}][kode_produk]" value="${detail.kode_produk}">
-            </td>
-            <td>
-                ${jumlah}
-                <input type="hidden" name="produk[${produkIndex}][jumlah]" value="${jumlah}">
-            </td>
-            <td>
-                ${kodeSumber}
-                <input type="hidden" name="produk[${produkIndex}][kode_sumber]" value="${kodeSumber}">
-                <input type="hidden" name="produk[${produkIndex}][tipe_sumber]" value="${type}">
-            </td>
-            <td>
-                <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '${uniqueKey}')">Hapus</button>
-            </td>
-        `;
+tr.innerHTML = `
+    <td>
+        ${namaProduk}
+        <input type="hidden" name="produk[${produkIndex}][kode_produk]" value="${detail.kode_produk}">
+    </td>
+    <td>
+        ${jumlah}
+        <input type="hidden" name="produk[${produkIndex}][jumlah]" value="${jumlah}">
+    </td>
+    <td>
+        ${kodeSumber}
+        <input type="hidden" name="produk[${produkIndex}][no_sumber]" value="${kodeSumber}">
+        <input type="hidden" name="produk[${produkIndex}][tipe_sumber]" value="${type}">
+    </td>
+    <td>
+        <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '${uniqueKey}')">Hapus</button>
+    </td>
+`;
         document.querySelector('#produk-table tbody').appendChild(tr);
         added[uniqueKey] = true;
         produkIndex++;
@@ -205,8 +213,8 @@ function tambahSetorKonsinyasi(setor) {
         </td>
         <td>
             ${setor.kode_consignee_setor}
-            <input type="hidden" name="produk[${produkIndex}][kode_sumber]" value="${setor.kode_consignee_setor}">
-            <input type="hidden" name="produk[${produkIndex}][tipe_sumber]" value="setor_konsinyasi">
+            <input type="hidden" name="produk[${produkIndex}][no_sumber]" value="${setor.kode_consignee_setor}">
+            <input type="hidden" name="produk[${produkIndex}][tipe_sumber]" value="konsinyasi">
         </td>
         <td>
             <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this, '${uniqueKey}')">Hapus</button>
@@ -226,59 +234,6 @@ function hapusBaris(el, uniqueKey) {
 }
 </script>
 
-            </tbody>
-        </table>
-
-        <button type="submit" class="btn btn-primary">Simpan Jadwal</button>
-    </form>
-</div>
-
-<script>
-    let produkIndex = 0;
-    let added = {};
-
-    function tambahPermintaan() {
-        const select = document.getElementById('permintaan-select');
-        const selectedOption = select.options[select.selectedIndex];
-        const kode = selectedOption.value;
-
-        if (!kode || added[kode]) return;
-
-        const data = JSON.parse(selectedOption.dataset.json);
-
-        data.details.forEach(detail => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    ${detail.produk.nama_produk}
-                    <input type="hidden" name="produk[${produkIndex}][kode_produk]" value="${detail.kode_produk}">
-                </td>
-                <td>
-                    ${detail.unit}
-                    <input type="hidden" name="produk[${produkIndex}][jumlah]" value="${detail.unit}">
-                </td>
-                <td>
-                    ${data.kode_permintaan_produksi}
-                    <input type="hidden" name="produk[${produkIndex}][kode_sumber]" value="${data.kode_permintaan_produksi}">
-                </td>
-                <td>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(this)">Hapus</button>
-                </td>
-            `;
-            document.querySelector('#produk-table tbody').appendChild(tr);
-            produkIndex++;
-        });
-
-        added[kode] = true;
-    }
-
-    function hapusBaris(el) {
-        const row = el.closest('tr');
-        const kodeSumber = row.querySelector('input[name$="[kode_sumber]"]').value;
-        row.remove();
-        delete added[kodeSumber];
-    }
-</script>
 
 @if(isset($selectedPermintaan) && $selectedPermintaan)
 <script>

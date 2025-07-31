@@ -16,7 +16,7 @@ class HppBahanBaku extends Model
         'no_detail_produksi',
         'kode_bahan',
         'jumlah_bahan',
-        'harga_bahan',
+        'harga_bahan',  
         'total_bahan',
     ];
 

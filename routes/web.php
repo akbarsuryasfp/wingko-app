@@ -36,6 +36,9 @@ use App\Http\Controllers\PenerimaanKonsinyasiController;
 use App\Http\Controllers\ReturConsigneeController;
 use App\Http\Controllers\KonsinyasiMasukController;
 use App\Http\Controllers\JurnalController;
+use App\Http\Controllers\LaporanKeuanganController;
+use App\Http\Controllers\AsetTetapController;
+use App\Http\Controllers\OverheadController;
 
 Route::get('/', function () {
     $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
@@ -138,7 +141,7 @@ Route::get('/returbeli/laporan', [ReturBeliController::class, 'laporan'])->name(
 Route::get('/permintaan-produksi', [PermintaanProduksiController::class, 'index'])->name('permintaan_produksi.index');
 Route::get('/permintaan-produksi/create', [PermintaanProduksiController::class, 'create'])->name('permintaan_produksi.create');
 Route::post('/permintaan-produksi', [PermintaanProduksiController::class, 'store'])->name('permintaan.store');
-
+Route::resource('permintaan_produksi', \App\Http\Controllers\PermintaanProduksiController::class);
 // Route detail Resep
 Route::get('/resep', [ResepController::class, 'index'])->name('resep.index');
 Route::get('/resep/create', [ResepController::class, 'create'])->name('resep.create');
@@ -149,7 +152,7 @@ Route::get('/jadwal-produksi/create', [JadwalProduksiController::class, 'create'
 Route::post('/jadwal-produksi', [JadwalProduksiController::class, 'store'])->name('jadwal.store');
 Route::get('/jadwal-produksi', [JadwalProduksiController::class, 'index'])->name('jadwal.index');
 Route::get('/jadwal-produksi/{kode}', [JadwalProduksiController::class, 'show'])->name('jadwal.show');
-Route::delete('/jadwal/{kode_jadwal}', [JadwalProduksiController::class, 'destroy'])->name('jadwal.destroy');
+Route::delete('/jadwal/{no_jadwal}', [JadwalProduksiController::class, 'destroy'])->name('jadwal.destroy');
 
 // Route produksi
 Route::get('/produksi/create', [ProduksiController::class, 'create'])->name('produksi.create');
@@ -244,6 +247,7 @@ Route::post('/penyesuaian/exp', [PenyesuaianBarangController::class, 'store'])->
 Route::get('/overhead', [OverheadController::class, 'index'])->name('overhead.index');
 Route::get('/overhead/create', [OverheadController::class, 'create'])->name('overhead.create');
 Route::post('/overhead/store', [OverheadController::class, 'store'])->name('overhead.store');
+Route::get('/overhead/ajax-overhead', [\App\Http\Controllers\OverheadController::class, 'ajaxOverhead'])->name('overhead.ajaxOverhead');
 
 // Route Aset Tetap
 Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'create', 'store']);
@@ -321,3 +325,10 @@ Route::get('returconsignor/{no_returconsignor}', [App\Http\Controllers\ReturCons
 Route::get('returconsignor/{no_returconsignor}/edit', [App\Http\Controllers\ReturConsignorController::class, 'edit'])->name('returconsignor.edit');
 Route::put('returconsignor/{no_returconsignor}', [App\Http\Controllers\ReturConsignorController::class, 'update'])->name('returconsignor.update');
 Route::resource('returconsignor', App\Http\Controllers\ReturConsignorController::class);
+
+// Route laporan
+Route::get('/laporan/neraca', [LaporanKeuanganController::class, 'neraca'])->name('laporan.neraca');
+Route::get('/laporan/laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laporan.laba_rugi');
+Route::get('/laporan/perubahan-ekuitas', [LaporanKeuanganController::class, 'perubahanEkuitas'])->name('laporan.perubahan_ekuitas');
+Route::get('/laporan/keuangan', [LaporanKeuanganController::class, 'index'])->name('laporan.keuangan');
+Route::get('/laporan/keuangan/cetak', [LaporanKeuanganController::class, 'cetak'])->name('laporan.keuangan.cetak');

@@ -59,169 +59,130 @@
                     </div>
                 </div>
 
-                <hr class="my-4">
+        <h5 class="mt-4">Daftar Pembelian Bahan</h5>
+        
+        @if($pembelian->jenis_pembelian == 'pembelian langsung')
+        <div class="mb-3">
+            <button type="button" class="btn btn-sm btn-success" id="tambah_bahan">Tambah Bahan</button>
+            <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalGabungan">
+                Kebutuhan Bahan
+            </button>
+        </div>
+        @endif
 
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="font-weight-bold mb-0">Daftar Pembelian Bahan</h5>
-                </div>
+        <table class="table table-bordered" id="bahan_table">
+            <thead>
+                <tr>
+                    <th>Nama Bahan</th>
+                    <th>Satuan</th>
+                    <th>Jumlah</th>
+                    <th>Harga</th>
+                    <th>Tanggal Expired</th>
+                    <th>Subtotal</th>
+                    @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <th>Aksi</th>
+                    @endif
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($details as $i => $detail)
+                <tr data-kode="{{ $detail->kode_bahan }}">
+                    <td>
+                        @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                            <select name="bahan[]" class="form-control">
+                                @foreach($bahan as $b)
+                                <option value="{{ $b->kode_bahan }}" {{ $b->kode_bahan == $detail->kode_bahan ? 'selected' : '' }}>
+                                    {{ $b->nama_bahan }} ({{ $b->satuan }})
+                                </option>
+                                @endforeach
+                            </select>
+                        @else
+                            {{ $detail->nama_bahan }}
+                        @endif
+                    </td>
+                    <td>{{ $detail->satuan }}</td>
+                    <td>
+                        @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                            <input type="number" class="form-control jumlah" name="jumlah[]" value="{{ $detail->bahan_masuk }}" min="1" required>
+                        @else
+                            {{ $detail->bahan_masuk }}
+                        @endif
+                    </td>
+                    <td>
+                        @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                            <input type="number" class="form-control harga" name="harga[]" value="{{ $detail->harga_beli }}" min="0" required>
+                        @else
+                            {{ $detail->harga_beli }}
+                        @endif
+                    </td>
+                    <td>
+                        @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                            <input type="date" class="form-control" name="tanggal_exp[]" value="{{ $detail->tanggal_exp }}">
+                        @else
+                            {{ $detail->tanggal_exp ?? '-' }}
+                        @endif
+                    </td>
+                    <td class="subtotal">
+                        {{ $detail->bahan_masuk * $detail->harga_beli }}
+                    </td>
+                    @if($pembelian->jenis_pembelian == 'pembelian langsung')
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remove">X</button>
+                    </td>
+                    @endif
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="bahan_table">
-                        <thead class="thead-light">
-                            <tr>
-                                <th width="25%">Nama Bahan</th>
-                                <th width="10%">Satuan</th>
-                                <th width="10%">Jumlah</th>
-                                <th width="15%">Harga</th>
-                                <th width="15%">Tanggal Expired</th>
-                                <th width="15%">Subtotal</th>
-                                @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                                <th width="10%">Aksi</th>
-                                @endif
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($details as $i => $detail)
-                            <tr data-kode="{{ $detail->kode_bahan }}">
-                                <td>
-                                    @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                                        <select name="bahan[]" class="form-control select-bahan">
-                                            @foreach($bahan as $b)
-                                            <option value="{{ $b->kode_bahan }}" {{ $b->kode_bahan == $detail->kode_bahan ? 'selected' : '' }}>
-                                                {{ $b->nama_bahan }} ({{ $b->satuan }})
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                    @else
-                                        {{ $detail->nama_bahan }}
-                                    @endif
-                                </td>
-                                <td class="align-middle">{{ $detail->satuan }}</td>
-                                <td>
-                                    @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                                        <input type="number" class="form-control jumlah" name="jumlah[]" value="{{ $detail->bahan_masuk }}" min="1" required>
-                                    @else
-                                        <span class="d-block text-center">{{ $detail->bahan_masuk }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                                        <div class="input-group">
-                                            <span class="input-group-text">Rp</span>
-                                            <input type="number" class="form-control harga" name="harga[]" value="{{ $detail->harga_beli }}" min="0" required>
-                                        </div>
-                                    @else
-                                        <span class="d-block text-right">Rp {{ number_format($detail->harga_beli, 0, ',', '.') }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                                        <input type="date" class="form-control" name="tanggal_exp[]" value="{{ $detail->tanggal_exp }}">
-                                    @else
-                                        {{ $detail->tanggal_exp ?? '-' }}
-                                    @endif
-                                </td>
-                                <td class="subtotal align-middle text-right">
-                                    Rp {{ number_format($detail->bahan_masuk * $detail->harga_beli, 0, ',', '.') }}
-                                </td>
-                                @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                                <td class="align-middle text-center">
-                                    <button type="button" class="btn btn-danger btn-sm remove" title="Hapus">
-                                        ×
-                                    </button>
-                                </td>
-                                @endif
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- BUTTON TAMBAH BAHAN & KEBUTUHAN DI BAWAH TABEL --}}
-                @if($pembelian->jenis_pembelian == 'pembelian langsung')
-                <div class="mt-2 mb-4">
-                    <button type="button" class="btn btn-sm btn-success" id="tambah_bahan">
-                        <i class="fas fa-plus"></i> Tambah Bahan
-                    </button>
-                    <button type="button" class="btn btn-sm btn-warning ml-2" data-bs-toggle="modal" data-bs-target="#modalGabungan">
-                        <i class="fas fa-list"></i> Kebutuhan Bahan
-                    </button>
-                </div>
-                @endif
-
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Total Harga</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control bg-light text-right" id="total_harga" name="total_harga" value="{{ $pembelian->total_harga }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Diskon</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control text-right" id="diskon" name="diskon" value="{{ $pembelian->diskon }}" oninput="hitungTotal()">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Ongkos Kirim</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control text-right" id="ongkir" name="ongkir" value="{{ $pembelian->ongkir }}" oninput="hitungTotal()">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Total Pembelian</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control bg-light text-right" id="total_pembelian" name="total_pembelian" value="{{ $pembelian->total_pembelian }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Uang Muka</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control bg-light text-right" id="uang_muka" name="uang_muka" value="{{ $pembelian->uang_muka }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Total Bayar</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control text-right" id="total_bayar" name="total_bayar" value="{{ $pembelian->total_bayar }}" oninput="hitungTotal()">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Kurang Bayar</label>
-                            <div class="col-sm-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control bg-light text-right" id="hutang" name="hutang" value="{{ $pembelian->hutang }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row" id="row_jatuh_tempo" style="{{ $pembelian->metode_bayar == 'Hutang' ? '' : 'display: none;' }}">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Jatuh Tempo</label>
-                            <div class="col-sm-8">
-                                <input type="date" class="form-control" name="jatuh_tempo" value="{{ $jatuh_tempo ?? '' }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Total Harga</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="total_harga" name="total_harga" value="{{ $total_harga ?? 0 }}" readonly>
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Diskon</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="diskon" name="diskon" value="{{ $pembelian->diskon }}" oninput="hitungTotal()">
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Ongkos Kirim</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="ongkir" name="ongkir" value="{{ $pembelian->ongkir }}" oninput="hitungTotal()">
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Total Pembelian</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="total_pembelian" name="total_pembelian" value="{{ $total_pembelian ?? 0 }}" readonly>
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Uang Muka</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="uang_muka" name="uang_muka" value="{{ $pembelian->uang_muka }}" readonly>
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Total Bayar</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="total_bayar" name="total_bayar" value="{{ $pembelian->total_bayar }}" oninput="hitungTotal()">
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center">
+            <label class="col-sm-4 col-form-label">Kurang Bayar</label>
+            <div class="col-sm-8">
+                <input type="number" class="form-control" id="hutang" name="hutang" value="{{ $kurang_bayar ?? 0 }}" readonly>
+            </div>
+        </div>
+        <div class="row mb-2 align-items-center" id="row_jatuh_tempo" style="{{ $pembelian->metode_bayar == 'Hutang' ? '' : 'display: none;' }}">
+            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+            <div class="col-sm-8">
+                <input type="date" class="form-control" name="jatuh_tempo" value="{{ $jatuh_tempo ?? '' }}">
+            </div>
+        </div>
 
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ route('pembelian.index') }}" class="btn btn-secondary">
@@ -429,7 +390,7 @@ $j(document).ready(function() {
         updateSubtotal();
     });
 
-    // Fungsi untuk menghitung subtotal dan total
+    // Fungsi untuk menghitung subtotal and total
     function updateSubtotal() {
         let total = 0;
         $j('#bahan_table tbody tr').each(function () {

@@ -30,6 +30,7 @@
                     <th>Debit</th>
                     <th>Kredit</th>
                     <th>Saldo</th>
+                    <th>D/K</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,6 +46,9 @@
                         <td>{{ number_format($row->debit, 2) }}</td>
                         <td>{{ number_format($row->kredit, 2) }}</td>
                         <td>{{ number_format($saldo, 2) }}</td>
+                        <td>
+                            {{ $saldo >= 0 ? 'D' : 'K' }}
+                        </td>
                     </tr>
                 @endforeach
             </tbody>

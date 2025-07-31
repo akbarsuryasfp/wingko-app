@@ -88,6 +88,7 @@
 
                     {{-- TAB TENAGA KERJA --}}
                     <div class="tab-pane fade" id="tenaga" role="tabpanel">
+                        <button type="button" class="btn btn-sm btn-primary mb-2" id="addTenagaKerja">+ Tambah Tenaga Kerja/Lembur</button>
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle">
                                 <thead class="table-light">
@@ -96,14 +97,14 @@
                                         <th>Jam Kerja</th>
                                         <th>Tarif/Jam</th>
                                         <th>Total</th>
+                                        <th>Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    @php $grandTotalTK = 0; @endphp
+                                <tbody id="tenagaKerjaBody">
                                     @foreach ($karyawan as $i => $k)
                                         <tr>
                                             <td>
-                                                {{ $k->nama }}
+                                                <input type="text" name="tk[{{ $i }}][nama]" value="{{ $k->nama }}" readonly class="form-control">
                                                 <input type="hidden" name="tk[{{ $i }}][kode_karyawan]" value="{{ $k->kode_karyawan }}">
                                             </td>
                                             <td>
@@ -115,15 +116,24 @@
                                             <td>
                                                 <input type="number" class="form-control" name="tk[{{ $i }}][total]" readonly>
                                             </td>
+                                            <td>
+                                                <!-- Tombol hapus dinonaktifkan untuk pegawai tetap -->
+                                                <button type="button" class="btn btn-sm btn-danger" disabled>Hapus</button>
+                                            </td>
                                         </tr>
                                     @endforeach
+                                    {{-- Baris tambahan tenaga kerja/lembur akan ditambahkan lewat JS --}}
+                                </tbody>
+                                <!-- Baris total dipindah ke bawah tabel -->
+                                <tfoot>
                                     <tr class="table-info fw-bold">
                                         <td colspan="3" class="text-end">Total</td>
                                         <td>
                                             <input type="number" class="form-control-plaintext fw-bold text-end" id="grandTotalTK" value="0" readonly tabindex="-1">
                                         </td>
+                                        <td></td>
                                     </tr>
-                                </tbody>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -249,6 +259,48 @@ document.addEventListener('DOMContentLoaded', function() {
     hitungGrandTotalBahan();
     hitungGrandTotalTK();
     hitungGrandTotalOverhead();
+});
+
+// Fungsi untuk menghapus baris tenaga kerja
+function hapusBarisTenagaKerja(button) {
+    // Hapus baris tabel tempat tombol ditekan
+    let row = button.closest('tr');
+    if (row) row.remove();
+
+    // Hitung ulang total setelah penghapusan
+    hitungGrandTotalTK();
+}
+</script>
+<script>
+document.getElementById('addTenagaKerja').addEventListener('click', function() {
+    let tbody = document.getElementById('tenagaKerjaBody');
+    let idx = tbody.rows.length;
+
+    // Hitung jumlah Pegawai Sementara yang sudah ada
+    let existingSementara = tbody.querySelectorAll('select option[value^="PS"]').length;
+    let sementaraCount = existingSementara + 1;
+
+    let karyawanOptions = `
+        <option value="">-- Pilih Karyawan --</option>
+        @foreach($karyawan as $k)
+            <option value="{{ $k->kode_karyawan }}">{{ $k->nama }}</option>
+        @endforeach
+        <option value="PS${sementaraCount}">Pegawai Sementara ${sementaraCount}</option>
+    `;
+
+    let row = document.createElement('tr');
+    row.innerHTML = `
+        <td>
+            <select name="tk_extra[${idx}][nama]" class="form-select">
+                ${karyawanOptions}
+            </select>
+        </td>
+        <td><input type="number" name="tk_extra[${idx}][jam]" class="form-control"></td>
+        <td><input type="number" name="tk_extra[${idx}][tarif]" class="form-control"></td>
+        <td><input type="number" name="tk_extra[${idx}][total]" readonly class="form-control"></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove()">Hapus</button></td>
+    `;
+    tbody.appendChild(row);
 });
 </script>
 @endpush

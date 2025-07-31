@@ -107,7 +107,11 @@
                         @php $no = 1; @endphp
                         @forelse($transfers as $transfer)
                             <tr>
+<<<<<<< Updated upstream
                                 <td>{{ $no++ }}</td>
+=======
+                                <td>{{ $loop->iteration + ($transfers->currentPage() - 1) * $transfers->perPage() }}</td>
+>>>>>>> Stashed changes
                                 <td>{{ $transfer->no_transaksi }}</td>
                                 <td>{{ date('d-m-Y', strtotime($transfer->tanggal)) }}</td>
                                 <td>{{ $transfer->lokasi_asal }}</td>

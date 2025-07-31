@@ -26,7 +26,6 @@
                     <th>Tanggal</th>
                     <th>No Jurnal</th>
                     <th>Keterangan</th>
-                    <th>Nomor Bukti</th>
                     <th>Akun</th>
                     <th class="text-end">Debit</th>
                     <th class="text-end">Kredit</th>
@@ -34,12 +33,13 @@
             </thead>
             <tbody>
                 @forelse($jurnals as $jurnal)
-                    @foreach($jurnal->details as $detail)
+                    @foreach($jurnal->details as $i => $detail)
                     <tr>
-                        <td>{{ \Carbon\Carbon::parse($jurnal->tanggal)->format('d-m-Y') }}</td>
-                        <td>{{ $jurnal->no_jurnal }}</td>
-                        <td>{{ $jurnal->keterangan }}</td>
-                        <td>{{ $jurnal->nomor_bukti }}</td>
+                        @if($i == 0)
+                            <td rowspan="{{ $jurnal->details->count() }}">{{ \Carbon\Carbon::parse($jurnal->tanggal)->format('d-m-Y') }}</td>
+                            <td rowspan="{{ $jurnal->details->count() }}">{{ $jurnal->no_jurnal }}</td>
+                            <td rowspan="{{ $jurnal->details->count() }}">{{ $jurnal->keterangan }}</td>
+                        @endif
                         <td>{{ $detail->akun->nama_akun ?? '-' }}</td>
                         <td class="text-end">{{ number_format($detail->debit, 2) }}</td>
                         <td class="text-end">{{ number_format($detail->kredit, 2) }}</td>

@@ -44,7 +44,7 @@ class PermintaanProduksiController extends Controller
 
             // Simpan ke t_permintaan_produksi
             $permintaan = PermintaanProduksi::create([
-                'kode_permintaan_produksi' => $kode,
+                'no_permintaan_produksi' => $kode,
                 'tanggal' => $request->tanggal,
                 'keterangan' => $request->keterangan,
                 'status' => 'Menunggu', // Ubah dari 'Diproses' ke 'Menunggu'
@@ -53,8 +53,8 @@ class PermintaanProduksiController extends Controller
             // Simpan detail
             foreach ($request->produk as $i => $item) {
                 PermintaanProduksiDetail::create([
-                    'kode_detail_permintaan_produksi' => $kode . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT),
-                    'kode_permintaan_produksi' => $kode,
+                    'no_detail_permintaan_produksi' => $kode . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT),
+                    'no_permintaan_produksi' => $kode,
                     'kode_produk' => $item['kode_produk'],
                     'unit' => $item['unit'],
                 ]);
@@ -62,5 +62,16 @@ class PermintaanProduksiController extends Controller
         });
 
         return redirect()->route('permintaan_produksi.index')->with('success', 'Permintaan produksi berhasil disimpan!');
+    }
+    public function destroy($no_permintaan_produksi)
+    {
+        DB::transaction(function () use ($no_permintaan_produksi) {
+            // Hapus detail terlebih dahulu
+            PermintaanProduksiDetail::where('no_permintaan_produksi', $no_permintaan_produksi)->delete();
+            // Hapus master
+            PermintaanProduksi::where('no_permintaan_produksi', $no_permintaan_produksi)->delete();
+        });
+
+        return redirect()->route('permintaan_produksi.index')->with('success', 'Permintaan produksi berhasil dihapus!');
     }
 }

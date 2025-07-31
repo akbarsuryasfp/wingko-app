@@ -58,7 +58,7 @@ class PembelianController extends Controller
     
         // --- Kebutuhan produksi dari jadwal ---
         $jadwalList = DB::table('t_jadwal_produksi')
-            ->join('t_jadwal_produksi_detail', 't_jadwal_produksi.kode_jadwal', '=', 't_jadwal_produksi_detail.kode_jadwal')
+            ->join('t_jadwal_produksi_detail', 't_jadwal_produksi.no_jadwal', '=', 't_jadwal_produksi_detail.no_jadwal')
             ->join('t_produk', 't_jadwal_produksi_detail.kode_produk', '=', 't_produk.kode_produk')
             ->join('t_resep', 't_produk.kode_produk', '=', 't_resep.kode_produk')
             ->join('t_resep_detail', 't_resep.kode_resep', '=', 't_resep_detail.kode_resep')
@@ -766,6 +766,21 @@ public function edit($no_pembelian)
         ->where('no_pembelian', $no_pembelian)
         ->value('jatuh_tempo');
 
+    // Hitung subtotal
+    $subtotal = 0;
+    foreach ($details as $d) {
+        $subtotal += $d->bahan_masuk * $d->harga_beli;
+    }
+
+    // Total harga, diskon, ongkir dari pembelian
+    $total_harga = $pembelian->total_harga ?? $subtotal;
+    $diskon = $pembelian->diskon ?? 0;
+    $ongkir = $pembelian->ongkir ?? 0;
+    $total_pembelian = $total_harga - $diskon + $ongkir;
+    $total_bayar = $pembelian->total_bayar ?? 0;
+    $kurang_bayar = $total_pembelian - $total_bayar;
+    if ($kurang_bayar < 0) $kurang_bayar = 0;
+
     // Data untuk modal kebutuhan bahan (jika pembelian langsung)
     $bahanKurangProduksi = [];
     $bahansPrediksiHarian = [];
@@ -844,7 +859,12 @@ public function edit($no_pembelian)
         'jatuh_tempo',
         'bahanKurangProduksi',
         'bahansPrediksiHarian',
-        'stokMinList'
+        'stokMinList',
+        'subtotal',
+        'total_harga',
+        'total_pembelian',
+        'total_bayar',
+        'kurang_bayar'
     ));
 }
 public function update(Request $request, $no_pembelian)

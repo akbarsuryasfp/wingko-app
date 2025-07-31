@@ -3,9 +3,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class BopTransaksi extends Model
+class BopRealisasi extends Model
 {
-    protected $table = 't_bop_transaksi';
+    protected $table = 't_bop_realisasi';
     protected $guarded = [];
     public $timestamps = false;
 
