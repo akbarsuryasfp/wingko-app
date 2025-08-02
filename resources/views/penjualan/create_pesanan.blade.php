@@ -2,14 +2,16 @@
 
 @section('content')
 <div class="container mt-5">
-    <h3>INPUT PENJUALAN PESANAN</h3>
-    <form action="{{ route('penjualan.store') }}" method="POST">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3>INPUT PENJUALAN PESANAN</h3>
+            <form action="{{ route('penjualan.store') }}" method="POST">
         @csrf
         <div class="row">
             <div class="col-md-6">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 140px;">No Jual</label>
-                    <input type="text" name="no_jual" class="form-control" value="{{ $no_jual ?? '' }}" readonly>
+                    <input type="text" name="no_jual" class="form-control" value="{{ $no_jual ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
                 </div>
             </div>
             <div class="col-md-6">
@@ -21,7 +23,8 @@
                             <option value="{{ $psn->no_pesanan }}"
                                 data-tanggal="{{ $psn->tanggal_pesanan }}"
                                 data-pelanggan="{{ $psn->nama_pelanggan }}"
-                                data-kodepelanggan="{{ $psn->kode_pelanggan }}">
+                                data-kodepelanggan="{{ $psn->kode_pelanggan }}"
+                                data-uangmuka="{{ $psn->uang_muka ?? 0 }}">
                                 {{ $psn->no_pesanan }}
                             </option>
                         @endforeach
@@ -49,7 +52,7 @@
             </div>
             <div class="col-md-6">
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 140px;">Pelanggan</label>
+                    <label class="me-2" style="width: 140px;">Nama Pelanggan</label>
                     <input type="text" id="nama_pelanggan" class="form-control" readonly>
                     <input type="hidden" name="kode_pelanggan" id="kode_pelanggan">
                 </div>
@@ -90,8 +93,10 @@
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
+                    <th>Satuan</th>
                     <th>Jumlah</th>
                     <th>Harga/Satuan</th>
+                    <th>Diskon/Satuan</th>
                     <th>Subtotal</th>
                 </tr>
             </thead>
@@ -106,37 +111,64 @@
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Total Harga</label>
                     <div class="col-sm-8">
-                        <input type="text" id="total_harga" name="total_harga" class="form-control" readonly>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_harga" name="total_harga" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
+                        </div>
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Diskon (Rp)</label>
                     <div class="col-sm-8">
-                        <input type="number" id="diskon" name="diskon" class="form-control" value="0" min="0" oninput="hitungTotalLain()">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" id="diskon" name="diskon" class="form-control" min="0" oninput="hitungTotalLain()">
+                        </div>
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Total Jual</label>
                     <div class="col-sm-8">
-                        <input type="text" id="total_jual" name="total_jual" class="form-control" readonly>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_jual" name="total_jual" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2 row align-items-center">
+                    <label class="col-sm-4 col-form-label">Uang Muka (DP)</label>
+                    <div class="col-sm-8">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" id="uang_muka" name="uang_muka" class="form-control" min="0" readonly style="background: #e9ecef; pointer-events: none;">
+                        </div>
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Total Bayar</label>
                     <div class="col-sm-8">
-                        <input type="number" id="total_bayar" name="total_bayar" class="form-control" value="0" min="0" oninput="hitungTotalLain()">
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="number" id="total_bayar" name="total_bayar" class="form-control" min="0" oninput="hitungTotalLain()">
+                        </div>
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Kembalian</label>
                     <div class="col-sm-8">
-                        <input type="text" id="kembalian" name="kembalian" class="form-control" readonly>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="kembalian" name="kembalian" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
+                        </div>
                     </div>
                 </div>
                 <div class="mb-2 row align-items-center">
                     <label class="col-sm-4 col-form-label">Piutang</label>
                     <div class="col-sm-8">
-                        <input type="text" id="piutang" class="form-control" readonly>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="piutang" class="form-control" readonly style="background: #e9ecef; pointer-events: none;">
+                        </div>
                         <input type="hidden" name="piutang" id="piutang_hidden">
                     </div>
                 </div>
@@ -159,6 +191,8 @@
         <input type="hidden" name="detail_json" id="detail_json">
         <input type="hidden" name="jenis_penjualan" value="{{ $jenis_penjualan }}">
     </form>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -173,6 +207,7 @@
             document.getElementById('tanggal_pesanan').value = '';
             document.getElementById('nama_pelanggan').value = '';
             document.getElementById('kode_pelanggan').value = '';
+            document.getElementById('uang_muka').value = 0;
             daftarProduk = [];
             updateTabel();
             return;
@@ -181,6 +216,10 @@
         const tanggal = selected.getAttribute('data-tanggal') || '';
         const pelanggan = selected.getAttribute('data-pelanggan') || '';
         const kodePelanggan = selected.getAttribute('data-kodepelanggan') || '';
+        // Ambil uang muka dari data attribute jika ada
+        let uangMuka = selected.getAttribute('data-uangmuka');
+        if (typeof uangMuka === 'undefined' || uangMuka === null) uangMuka = 0;
+        document.getElementById('uang_muka').value = uangMuka;
         // Format tanggal pesanan ke dd-mm-yyyy jika ada
         if (tanggal) {
             const tglObj = new Date(tanggal);
@@ -212,9 +251,15 @@
         }
     });
 
-    function formatRupiah(angka) {
-        if (!angka && angka !== 0) return '';
-        return 'Rp ' + parseFloat(angka).toLocaleString('id-ID');
+    // Format Rp tanpa spasi dan dengan titik ribuan
+    function formatRupiah(angka, showPrefix = false) {
+        if (angka === '' || angka === null || typeof angka === 'undefined') return '';
+        angka = angka.toString().replace(/[^\d]/g, '');
+        if (!angka) return '';
+        let intVal = parseInt(angka, 10);
+        if (isNaN(intVal)) return '';
+        let formatted = intVal.toLocaleString('id-ID');
+        return showPrefix ? 'Rp' + formatted : formatted;
     }
 
     function updateTabel() {
@@ -223,20 +268,25 @@
         let totalHarga = 0;
 
         daftarProduk.forEach((item, index) => {
-            // Pastikan kode_produk ada di setiap item
             if (!item.kode_produk && item.kode) item.kode_produk = item.kode;
-            item.subtotal = item.jumlah * item.harga_satuan;
+            let satuan = item.satuan || (item.satuan_produk || '-');
+            let diskon_satuan = typeof item.diskon_satuan !== 'undefined' ? item.diskon_satuan : (item.diskon_produk || 0);
+            diskon_satuan = parseInt((diskon_satuan + '').replace(/\D/g, '')) || 0;
+            item.diskon_satuan = diskon_satuan;
+            item.subtotal = parseInt(item.jumlah) * Math.max(parseInt(item.harga_satuan) - diskon_satuan, 0);
             totalHarga += item.subtotal;
             const row = `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
+                    <td>${satuan}</td>
                     <td>${item.jumlah}</td>
-                    <td>${formatRupiah(item.harga_satuan)}</td>
-                    <td>${formatRupiah(item.subtotal)}</td>
+                    <td>${formatRupiah(parseInt(item.harga_satuan), true)}</td>
+                    <td><div class="input-group input-group-sm"><span class="input-group-text">Rp</span><input type="text" min="0" class="form-control form-control-sm text-center diskon-satuan-input" data-index="${index}" value="${formatRupiah(diskon_satuan)}"></div></td>
+                    <td class="subtotal-col">${formatRupiah(item.subtotal, true)}</td>
                 </tr>
             `;
-            tbody.insertAdjacentHTML('beforeend', row);
+            tbody.insertAdjacentHTML('beforeend', row); 
         });
 
         document.getElementById('total_harga').value = formatRupiah(totalHarga);
@@ -246,9 +296,36 @@
             nama_produk: item.nama_produk,
             jumlah: Number(item.jumlah),
             harga_satuan: Number(item.harga_satuan),
+            diskon_satuan: Number(item.diskon_satuan) || 0,
             subtotal: Number(item.subtotal)
         })));
         hitungTotalLain();
+        attachDiskonSatuanListeners();
+    }
+
+    // Handler for diskon/satuan input auto-formatting
+    function attachDiskonSatuanListeners() {
+        document.querySelectorAll('.diskon-satuan-input').forEach(function(input) {
+            input.addEventListener('input', function(e) {
+                let val = this.value.replace(/[^\d]/g, '');
+                this.value = formatRupiah(val);
+                let idx = parseInt(this.getAttribute('data-index'));
+                if (!isNaN(idx)) {
+                    // Update the correct product's diskon_satuan
+                    daftarProduk[idx].diskon_satuan = parseInt(val) || 0;
+                    let harga = parseInt(daftarProduk[idx].harga_satuan) || 0;
+                    let jumlah = parseInt(daftarProduk[idx].jumlah) || 0;
+                    daftarProduk[idx].subtotal = jumlah * Math.max(harga - (parseInt(val) || 0), 0);
+                    // Update subtotal cell
+                    const subtotalCell = document.querySelector(`#daftar-produk tbody tr:nth-child(${idx+1}) .subtotal-col`);
+                    if (subtotalCell) subtotalCell.textContent = formatRupiah(daftarProduk[idx].subtotal, true);
+                    // Update total harga and summary fields
+                    let totalHarga = daftarProduk.reduce((sum, p) => sum + p.subtotal, 0);
+                    document.getElementById('total_harga').value = formatRupiah(totalHarga);
+                    hitungTotalLain();
+                }
+            });
+        });
     }
 
     function hapusBaris(index) {
@@ -257,21 +334,29 @@
     }
 
     function hitungTotalLain() {
-        let totalHarga = parseFloat((document.getElementById('total_harga').value || '0').replace(/[^\d]/g, '')) || 0;
-        let diskon = parseFloat(document.getElementById('diskon').value || '0') || 0;
+        // Always use unformatted values for calculation
+        let totalHarga = parseInt((document.getElementById('total_harga').value || '0').replace(/[^\d]/g, '')) || 0;
+        let diskon = parseInt((document.getElementById('diskon').value || '0').replace(/[^\d]/g, '')) || 0;
         let totalJual = totalHarga - diskon;
         if (totalJual < 0) totalJual = 0;
         document.getElementById('total_jual').value = formatRupiah(totalJual);
 
-        let totalBayar = parseFloat(document.getElementById('total_bayar').value || '0') || 0;
+        let uangMuka = parseInt((document.getElementById('uang_muka').value || '0').replace(/[^\d]/g, '')) || 0;
+        if (uangMuka < 0) uangMuka = 0;
+
+        let totalBayar = parseInt((document.getElementById('total_bayar').value || '0').replace(/[^\d]/g, '')) || 0;
         let kembalian = 0, piutang = 0;
 
-        if (totalBayar > totalJual) {
-            kembalian = totalBayar - totalJual;
+        // DP (uang muka) mengurangi piutang, bukan total bayar
+        let sisaTagihan = totalJual - uangMuka;
+        if (sisaTagihan < 0) sisaTagihan = 0;
+
+        if (totalBayar > sisaTagihan) {
+            kembalian = totalBayar - sisaTagihan;
             piutang = 0;
         } else {
             kembalian = 0;
-            piutang = totalJual - totalBayar > 0 ? totalJual - totalBayar : 0;
+            piutang = sisaTagihan - totalBayar > 0 ? sisaTagihan - totalBayar : 0;
         }
         document.getElementById('kembalian').value = formatRupiah(kembalian);
         document.getElementById('piutang').value = formatRupiah(piutang);
@@ -294,8 +379,17 @@
     //     hitungTotalLain();
     // });
     // Ganti dengan event input biasa agar tetap hitung ulang tanpa format Rp
-    document.getElementById('diskon').addEventListener('input', hitungTotalLain);
-    document.getElementById('total_bayar').addEventListener('input', hitungTotalLain);
+    // Auto-formatting for diskon and total_bayar fields
+    function autoFormatInputThousand(inputId) {
+        const input = document.getElementById(inputId);
+        input.addEventListener('input', function(e) {
+            let val = this.value.replace(/[^\d]/g, '');
+            this.value = formatRupiah(val);
+            hitungTotalLain();
+        });
+    }
+    autoFormatInputThousand('diskon');
+    autoFormatInputThousand('total_bayar');
 
     document.querySelector('form').addEventListener('submit', function(e) {
         if (daftarProduk.length === 0) {
@@ -304,10 +398,7 @@
             return false;
         }
         // Pastikan hidden piutang ikut terkirim
-        document.getElementById('piutang_hidden').value = parseFloat((document.getElementById('piutang').value || '0').replace(/[^\\d]/g, '')) || 0;
-        // Pastikan total_harga dan total_jual juga dalam bentuk angka
-        document.getElementById('total_harga').value = parseFloat((document.getElementById('total_harga').value || '0').replace(/[^ -9]/g, '')) || 0;
-        document.getElementById('total_jual').value = parseFloat((document.getElementById('total_jual').value || '0').replace(/[^ -9]/g, '')) || 0;
+        
     });
 </script>
 @endsection

@@ -48,28 +48,49 @@
                 <th>Nama Produk</th>
                 <th>Satuan</th>
                 <th>Jumlah</th>
-                <th>Harga Satuan</th>
+                <th>Harga/Satuan</th>
+                <th>Diskon/Satuan</th>
                 <th>Subtotal</th>
             </tr>
         </thead>
         <tbody>
+            @php $totalPenjualan = 0; @endphp
             @foreach($details as $i => $detail)
+            @php
+                $hargaSatuan = isset($detail->harga_satuan) ? (float)$detail->harga_satuan : 0;
+                $diskonSatuan = isset($detail->diskon_produk) ? (float)$detail->diskon_produk : (isset($detail->diskon_satuan) ? (float)$detail->diskon_satuan : 0);
+                $jumlah = isset($detail->jumlah) ? (float)$detail->jumlah : 0;
+                $subtotal = ($hargaSatuan - $diskonSatuan) * $jumlah;
+                $totalPenjualan += $subtotal;
+            @endphp
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>{{ $detail->nama_produk ?? ($detail->produk->nama_produk ?? '-') }}</td>
                 <td>{{ $detail->satuan ?? ($detail->produk->satuan ?? '-') }}</td>
-                <td>{{ $detail->jumlah }}</td>
-                <td>Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
-                <td>Rp{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
+                <td>{{ $jumlah }}</td>
+                <td>Rp{{ number_format($hargaSatuan, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($diskonSatuan, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($subtotal, 0, ',', '.') }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
 
+    @php
+        // Ambil data piutang dari relasi jika ada
+        $piutangRow = null;
+        if (isset($penjualan->no_jual)) {
+            $piutangRow = DB::table('t_piutang')->where('no_jual', $penjualan->no_jual)->first();
+        }
+        $total_bayar = $piutangRow && isset($piutangRow->total_bayar) ? (float)$piutangRow->total_bayar : (float)$penjualan->total_bayar;
+        $sisa_piutang = $piutangRow && isset($piutangRow->sisa_piutang) ? (float)$piutangRow->sisa_piutang : null;
+        $piutang = $sisa_piutang !== null ? $sisa_piutang : ($totalPenjualan - (float)$penjualan->diskon - $total_bayar);
+        if ($piutang < 0) $piutang = 0;
+    @endphp
     <table class="nota-summary" style="margin-left:0; width: 350px;">
         <tr>
             <td class="fw-bold" style="width:170px;">Total Penjualan</td>
-            <td>: Rp{{ number_format($penjualan->total_harga, 0, ',', '.') }}</td>
+            <td>: Rp{{ number_format($totalPenjualan, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <td class="fw-bold">Diskon</td>
@@ -83,7 +104,7 @@
         </tr>
         <tr>
             <td class="fw-bold">Pembayaran Sebelumnya</td>
-            <td>: Rp{{ number_format($penjualan->total_bayar, 0, ',', '.') }}</td>
+            <td>: Rp{{ number_format($total_bayar, 0, ',', '.') }}</td>
         </tr>
         <tr>
             <td class="fw-bold">Metode Pembayaran</td>
@@ -91,13 +112,23 @@
         </tr>
         <tr>
             <td class="fw-bold">Sisa Tagihan (Piutang)</td>
-            <td>: <b>Rp{{ number_format($penjualan->piutang, 0, ',', '.') }}</b></td>
+            <td>: <b>Rp{{ number_format($piutang, 0, ',', '.') }}</b></td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Tanggal Jatuh Tempo</td>
+            <td>:
+                @if(isset($penjualan->tanggal_jatuh_tempo) && $penjualan->tanggal_jatuh_tempo)
+                    {{ \Carbon\Carbon::parse($penjualan->tanggal_jatuh_tempo)->format('d-m-Y') }}
+                @else
+                    -
+                @endif
+            </td>
         </tr>
     </table>
 
     <div class="section-title">Instruksi Pembayaran</div>
     <div style="font-size:13px;">
-        Silakan lakukan pelunasan sisa tagihan sebesar <b>Rp{{ number_format($penjualan->piutang, 0, ',', '.') }}</b> melalui:
+        Silakan lakukan pelunasan sisa tagihan sebesar <b>Rp{{ number_format($piutang, 0, ',', '.') }}</b> melalui:
         <ul style="margin-top:8px;">
             <li><b>Tunai</b><br>
                 Datang langsung ke toko Wingko Babat Pratama.</li>

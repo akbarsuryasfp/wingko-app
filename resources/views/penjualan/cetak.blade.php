@@ -50,8 +50,9 @@
                 <th>No</th>
                 <th>Nama Produk</th>
                 <th>Satuan</th>
-                <th>Kuantitas</th>
-                <th>Harga Jual</th>
+                <th>Jumlah</th>
+                <th>Harga/Satuan</th>
+                <th>Diskon/Satuan</th>
                 <th>Sub Total</th>
             </tr>
         </thead>
@@ -63,6 +64,7 @@
                 <td>{{ $detail->satuan ?? '-' }}</td>
                 <td>{{ $detail->jumlah }}</td>
                 <td>Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
+                <td>Rp{{ number_format($detail->diskon_produk ?? $detail->diskon_satuan ?? 0, 0, ',', '.') }}</td>
                 <td>Rp{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
             </tr>
             @endforeach

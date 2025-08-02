@@ -7,9 +7,13 @@ use App\Models\Consignor;
 
 class ConsignorController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $consignor = \App\Models\Consignor::with('produkKonsinyasi')->get();
+        $query = \App\Models\Consignor::with('produkKonsinyasi');
+        if ($request->filled('search')) {
+            $query->where('nama_consignor', 'like', '%' . $request->search . '%');
+        }
+        $consignor = $query->get();
         return view('consignor.index', compact('consignor'));
     }
 

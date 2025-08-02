@@ -2,15 +2,17 @@
 
 @section('content')
 
-<div class="container">
-    <h2 class="mb-4">INPUT PEMBAYARAN CONSIGNOR (PEMILIK BARANG)</h2>
-    <form method="POST" action="{{ route('bayarconsignor.store') }}">
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="mb-4">INPUT PEMBAYARAN CONSIGNOR (PEMILIK BARANG)</h2>
+            <form method="POST" action="{{ route('bayarconsignor.store') }}">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Bayar Consignor</label>
-                    <input type="text" name="no_bayarconsignor" id="no_bayarconsignor" class="form-control" value="{{ $no_bayarconsignor ?? '' }}" readonly>
+                    <input type="text" name="no_bayarconsignor" id="no_bayarconsignor" class="form-control" value="{{ $no_bayarconsignor ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Tanggal Bayar</label>
@@ -48,6 +50,7 @@
                         <th>No</th>
                         <th>Kode Produk</th>
                         <th>Nama Produk</th>
+                        <th>Satuan</th>
                         <th>Jumlah Terjual</th>
                         <th>Total Penjualan</th>
                     </tr>
@@ -55,7 +58,7 @@
                 <tbody>
                     @if(isset($produk) && count($produk) === 0)
                         <tr>
-                            <td colspan="5" class="text-center">Data produk tidak ditemukan.</td>
+                            <td colspan="6" class="text-center">Data produk tidak ditemukan.</td>
                         </tr>
                     @elseif(isset($produk))
                         @foreach($produk as $i => $p)
@@ -63,19 +66,23 @@
                             <td>{{ $i+1 }}</td>
                             <td>{{ $p['kode_produk'] }}</td>
                             <td>{{ $p['nama_produk'] }}</td>
+                            <td>{{ $p['satuan'] ?? ($p['produk']['satuan'] ?? '-') }}</td>
                             <td>{{ $p['terjual'] }}</td>
                             <td>Rp {{ number_format($p['total_penjualan'],0,',','.') }}</td>
                         </tr>
                         @endforeach
-                        <tr>
-                            <td colspan="4" class="text-end fw-bold">Total Bayar</td>
-                            <td class="fw-bold">
-                                Rp {{ number_format(collect($produk)->sum('total_penjualan'),0,',','.') }}
-                            </td>
-                        </tr>
                     @endif
                 </tbody>
             </table>
+            <!-- Total Bayar mirip Total Pesanan -->
+            <div class="d-flex justify-content-end align-items-center mt-2" style="max-width: 400px; margin-left: auto;">
+                <label class="me-2 fw-bold mb-0">Total Bayar</label>
+                <div class="input-group" style="width: 220px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" id="total_bayar_display" class="form-control fw-bold" value="{{ isset($produk) ? number_format(collect($produk)->sum('total_penjualan'),0,',','.') : '' }}" readonly tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+                </div>
+                <input type="hidden" id="total_bayar" name="total_bayar" value="{{ isset($produk) ? collect($produk)->sum('total_penjualan') : '' }}">
+            </div>
         </div>
         <div class="d-flex justify-content-between mt-4 gap-2 flex-wrap">
             <div class="d-flex align-items-center gap-2">
@@ -86,7 +93,9 @@
                 <button type="submit" class="btn btn-success">Simpan Pembayaran</button>
             </div>
         </div>
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 
 
