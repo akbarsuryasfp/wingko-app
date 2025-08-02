@@ -85,30 +85,30 @@ class TerimaBahanController extends Controller
             : 'TB000001';
 
         // Ambil semua order yang BELUM diterima sepenuhnya
-        $orderbeli = DB::table('t_order_beli')
-            ->leftJoin('t_supplier', 't_order_beli.kode_supplier', '=', 't_supplier.kode_supplier')
-            ->select('t_order_beli.*', 't_supplier.nama_supplier')
-            ->orderBy('no_order_beli', 'asc')
-            ->get()
-            ->filter(function($order) {
-                // Hitung total beli dan total masuk
-                $details = DB::table('t_order_detail')->where('no_order_beli', $order->no_order_beli)->get();
-                $noTerimaList = DB::table('t_terimabahan')->where('no_order_beli', $order->no_order_beli)->pluck('no_terima_bahan')->toArray();
-                $semuaDiterima = true;
-                foreach ($details as $detail) {
-                    $masuk = 0;
-                    if (!empty($noTerimaList)) {
-                        $masuk = DB::table('t_terimab_detail')
-                            ->where('kode_bahan', $detail->kode_bahan)
-                            ->whereIn('no_terima_bahan', $noTerimaList)
-                            ->sum('bahan_masuk');
-                    }
-                    if ($masuk < $detail->jumlah_beli) {
-                        $semuaDiterima = false;
-                    }
-                }
-                return !$semuaDiterima; // hanya tampilkan yang BELUM diterima sepenuhnya
-            })->values();
+
+$orderbeli = DB::table('t_order_beli')
+    ->leftJoin('t_supplier', 't_order_beli.kode_supplier', '=', 't_supplier.kode_supplier')
+    ->whereIn('t_order_beli.status', ['Disetujui', 'Diterima Sebagian'])
+    ->select('t_order_beli.*', 't_supplier.nama_supplier')
+    ->get()
+    ->filter(function($order) {
+        // Hitung total beli dan total masuk
+        $details = DB::table('t_order_detail')->where('no_order_beli', $order->no_order_beli)->get();
+        $noTerimaList = DB::table('t_terimabahan')->where('no_order_beli', $order->no_order_beli)->pluck('no_terima_bahan')->toArray();
+        foreach ($details as $detail) {
+            $masuk = 0;
+            if (!empty($noTerimaList)) {
+                $masuk = DB::table('t_terimab_detail')
+                    ->where('kode_bahan', $detail->kode_bahan)
+                    ->whereIn('no_terima_bahan', $noTerimaList)
+                    ->sum('bahan_masuk');
+            }
+            if ($masuk < $detail->jumlah_beli) {
+                return true; // Masih ada sisa, tampilkan
+            }
+        }
+        return false; // Semua sudah diterima penuh, jangan tampilkan
+    })->values();
 
         $order_selected = null;
         $order_details = [];
@@ -128,6 +128,22 @@ class TerimaBahanController extends Controller
         $order_details = $order_details ?? [];
         return view('terimabahan.create', compact('kode', 'orderbeli', 'order_selected', 'order_details'));
     }
+
+public function getDetail($no_order)
+{
+    $details = OrderBeliDetail::where('no_order_beli', $no_order)
+        ->join('m_bahan', 'order_beli_detail.kode_bahan', '=', 'm_bahan.kode_bahan')
+        ->select(
+            'order_beli_detail.kode_bahan',
+            'm_bahan.nama_bahan',
+            'm_bahan.satuan',
+            'order_beli_detail.jumlah_beli',
+            'order_beli_detail.harga_beli'
+        )
+        ->get();
+
+    return response()->json($details);
+}
 
     public function store(Request $request)
     {
@@ -221,48 +237,60 @@ class TerimaBahanController extends Controller
         return redirect()->route('terimabahan.index')->with('success', 'Penerimaan bahan berhasil disimpan!');
     }
 
-    public function show($id)
-    {
-        $terima = DB::table('t_terimabahan')
-            ->where('no_terima_bahan', $id)
-            ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
-            ->select('t_terimabahan.*', 't_supplier.nama_supplier')
-            ->first();
+public function show($id)
+{
+    $terima = DB::table('t_terimabahan')
+        ->where('no_terima_bahan', $id)
+        ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
+        ->select('t_terimabahan.*', 't_supplier.nama_supplier')
+        ->first();
 
-        $details = DB::table('t_terimab_detail')
-            ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-            ->where('no_terima_bahan', $id)
-            ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
+    $details = DB::table('t_terimab_detail')
+        ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+        ->where('no_terima_bahan', $id)
+        ->select('t_terimab_detail.*', 't_bahan.nama_bahan', 't_bahan.satuan')
+        ->get();
+
+    return view('terimabahan.detail', compact('terima', 'details'));
+}
+
+public function getOrderDetail($no_order_beli)
+{
+    try {
+        $details = DB::table('t_order_detail as d')
+            ->join('t_bahan as b', 'd.kode_bahan', '=', 'b.kode_bahan')
+            ->select('d.kode_bahan', 'b.nama_bahan', 'd.jumlah_beli', 'b.satuan', 'd.harga_beli')
+            ->where('d.no_order_beli', $no_order_beli)
             ->get();
 
-        return view('terimabahan.detail', compact('terima', 'details'));
+        return response()->json($details);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
-    public function getSisaOrder($no_order_beli)
-    {
-        $orderDetails = DB::table('t_order_detail')
-            ->where('no_order_beli', $no_order_beli)
-            ->get();
-
-        $result = [];
-        foreach ($orderDetails as $detail) {
-            $totalMasuk = DB::table('t_terimab_detail')
-                ->where('kode_bahan', $detail->kode_bahan)
-                ->whereIn('no_terima_bahan', function ($q) use ($no_order_beli) {
+public function getSisaOrder($no_order_beli)
+{
+    $sisa = DB::table('t_order_detail')
+        ->leftJoin('t_terimab_detail', function($join) use ($no_order_beli) {
+            $join->on('t_order_detail.kode_bahan', '=', 't_terimab_detail.kode_bahan')
+                ->where('t_terimab_detail.no_terima_bahan', 'like', 'TB%')
+                ->whereIn('t_terimab_detail.no_terima_bahan', function($q) use ($no_order_beli) {
                     $q->select('no_terima_bahan')
                       ->from('t_terimabahan')
                       ->where('no_order_beli', $no_order_beli);
-                })
-                ->sum('bahan_masuk');
+                });
+        })
+        ->where('t_order_detail.no_order_beli', $no_order_beli)
+        ->select(
+            't_order_detail.kode_bahan',
+            DB::raw('t_order_detail.jumlah_beli - IFNULL(SUM(t_terimab_detail.bahan_masuk), 0) as sisa')
+        )
+        ->groupBy('t_order_detail.kode_bahan', 't_order_detail.jumlah_beli')
+        ->get();
 
-            $result[] = [       
-            'kode_bahan' => $detail->kode_bahan,
-            'sisa' => max(0, $detail->jumlah_beli - $totalMasuk),
-        ];
-        }
-
-        return response()->json($result);
-    }
+    return response()->json($sisa);
+}
 
     public function edit($id)
 {
@@ -495,6 +523,21 @@ $terimaBahan->details = $details;
             });
         }
 
+$status = $request->status;
+if ($status == 'selesai') {
+    $query->whereExists(function($q) {
+        $q->select(DB::raw(1))
+          ->from('t_pembelian')
+          ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+    });
+} elseif ($status == 'belum') {
+    $query->whereNotExists(function($q) {
+        $q->select(DB::raw(1))
+          ->from('t_pembelian')
+          ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+    });
+}
+
         $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
         $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
         $query->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
@@ -504,7 +547,7 @@ $terimaBahan->details = $details;
         // Ambil semua detail sekaligus, lalu kelompokkan per no_terima_bahan
         $allDetails = \DB::table('t_terimab_detail')
             ->leftJoin('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-            ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
+            ->select('t_terimab_detail.*', 't_bahan.nama_bahan', 't_bahan.satuan')
             ->whereIn('no_terima_bahan', $terimabahan->pluck('no_terima_bahan')->map(fn($v) => trim((string)$v)))
             ->get()
             ->groupBy(function($item) {

@@ -13,38 +13,83 @@
     </style>
 </head>
 <body>
-    <h4 style="text-align:center;">Laporan Penerimaan Bahan</h4>
-    <p>Periode: {{ $tanggal_mulai }} s/d {{ $tanggal_selesai }}</p>
-    <table>
+    <h4 style="text-align:center; margin-bottom:5px;">LAPORAN PENERIMAAN BAHAN</h4>
+    <p style="text-align:center; margin-top:0;">Periode: {{ $tanggal_mulai }} s/d {{ $tanggal_selesai }}</p>
+    
+    <table border="1" cellspacing="0" cellpadding="5" width="100%" style="border-collapse: collapse;">
         <thead>
             <tr>
-                <th>No</th>
-                <th>Kode Terima</th>
-                <th>Tanggal Terima</th>
-                <th>Kode Supplier</th>
+                <th style="text-align:center">No</th>
+                <th style="text-align:center">Kode Terima</th>
+                <th style="text-align:center">Tanggal Terima</th>
                 <th>Nama Supplier</th>
                 <th>Nama Bahan</th>
-                <th>Total Terima</th>
+                <th style="text-align:center">Satuan</th>
+                <th style="text-align:center">Qty</th>
+                <th style="text-align:center">Harga Beli</th>
+                <th style="text-align:center">Total Harga</th>
             </tr>
         </thead>
         <tbody>
-            @php $no = 1; @endphp
-            @foreach($terimabahan as $item)
+            @php 
+                $no = 1;
+                $grandTotal = 0;
+                $sortedTerimaBahan = $terimabahan->sortBy([
+                    ['tanggal_terima', 'asc'],
+                    ['no_terima_bahan', 'asc']
+                ]);
+            @endphp
+            
+            @foreach($sortedTerimaBahan as $item)
                 @php
                     $key = trim((string)$item->no_terima_bahan);
-                    $detailList = $details[$key] ?? collect();
+                    $detailList = isset($details[$key]) ? $details[$key]->sortBy('nama_bahan') : collect();
+                    $rowCount = count($detailList);
+                    $subTotal = 0;
+                    
+                    foreach($detailList as $d) {
+                        $subTotal += $d->bahan_masuk * ($d->harga_beli ?? 0);
+                    }
+                    $grandTotal += $subTotal;
                 @endphp
-                @foreach($detailList as $d)
-                <tr>
-                    <td>{{ $no++ }}</td>
-                    <td>{{ $item->no_terima_bahan }}</td>
-                    <td>{{ $item->tanggal_terima }}</td>
-                    <td>{{ $item->kode_supplier ?? '-' }}</td>
-                    <td>{{ $item->nama_supplier ?? '-' }}</td>
-                    <td>{{ $d->nama_bahan }}</td>
-                    <td>{{ number_format($d->bahan_masuk, 2) }}</td>
-                </tr>
+                
+                @foreach($detailList as $index => $d)
+                    <tr>
+                        @if($index === 0)
+                            <td rowspan="{{ $rowCount }}" style="text-align:center; vertical-align:middle">{{ $no++ }}</td>
+                            <td rowspan="{{ $rowCount }}" style="text-align:center; vertical-align:middle">{{ $item->no_terima_bahan }}</td>
+                            <td rowspan="{{ $rowCount }}" style="text-align:center; vertical-align:middle">{{ $item->tanggal_terima }}</td>
+                            <td rowspan="{{ $rowCount }}" style="vertical-align:middle">{{ $item->nama_supplier ?? '-' }}</td>
+                        @endif
+                        <td style="vertical-align:middle">{{ $d->nama_bahan }}</td>
+                        <td style="text-align:center; vertical-align:middle">{{ $d->satuan ?? '-' }}</td>
+                        <td style="text-align:right; vertical-align:middle">{{ number_format($d->bahan_masuk, 0) }}</td>
+                        <td style="padding-right:10px; text-align:right; vertical-align:middle">
+                            <span style="float:left">Rp</span>
+<span style="float:right">{{ number_format($d->harga_beli ?? 0, 0, ',', '.') }}</span>
+                        </td>
+@if($index === 0)
+<td rowspan="{{ $rowCount }}" style="vertical-align:middle; width:150px; padding:0 10px; text-align:right;">
+    <div style="display:flex; justify-content:flex-end; gap:2px;">
+        <span style="text-align:left;">Rp</span>
+        <span style="text-align:right; letter-spacing:0.5px;">
+            {{ number_format($subTotal, 0, ',', '.') }}
+        </span>
+    </div>
+</td>
+@endif
+
+                    </tr>
                 @endforeach
             @endforeach
+            
+            <tr style="font-weight:bold; background-color:#e6e6e6; border-top:2px solid #000">
+                <td colspan="8" style="text-align:right">GRAND TOTAL:</td>
+                <td style="padding-right:10px; text-align:right">
+                    <span style="float:left">Rp</span>
+                    <span style="float:right">{{ number_format($grandTotal, 0) }}</span>
+                </td>
+            </tr>
         </tbody>
     </table>
+</body>

@@ -13,7 +13,7 @@
     <table class="table table-bordered table-hover">
         <thead class="table-dark">
             <tr>
-                <th>Kode Jadwal</th>
+                <th>No Jadwal</th>
                 <th>Tanggal</th>
                 <th>Keterangan</th>
                 <th>Status Bahan</th> <!-- Kolom baru -->
@@ -24,7 +24,7 @@
         <tbody>
             @foreach ($jadwal as $j)
                 <tr>
-                    <td>{{ $j->kode_jadwal }}</td>
+                    <td>{{ $j->no_jadwal }}</td>
                     <td>{{ $j->tanggal_jadwal }}</td>
                     <td>{{ $j->keterangan }}</td>
                     <td>
@@ -35,11 +35,17 @@
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('produksi.create', ['jadwal' => $j->kode_jadwal]) }}" class="btn btn-sm btn-primary mt-1">Proses Produksi</a>
+                        @if($j->sudah_diproses)
+                            <button class="btn btn-sm btn-secondary mt-1" disabled>Diproses</button>
+                        @elseif(!empty($j->ada_bahan_kurang))
+                            <button class="btn btn-sm btn-secondary mt-1" disabled style="pointer-events: none; opacity: 0.6;">Proses Produksi</button>
+                        @else
+                            <a href="{{ route('produksi.create', ['jadwal' => $j->no_jadwal]) }}" class="btn btn-sm btn-primary mt-1">Proses Produksi</a>
+                        @endif
                     </td>
                     <td>
-                        <a href="{{ route('jadwal.show', $j->kode_jadwal) }}" class="btn btn-sm btn-info">Detail</a>
-                        <form action="{{ route('jadwal.destroy', $j->kode_jadwal) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus jadwal ini?')">
+                        <a href="{{ route('jadwal.show', $j->no_jadwal) }}" class="btn btn-sm btn-info">Detail</a>
+                        <form action="{{ route('jadwal.destroy', $j->no_jadwal) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus jadwal ini?')">
                             @csrf
                             @method('DELETE')
                             <button class="btn btn-sm btn-danger" type="submit">Hapus</button>

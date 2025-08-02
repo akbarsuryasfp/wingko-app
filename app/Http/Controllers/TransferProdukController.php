@@ -12,8 +12,7 @@ public function index(Request $request)
     $start = $request->input('start_date', date('Y-m-01'));
     $end = $request->input('end_date', date('Y-m-d'));
 
-    // Ambil header transfer (group by no_transaksi)
-    $transfers = DB::table('t_kartupersproduk')
+    $query = DB::table('t_kartupersproduk')
         ->whereBetween('tanggal', [$start, $end])
         ->where('keterangan', 'like', 'Transfer ke%')
         ->select(
@@ -23,28 +22,56 @@ public function index(Request $request)
             DB::raw('MAX(CASE WHEN keterangan LIKE "Transfer ke%" THEN REPLACE(keterangan, "Transfer ke ", "") ELSE NULL END) as lokasi_tujuan')
         )
         ->groupBy('no_transaksi', 'tanggal')
-        ->orderByDesc('tanggal')
-        ->paginate(10);
+        ->orderByDesc('tanggal');
+
+    // Filter tujuan
+    if ($request->filled('lokasi_tujuan')) {
+        $query->having('lokasi_tujuan', '=', $request->lokasi_tujuan);
+    }
+
+    // Filter search
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('no_transaksi', 'like', "%$search%")
+              ->orWhere('lokasi', 'like', "%$search%");
+        });
+    }
+
+    $transfers = $query->paginate(10)->withQueryString();
+
+    // Ambil daftar lokasi tujuan unik untuk filter
+    $listLokasi = DB::table('t_kartupersproduk')
+        ->where('keterangan', 'like', 'Transfer ke%')
+        ->select(DB::raw('REPLACE(keterangan, "Transfer ke ", "") as lokasi_tujuan'))
+        ->distinct()
+        ->pluck('lokasi_tujuan');
 
     // Ambil detail produk per transfer
-foreach ($transfers as $transfer) {
-   $details = DB::table('t_kartupersproduk')
-    ->join('t_produk', 't_kartupersproduk.kode_produk', '=', 't_produk.kode_produk')
-    ->where('no_transaksi', $transfer->no_transaksi)
-    ->where('keterangan', 'like', 'Transfer ke%')
-    ->select(
-        't_produk.nama_produk',
-        't_produk.satuan', // ambil satuan dari t_produk
-        DB::raw('SUM(t_kartupersproduk.keluar) as jumlah')
-    )
-    ->groupBy('t_produk.nama_produk', 't_produk.satuan')
-    ->get();
-$transfer->details = $details;
-}
+    foreach ($transfers as $transfer) {
+        $details = DB::table('t_kartupersproduk')
+            ->join('t_produk', 't_kartupersproduk.kode_produk', '=', 't_produk.kode_produk')
+            ->where('no_transaksi', $transfer->no_transaksi)
+            ->where('keterangan', 'like', 'Transfer ke%')
+            ->select(
+                't_produk.nama_produk',
+                't_produk.satuan',
+                DB::raw('SUM(t_kartupersproduk.keluar) as jumlah')
+            )
+            ->groupBy('t_produk.nama_produk', 't_produk.satuan')
+            ->get();
+        $transfer->details = $details;
+    }
 
-    return view('transferproduk.index', compact('transfers'));
+<<<<<<< Updated upstream
+    return view('transferproduk.index', compact('transfers', 'listLokasi'));
 }
+=======
+        return view('transferproduk.index', compact('transfers'));
+    }
+>>>>>>> Stashed changes
 
+    // Tampilkan form create
     // Tampilkan form create
     public function create()
     {
@@ -234,7 +261,10 @@ public function edit($no_transaksi)
     public function update(Request $request, $no_transaksi)
     {
         $request->validate([
+            'no_transaksi' => 'required',
             'tanggal' => 'required|date',
+            'lokasi_asal' => 'required',
+            'lokasi_tujuan' => 'required|different:lokasi_asal',
             'lokasi_asal' => 'required',
             'lokasi_tujuan' => 'required|different:lokasi_asal',
             'produk_id' => 'required|array',
@@ -327,4 +357,56 @@ public function edit($no_transaksi)
         DB::table('t_kartupersproduk')->where('no_transaksi', $no_transaksi)->delete();
         return redirect()->route('transferproduk.index')->with('success', 'Transfer produk berhasil dihapus!');
     }
+
+public function laporanPdf(Request $request)
+{
+    $start = $request->input('start_date', date('Y-m-01'));
+    $end = $request->input('end_date', date('Y-m-d'));
+
+    $query = DB::table('t_kartupersproduk')
+        ->whereBetween('tanggal', [$start, $end])
+        ->where('keterangan', 'like', 'Transfer ke%')
+        ->select(
+            'no_transaksi',
+            'tanggal',
+            DB::raw('MIN(lokasi) as lokasi_asal'),
+            DB::raw('MAX(CASE WHEN keterangan LIKE "Transfer ke%" THEN REPLACE(keterangan, "Transfer ke ", "") ELSE NULL END) as lokasi_tujuan')
+        )
+        ->groupBy('no_transaksi', 'tanggal')
+        ->orderByDesc('tanggal');
+
+    // Optional: filter search
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('no_transaksi', 'like', "%$search%")
+              ->orWhere('lokasi', 'like', "%$search%");
+        });
+    }
+
+    if ($request->filled('lokasi_tujuan')) {
+        $query->where('lokasi_tujuan', $request->lokasi_tujuan);
+    }
+
+    $transfers = $query->get();
+
+    // Ambil detail produk per transfer
+    foreach ($transfers as $transfer) {
+        $details = DB::table('t_kartupersproduk')
+            ->join('t_produk', 't_kartupersproduk.kode_produk', '=', 't_produk.kode_produk')
+            ->where('no_transaksi', $transfer->no_transaksi)
+            ->where('keterangan', 'like', 'Transfer ke%')
+            ->select(
+                't_produk.nama_produk',
+                't_produk.satuan',
+                DB::raw('SUM(t_kartupersproduk.keluar) as jumlah')
+            )
+            ->groupBy('t_produk.nama_produk', 't_produk.satuan')
+            ->get();
+        $transfer->details = $details;
+    }
+
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('transferproduk.cetak', compact('transfers'));
+    return $pdf->stream('laporan_transfer_produk.pdf');
+}
 }

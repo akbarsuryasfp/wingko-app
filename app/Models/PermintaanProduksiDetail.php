@@ -11,23 +11,23 @@ class PermintaanProduksiDetail extends Model
     protected $table = 't_permintaan_produksi_detail';
 
     // Primary key
-    protected $primaryKey = 'kode_detail_permintaan_produksi';
+    protected $primaryKey = 'no_detail_permintaan_produksi';
 
     // Tidak menggunakan timestamps
     public $timestamps = false;
 
     // Kolom yang dapat diisi
     protected $fillable = [
-        'kode_detail_permintaan_produksi',
-        'kode_permintaan_produksi',
+        'no_detail_permintaan_produksi',
+        'no_permintaan_produksi',
         'kode_produk',
         'unit',
     ];
 
     // Relasi ke master permintaan produksi
-    public function permintaanProduksi(): BelongsTo
+    public function permintaanProduksi()
     {
-        return $this->belongsTo(PermintaanProduksi::class, 'kode_permintaan_produksi', 'kode_permintaan_produksi');
+        return $this->belongsTo(PermintaanProduksi::class, 'no_permintaan_produksi', 'no_permintaan_produksi');
     }
 
     // Relasi ke produk

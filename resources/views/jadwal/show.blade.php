@@ -4,63 +4,67 @@
 <div class="container">
     <h3>Detail Jadwal Produksi</h3>
 
-    <p><strong>Kode:</strong> {{ $jadwal->kode_jadwal }}</p>
-    <p><strong>Tanggal:</strong> {{ $jadwal->tanggal_jadwal }}</p>
-    <p><strong>Keterangan:</strong> {{ $jadwal->keterangan }}</p>
+<p><strong>Kode:</strong> {{ $jadwal->no_jadwal }}</p>
+<p><strong>Tanggal:</strong> {{ $jadwal->tanggal_jadwal }}</p>
+<p><strong>Keterangan:</strong> {{ $jadwal->keterangan }}</p>
 
     <hr>
     <h5>Produk yang Akan Diproduksi</h5>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Produk</th>
-                <th>Jumlah</th>
-                <th>Sumber</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($jadwal->details as $d)
-                <tr>
-                    <td>{{ $d->produk->nama_produk ?? $d->kode_produk }}</td>
-                    <td>{{ $d->jumlah }}</td>
-                    <td>{{ $d->kode_sumber }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Produk</th>
+            <th>Jumlah</th>
+            <th>Sumber</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($jadwal->details as $d)
+        <tr>
+            <td>{{ $d->produk->nama_produk ?? $d->kode_produk }}</td>
+            <td>{{ $d->jumlah }}</td>
+            <td>{{ $d->no_sumber }}</td>
+        </tr>
+        @endforeach
+    </tbody>
+</table>
 
     <hr>
-    <h5>Estimasi Kebutuhan Bahan</h5>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Bahan</th>
-                <th>Jumlah</th>
-                <th>Satuan</th>
-                <th>Stok</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($kebutuhan as $b)
-                <tr>
-                    <td>{{ $b['nama_bahan'] }}</td>
-                    <td>{{ number_format($b['jumlah'], 2) }}</td>
-                    <td>{{ $b['satuan'] }}</td>
-                    <td>{{ number_format($b['stok'] ?? 0, 2) }}</td>
-                    <td>
-                        @if(($b['status'] ?? '') === 'Cukup')
-                            <span class="badge bg-success">Cukup</span>
-                        @else
-                            <span class="badge bg-danger">Kurang</span>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="5">Tidak ada estimasi bahan.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+
+<h5>Estimasi Kebutuhan Bahan</h5>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Bahan</th>
+            <th>Jumlah</th>
+            <th>Satuan</th>
+            <th>Stok</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($kebutuhan as $bahan)
+        <tr>
+            <td>{{ $bahan['nama_bahan'] }}</td>
+            <td>{{ $bahan['jumlah'] }}</td>
+            <td>{{ $bahan['satuan'] }}</td>
+            <td>{{ $bahan['stok'] }}</td>
+            <td>
+                @if($bahan['status'] == 'Cukup')
+                    <span class="badge bg-success">Cukup</span>
+                @else
+                    <span class="badge bg-danger">Kurang</span>
+                @endif
+            </td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="5" class="text-center">Tidak ada kebutuhan bahan</td>
+        </tr>
+        @endforelse
+    </tbody>
+</table>
 
     @php
         // Ambil bahan yang kurang
@@ -95,6 +99,6 @@
         </script>
     @endif
 
-    <a href="{{ route('produksi.create', ['jadwal' => $jadwal->kode_jadwal]) }}" class="btn btn-primary mt-3">Proses Produksi</a>
+    <a href="{{ route('produksi.create', ['jadwal' => $jadwal->no_jadwal]) }}" class="btn btn-primary mt-3">Proses Produksi</a>
 </div>
 @endsection

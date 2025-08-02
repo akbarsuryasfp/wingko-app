@@ -2,99 +2,118 @@
 
 @section('content')
 <div class="container">
-    <h2>Input Retur Pembelian</h2>
-    <form action="{{ route('returbeli.store') }}" method="POST">
-        @csrf
-
-<div class="row mb-3 align-items-center">
-    <label class="col-sm-3 col-form-label">Kode Retur Pembelian</label>
-    <div class="col-sm-9">
-        <input type="text" class="form-control" name="kode_retur" value="{{ $kode_retur }}" readonly required style="max-width: 400px;">
-    </div>
-</div>
-
-<div class="row mb-3 align-items-center">
-    <label class="col-sm-3 col-form-label">No Pembelian</label>
-    <div class="col-sm-9">
-        <select class="form-control" name="kode_pembelian" id="kode_pembelian" required style="max-width: 400px;">
-            <option value="">-- Pilih No Pembelian --</option>
-            @foreach($pembelian as $item)
-                <option value="{{ $item->no_pembelian }}"
-                    data-tanggal="{{ $item->tanggal_pembelian }}"
-                    data-supplier="{{ $item->nama_supplier }}">
-                    {{ $item->no_pembelian }} | {{ $item->tanggal_pembelian }} | {{ $item->nama_supplier }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-</div>
-
-<div class="row mb-3 align-items-center">
-    <label class="col-sm-3 col-form-label">Nama Supplier</label>
-    <div class="col-sm-9">
-        <input type="text" class="form-control" id="nama_supplier" readonly style="max-width: 400px;">
-    </div>
-</div>
-
-<div class="row mb-3 align-items-center">
-    <label class="col-sm-3 col-form-label">Tanggal Retur</label>
-    <div class="col-sm-9">
-        <input type="date" class="form-control" name="tanggal_retur_beli" 
-               value="{{ date('Y-m-d') }}" required style="max-width: 400px;">
-    </div>
-</div>
-
-<div class="row mb-3 align-items-center">
-    <label class="col-sm-3 col-form-label">Jenis Pengembalian</label>
-    <div class="col-sm-9">
-        <select class="form-control" name="jenis_pengembalian" required style="max-width: 400px;">
-            <option value="">-- Pilih Jenis Pengembalian --</option>
-            <option value="uang">Uang</option>
-            <option value="barang">Barang</option>
-        </select>
-    </div>
-</div>
-
-<div class="row mb-3 align-items-start">
-    <label class="col-sm-3 col-form-label">Keterangan (Opsional)</label>
-    <div class="col-sm-9">
-        <textarea class="form-control" name="keterangan" style="max-width: 400px;">{{ old('keterangan') }}</textarea>
-    </div>
-</div>
-        <h3>Daftar Retur Pembelian</h3>
-        <div id="detail_bahan">
-            <table class="table" id="detail_table">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Nama Bahan</th>
-                        <th>Satuan</th>
-                        <th>Jumlah Terima</th>
-                        <th>Jumlah Retur</th>
-                        <th>Harga/Satuan</th>
-                        <th>Total</th>
-                        <th>Alasan</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Data bahan akan diisi otomatis oleh JS -->
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <th colspan="6" class="text-end">Total Retur</th>
-                        <th>
-                            <input type="number" class="form-control" id="total_retur" name="total_retur" readonly>
-                        </th>
-                        <th colspan="2"></th>
-                    </tr>
-                </tfoot>
-            </table>
+    <div class="card shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h4 class="mb-0">Input Retur Pembelian</h4>
         </div>
+        
+        <div class="card-body">
+            <form action="{{ route('returbeli.store') }}" method="POST">
+                @csrf
 
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-3 col-form-label">Kode Retur Pembelian</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control bg-light" name="kode_retur" value="{{ $kode_retur }}" readonly required>
+                    </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-3 col-form-label">No Pembelian</label>
+                    <div class="col-sm-9">
+                        <select class="form-control" name="kode_pembelian" id="kode_pembelian" required>
+                            <option value="">-- Pilih No Pembelian --</option>
+                            @foreach($pembelian as $item)
+                                <option value="{{ $item->no_pembelian }}"
+                                    data-tanggal="{{ $item->tanggal_pembelian }}"
+                                    data-supplier="{{ $item->nama_supplier }}">
+                                    {{ $item->no_pembelian }} | {{ $item->tanggal_pembelian }} | {{ $item->nama_supplier }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-3 col-form-label">Nama Supplier</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control bg-light" id="nama_supplier" readonly>
+                    </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-3 col-form-label">Tanggal Retur</label>
+                    <div class="col-sm-9">
+                        <input type="date" class="form-control" name="tanggal_retur_beli" 
+                               value="{{ date('Y-m-d') }}" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3 align-items-center">
+                    <label class="col-sm-3 col-form-label">Jenis Pengembalian</label>
+                    <div class="col-sm-9">
+                        <select class="form-control" name="jenis_pengembalian" required>
+                            <option value="">-- Pilih Jenis Pengembalian --</option>
+                            <option value="uang">Uang</option>
+                            <option value="barang">Barang</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3 align-items-start">
+                    <label class="col-sm-3 col-form-label">Keterangan (Opsional)</label>
+                    <div class="col-sm-9">
+                        <textarea class="form-control" name="keterangan">{{ old('keterangan') }}</textarea>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 mb-3">Detail Bahan</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm" id="detail_table">
+                        <thead>
+<tr class="text-center align-middle">
+    <th style="width: 50px; vertical-align: middle;">No</th>
+    <th style="vertical-align: middle;">Nama Bahan</th>
+    <th style="width: 100px; vertical-align: middle;">Satuan</th>
+    <th style="width: 100px; vertical-align: middle;">Jumlah Terima</th>
+    <th style="width: 100px; vertical-align: middle;">Jumlah Retur</th>
+    <th style="width: 120px; vertical-align: middle;">Harga/Satuan</th>
+    <th style="width: 120px; vertical-align: middle;">Subtotal</th>
+    <th style="vertical-align: middle;">Alasan</th>
+    <th style="width: 50px; vertical-align: middle;">Aksi</th>
+</tr>
+
+                        </thead>
+                        <tbody>
+                            <!-- Data bahan akan diisi otomatis oleh JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="6" class="text-end">Total Retur</th>
+                                <th class="text-end">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" class="form-control bg-light text-end" id="total_retur" name="total_retur" readonly>
+                                    </div>
+                                </th>
+                                <th colspan="2"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <div>
+                        <a href="{{ route('returbeli.index') }}" class="btn btn-secondary">← Kembali</a>
+                        <button type="reset" class="btn btn-warning">Reset</button>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Simpan Retur</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
 <!-- jQuery dulu -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Baru script Anda -->
@@ -120,10 +139,14 @@ jQuery(document).ready(function() {
                                 <input type="number" name="jumlah_retur[]" class="form-control jumlah" max="${item.jumlah}" min="0" value="0" required oninput="cekRetur(this, ${item.jumlah})">
                             </td>
                             <td><input type="number" name="harga_beli[]" class="form-control harga" value="${item.harga_beli}" readonly></td>
-                            <td><input type="number" name="total[]" class="form-control" value="0" readonly></td>
-                            <td><input type="text" name="alasan[]" class="form-control"></td>
-                            <td><button type="button" class="btn btn-danger" onclick="this.closest('tr').remove()">Hapus</button></td>
-                        </tr>
+                            <td>
+    <input type="number" name="total[]" class="form-control" value="0" readonly style="min-width:140px;">
+</td>                            <td><input type="text" name="alasan[]" class="form-control"></td>
+                            <td>
+    <button type="button" class="btn btn-danger btn-sm btn-hapus-baris" title="Hapus">
+        <i class="bi bi-x"></i>
+    </button>
+</td>                        </tr>
                     `);
                 });
                 updateSubtotal();
@@ -154,12 +177,13 @@ jQuery(document).ready(function() {
                                 <input type="number" name="jumlah_retur[]" class="form-control jumlah" max="${item.jumlah}" min="0" value="0" required oninput="cekRetur(this, ${item.jumlah})">
                             </td>
                             <td><input type="number" name="harga_beli[]" class="form-control harga" value="${item.harga_beli}" readonly></td>
-                            <td><input type="number" name="total[]" class="form-control" value="0" readonly></td>
-                            <td><input type="text" name="alasan[]" class="form-control"></td>
                             <td>
-                <button type="button" class="btn btn-danger btn-sm btn-hapus-baris">
-                    <i class="bi bi-trash"></i> Hapus
-                </button>
+    <input type="number" name="total[]" class="form-control" value="0" readonly style="min-width:140px;">
+</td>                            <td><input type="text" name="alasan[]" class="form-control"></td>
+                            <td>
+<button type="button" class="btn btn-danger btn-sm btn-hapus-baris" title="Hapus">
+    <i class="bi bi-x"></i>
+</button>
             </td>                        </tr>
                     `);
                 });
@@ -247,12 +271,10 @@ function updateSubtotal() {
     $('#total_retur').val(total);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.btn-hapus-baris').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            this.closest('tr').remove();
-        });
-    });
+jQuery(document).on('click', '.btn-hapus-baris', function() {
+    jQuery(this).closest('tr').remove();
+    updateSubtotal();
 });
+
 </script>
 @endsection

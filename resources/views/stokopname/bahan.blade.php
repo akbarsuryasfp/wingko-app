@@ -50,16 +50,16 @@
                 <div class="table-responsive">
                     <table class="table table-bordered text-center align-middle">
                         <thead class="table-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Kode Bahan</th>
-                                <th>Nama Bahan</th>
-                                <th>Satuan</th>
-                                <th>Stok Sistem</th>
-                                <th>Stok Fisik</th>
-                                <th>Selisih</th>
-                                <th>Keterangan</th>
-                            </tr>
+                            <tr class="text-center align-middle">
+            <th>No</th>
+            <th>Kode Bahan</th>
+            <th>Nama Bahan</th>
+            <th>Satuan</th>
+            <th>Stok Sistem</th>
+            <th>Stok Fisik</th>
+            <th>Selisih</th>
+            <th>Keterangan</th>
+        </tr>
                         </thead>
                         <tbody>
                             @php $no = 1; @endphp

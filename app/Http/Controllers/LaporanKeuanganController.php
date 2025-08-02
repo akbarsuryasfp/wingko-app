@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\JurnalDetail;
 use Carbon\Carbon;
 use App\Helpers\JurnalHelper;
+use App\Models\AsetTetap;
 
 class LaporanKeuanganController extends Controller
 {
@@ -79,29 +80,59 @@ class LaporanKeuanganController extends Controller
     public function neraca(Request $request)
     {
         $periode = $request->input('periode', date('Y-m'));
-        $start = Carbon::parse($periode . '-01')->startOfMonth();
-        $end = Carbon::parse($periode . '-01')->endOfMonth();
+        $end = \Carbon\Carbon::parse($periode . '-01')->endOfMonth();
 
-        $akun = [
-            'kas'        => JurnalHelper::getKodeAkun('kas_bank'),
-            'piutang'    => JurnalHelper::getKodeAkun('piutang_usaha'),
-            'persediaan' => JurnalHelper::getKodeAkun('persediaan_jadi'),
-            'utang'      => JurnalHelper::getKodeAkun('utang_usaha'),
-            'modal'      => JurnalHelper::getKodeAkun('modal_pemilik'),
+        // Query saldo akun lain dari jurnal seperti sebelumnya
+        $akunKeys = [
+            'kas_bank'            => 'kas_bank',
+            'kas_kecil'           => 'kas_kecil',
+            'piutang_usaha'       => 'piutang_usaha',
+            'uang_muka'           => 'uang_muka',
+            'persediaan_bahan'    => 'persediaan_bahan',
+            'persediaan_jadi'     => 'persediaan_jadi',
+            'tanah'               => 'tanah',
+            'bangunan'            => 'bangunan',
+            'mesin'               => 'mesin',
+            'akumulasi_penyusutan'=> 'akumulasi_penyusutan',
+            'utang_usaha'         => 'utang_usaha',
+            'utang_bank'          => 'utang_bank',
+            'utang_pajak'         => 'utang_pajak',
+            'modal_pemilik'       => 'modal_pemilik',
+            'prive'               => 'prive',
         ];
 
         $saldo = [];
-        foreach ($akun as $key => $kode) {
-            $saldo[$key] = JurnalDetail::where('kode_akun', $kode)
+        foreach ($akunKeys as $key => $akunKey) {
+            $kodeAkun = \App\Helpers\JurnalHelper::getKodeAkun($akunKey);
+            $debit = \App\Models\JurnalDetail::where('kode_akun', $kodeAkun)
                 ->whereHas('jurnalUmum', function($q) use ($end) {
                     $q->where('tanggal', '<=', $end);
                 })
-                ->sum('debit') - JurnalDetail::where('kode_akun', $kode)
+                ->sum('debit');
+            $kredit = \App\Models\JurnalDetail::where('kode_akun', $kodeAkun)
                 ->whereHas('jurnalUmum', function($q) use ($end) {
                     $q->where('tanggal', '<=', $end);
                 })
                 ->sum('kredit');
+            // Saldo kredit untuk akun tertentu
+            if (in_array($akunKey, ['akumulasi_penyusutan', 'prive', 'utang_usaha', 'utang_bank', 'utang_pajak', 'modal_pemilik'])) {
+                $saldo[$key . '_' . \App\Helpers\JurnalHelper::$akunMap[$akunKey]] = $kredit - $debit;
+            } else {
+                $saldo[$key . '_' . \App\Helpers\JurnalHelper::$akunMap[$akunKey]] = $debit - $kredit;
+            }
         }
+
+        // Query aset tetap
+        $asetTetap = AsetTetap::selectRaw('tipe_aset, SUM(harga_perolehan) as total')
+            ->groupBy('tipe_aset')
+            ->get()
+            ->pluck('total', 'tipe_aset')
+            ->toArray();
+
+        // Contoh mapping ke saldo neraca
+        $saldo['tanah_1110'] = $asetTetap['tanah'] ?? 0;
+        $saldo['bangunan_1120'] = $asetTetap['bangunan'] ?? 0;
+        $saldo['mesin_1130'] = $asetTetap['mesin'] ?? 0;
 
         return view('laporan.neraca', compact('saldo', 'periode'));
     }

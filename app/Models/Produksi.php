@@ -16,6 +16,7 @@ class Produksi extends Model
         'no_produksi',
         'tanggal_produksi',
         'keterangan',
+        'no_jadwal',
     ];
 
     public function details()

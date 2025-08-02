@@ -7,23 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class JadwalProduksiDetail extends Model
 {
     protected $table = 't_jadwal_produksi_detail';
-    protected $primaryKey = 'kode_jadwal_detail';
+    protected $primaryKey = 'no_jadwal_detail';
     public $incrementing = false;
     protected $keyType = 'string';
     public $timestamps = false;
 
     protected $fillable = [
-        'kode_jadwal_detail',
-        'kode_jadwal',
+        'no_jadwal_detail',
+        'no_jadwal',
         'kode_produk',
         'jumlah',
         'sumber_data',
-        'kode_sumber',
+        'no_sumber',
     ];
 
     public function jadwal()
     {
-        return $this->belongsTo(JadwalProduksi::class, 'kode_jadwal', 'kode_jadwal');
+        return $this->belongsTo(JadwalProduksi::class, 'no_jadwal', 'no_jadwal');
     }
 
     public function produk()
@@ -34,6 +34,6 @@ class JadwalProduksiDetail extends Model
     // Opsional: untuk akses ke permintaan atau pesanan nanti
     public function sumberPermintaan()
     {
-        return $this->belongsTo(PermintaanProduksi::class, 'kode_sumber', 'kode_permintaan_produksi');
+        return $this->belongsTo(PermintaanProduksi::class, 'no_sumber', 'no_permintaan_produksi');
     }
 }

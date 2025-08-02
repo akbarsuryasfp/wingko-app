@@ -15,7 +15,7 @@ class ProduksiController extends Controller
         $jadwal = \App\Models\JadwalProduksi::with('details.produk')->get();
         $jadwalTerpilih = null;
         if ($request->has('jadwal')) {
-            $jadwalTerpilih = $jadwal->where('kode_jadwal', $request->jadwal)->first();
+            $jadwalTerpilih = $jadwal->where('no_jadwal', $request->jadwal)->first();
         }
         return view('produksi.create', compact('jadwal', 'jadwalTerpilih'));
     }
@@ -27,16 +27,29 @@ class ProduksiController extends Controller
             'produk.*.kode_produk' => 'required',
             'produk.*.jumlah_unit' => 'required|integer|min:1',
             'produk.*.tanggal_expired' => 'required|date',
+            // tambahkan validasi no_jadwal jika ada
         ]);
+
+        // LOG: Cek data yang diterima dari form
+        \Log::info('Data request produksi:', $request->all());
 
         DB::transaction(function () use ($request) {
             $kode = 'PRD' . now()->format('YmdHis');
             $keterangan = 'Produksi tanggal ' . date('d/m/Y', strtotime($request->tanggal_produksi));
 
+            // LOG: Cek data yang akan disimpan ke tabel produksi
+            \Log::info('Data untuk tabel produksi:', [
+                'no_produksi' => $kode,
+                'tanggal_produksi' => $request->tanggal_produksi,
+                'keterangan' => $keterangan,
+                'no_jadwal' => $request->no_jadwal,
+            ]);
+
             Produksi::create([
                 'no_produksi' => $kode,
                 'tanggal_produksi' => $request->tanggal_produksi,
                 'keterangan' => $keterangan,
+                'no_jadwal' => $request->no_jadwal, // simpan no_jadwal ke tabel produksi
             ]);
 
             // Simpan detail produk dulu
@@ -45,7 +58,6 @@ class ProduksiController extends Controller
                 $kode_produk = $produk['kode_produk'];
                 $jumlah_unit = $produk['jumlah_unit'];
                 $tanggal_expired = $produk['tanggal_expired'];
-                $harga_per_unit = $produk['harga_per_unit']; // Ambil harga dari input
 
             $produkData = DB::table('t_produk')
                 ->where('kode_produk', $kode_produk)
@@ -257,17 +269,26 @@ class ProduksiController extends Controller
             $produkDetail = DB::table('t_produksi_detail')->where('no_produksi', $no_produksi)->get();
             foreach ($produkDetail as $d) {
                 DB::table('t_kartupersproduk')
-                    ->where('no_transaksi', $no_produksi)
+                    ->where('no_transaksi', $d->no_detail_produksi)
                     ->where('kode_produk', $d->kode_produk)
                     ->where('masuk', $d->jumlah_unit)
                     ->delete();
             }
             DB::table('t_produksi_detail')->where('no_produksi', $no_produksi)->delete();
 
+            // Hapus jurnal HPP terkait produksi ini
+            foreach ($no_detail_list as $no_detail) {
+                $jurnal = \App\Models\JurnalUmum::where('nomor_bukti', $no_detail)->first();
+                if ($jurnal) {
+                    \App\Models\JurnalDetail::where('no_jurnal', $jurnal->no_jurnal)->delete();
+                    $jurnal->delete();
+                }
+            }
+
             // Hapus data produksi utama
             DB::table('t_produksi')->where('no_produksi', $no_produksi)->delete();
         });
 
-        return redirect()->route('produksi.index')->with('success', 'Produksi dan seluruh data terkait berhasil dihapus.');
+        return redirect()->route('produksi.index')->with('success', 'Produksi, stok, dan jurnal terkait berhasil dihapus.');
     }
 }

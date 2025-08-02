@@ -14,11 +14,13 @@ class ReturBeliController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+
 public function index(Request $request)
 {
     $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
     $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
     $status = $request->status;
+    $search = $request->search;
 
     $query = DB::table('t_returbeli')
         ->leftJoin('t_supplier', 't_returbeli.kode_supplier', '=', 't_supplier.kode_supplier')
@@ -31,6 +33,14 @@ public function index(Request $request)
 
     if ($status) {
         $query->where('t_returbeli.status', $status);
+    }
+
+    // Tambahkan filter search
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('t_returbeli.no_retur_beli', 'like', "%$search%")
+              ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+        });
     }
 
     $returList = $query->get();
@@ -174,7 +184,7 @@ $tanggal_exp = DB::table('t_terimab_detail')
 if ($total_retur > 0) {
     $no_jurnal = JurnalHelper::generateNoJurnal();
 
-    // Insert ke jurnal umum
+    // 1. Insert ke t_jurnal_umum dulu
     DB::table('t_jurnal_umum')->insert([
         'no_jurnal'   => $no_jurnal,
         'tanggal'     => $request->tanggal_retur_beli,
@@ -182,11 +192,10 @@ if ($total_retur > 0) {
         'nomor_bukti' => $no_retur_beli,
     ]);
 
-    // Akun yang digunakan
-    $kode_akun_debit      = JurnalHelper::getKodeAkun('retur_pembelian');     // akun penampung retur
-    $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');    // akun pengurang persediaan
+    // 2. Baru insert ke t_jurnal_detail
+    $kode_akun_debit      = JurnalHelper::getKodeAkun('retur_pembelian');
+    $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
-    // Baris jurnal debit (nilai retur yang akan diklaim)
     DB::table('t_jurnal_detail')->insert([
         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
         'no_jurnal'        => $no_jurnal,
@@ -194,8 +203,6 @@ if ($total_retur > 0) {
         'debit'            => $total_retur,
         'kredit'           => 0,
     ]);
-
-    // Baris jurnal kredit (pengurangan persediaan)
     DB::table('t_jurnal_detail')->insert([
         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
         'no_jurnal'        => $no_jurnal,
@@ -203,8 +210,11 @@ if ($total_retur > 0) {
         'debit'            => 0,
         'kredit'           => $total_retur,
     ]);
-}
 
+
+}
+// Akun yang digunakan
+    
         return redirect()->route('returbeli.index')->with('success', 'Data retur pembelian berhasil disimpan.');
     }
 
@@ -370,7 +380,7 @@ $tanggal_exp = DB::table('t_terimab_detail')
 if ($total_retur > 0) {
     $no_jurnal = JurnalHelper::generateNoJurnal();
 
-    // Insert header jurnal
+    // 1. Insert ke t_jurnal_umum dulu
     DB::table('t_jurnal_umum')->insert([
         'no_jurnal'   => $no_jurnal,
         'tanggal'     => $request->tanggal_retur_beli,
@@ -378,11 +388,10 @@ if ($total_retur > 0) {
         'nomor_bukti' => $no_retur_beli,
     ]);
 
-    // Ambil kode akun
+    // 2. Baru insert ke t_jurnal_detail
     $kode_akun_debit      = JurnalHelper::getKodeAkun('retur_pembelian');
     $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 
-    // Baris jurnal debit: Retur Pembelian
     DB::table('t_jurnal_detail')->insert([
         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
         'no_jurnal'        => $no_jurnal,
@@ -390,8 +399,6 @@ if ($total_retur > 0) {
         'debit'            => $total_retur,
         'kredit'           => 0,
     ]);
-
-    // Baris jurnal kredit: Pengurangan Persediaan
     DB::table('t_jurnal_detail')->insert([
         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
         'no_jurnal'        => $no_jurnal,
@@ -400,7 +407,9 @@ if ($total_retur > 0) {
         'kredit'           => $total_retur,
     ]);
 }
+    
 
+  
 
     return redirect()->route('returbeli.index')->with('success', 'Data retur berhasil diupdate.');
 }
@@ -657,17 +666,28 @@ public function laporan(Request $request)
     return view('returbeli.laporan', compact('returList', 'tanggal_mulai', 'tanggal_selesai'));
 }
 
+
 public function laporanPdf(Request $request)
 {
     $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
     $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+    $search = $request->search;
 
-    $returList = \DB::table('t_returbeli')
+    $query = \DB::table('t_returbeli')
         ->join('t_supplier', 't_returbeli.kode_supplier', '=', 't_supplier.kode_supplier')
         ->whereBetween('t_returbeli.tanggal_retur_beli', [$tanggal_mulai, $tanggal_selesai])
         ->select('t_returbeli.*', 't_supplier.nama_supplier')
-        ->orderBy('t_returbeli.tanggal_retur_beli', 'desc')
-        ->get();
+        ->orderBy('t_returbeli.tanggal_retur_beli', 'desc');
+
+    // Tambahkan filter search
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('t_returbeli.no_retur_beli', 'like', "%$search%")
+              ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
+        });
+    }
+
+    $returList = $query->get();
 
     // Tambahkan details pada setiap retur
     foreach ($returList as $retur) {
@@ -682,4 +702,3 @@ public function laporanPdf(Request $request)
     return $pdf->stream('laporan_retur_pembelian.pdf');
 }
 }
-

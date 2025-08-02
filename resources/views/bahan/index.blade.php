@@ -1,5 +1,13 @@
 @extends('layouts.app')
-
+<style>
+    .table-fixed-height thead th,
+    .table-fixed-height tbody td {
+        height: 35px; /* Sesuaikan tinggi sesuai kebutuhan */
+        vertical-align: middle;
+        padding-top: 0;
+        padding-bottom: 1px;
+    }
+</style>
 @section('content')
 <div class="container-fluid px-3">
     <div class="row">
@@ -55,49 +63,61 @@
     </div>
 </div>
             {{-- Tabel --}}
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm text-center align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 100px;">Kode Bahan</th>
-                            <th style="width: 130px;">Kode Kategori</th>
-                            <th style="width: 220px;">Nama Bahan</th>
-                            <th style="width: 90px;">Satuan</th>
-                            <th style="width: 110px;">Stok Minimal</th>
-                            <th style="width: 100px;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($bahan as $item)
-                            <tr>
-                                <td>{{ $item->kode_bahan }}</td>
-                                <td>{{ $item->kode_kategori }}</td>
-                                <td class="text-start">{{ $item->nama_bahan }}</td>
-                                <td>{{ $item->satuan }}</td>
-                                <td>{{ $item->stokmin }}</td>
-                                <td>
-                                    <div class="d-flex justify-content-center gap-1">
-                                        <a href="{{ route('bahan.edit', $item->kode_bahan) }}" class="btn btn-sm btn-warning" title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <form action="{{ route('bahan.destroy', $item->kode_bahan) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center">Data tidak tersedia.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+          <div class="table-responsive">
+    <table class="table table-bordered table-sm text-center align-middle mb-0 table-fixed-height">
+
+<thead class="table-light">
+    <tr>
+        <th style="width: 40px;">No</th>
+        <th style="width: 100px;">Kode Bahan</th>
+        <th style="width: 220px;">Nama Bahan</th>
+        <th style="width: 90px;">Satuan</th>
+        <th style="width: 110px;">Stok Minimal</th>
+        <th style="width: 120px;">Jumlah/Order</th>
+        <th style="width: 160px;">Frekuensi Pembelian</th>
+        <th style="width: 100px;">Aksi</th>
+    </tr>
+</thead>
+<tbody>
+    @forelse($bahan as $item)
+        <tr>
+            <td>{{ $loop->iteration }}</td>
+            <td>{{ $item->kode_bahan }}</td>
+            <td class="text-start">{{ $item->nama_bahan }}</td>
+            <td>{{ $item->satuan }}</td>
+            <td>{{ $item->stokmin }}</td>
+            <td>{{ $item->jumlah_per_order }}</td>
+<td>
+    @php
+        $intervalKey = strtolower($item->interval ?? '');
+        $interval = $intervalMap[$intervalKey] ?? ($item->interval ?? '-');
+        $freq = $item->frekuensi_pembelian ?? 1;
+    @endphp
+     {{ $interval }} x {{ $freq }} 
+</td>
+            <td>
+                <div class="d-flex justify-content-center gap-1">
+                    <a href="{{ route('bahan.edit', $item->kode_bahan) }}" class="btn btn-sm btn-warning square-icon" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form action="{{ route('bahan.destroy', $item->kode_bahan) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger square-icon" title="Hapus">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="8" class="text-center">Data tidak tersedia.</td>
+        </tr>
+    @endforelse
+</tbody>
+    </table>
+</div>
 
         </div>
     </div>

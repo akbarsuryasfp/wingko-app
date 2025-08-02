@@ -180,7 +180,7 @@ if ($total_debet > 0 || $total_kredit > 0) {
     $no_jurnal = JurnalHelper::generateNoJurnal();
 
     $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
-    $kode_akun_beban = JurnalHelper::getKodeAkun('beban_lain');
+    $kode_akun_beban = JurnalHelper::getKodeAkun('beban_kerugian');
     $kode_akun_pendapatan = JurnalHelper::getKodeAkun('pendapatan_lain');
 
     DB::table('t_jurnal_umum')->insert([
@@ -418,7 +418,7 @@ public function storeProduk(Request $request)
             $no_jurnal = JurnalHelper::generateNoJurnal();
 
             $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_produk');
-            $kode_akun_beban = JurnalHelper::getKodeAkun('beban_lain');
+            $kode_akun_beban = JurnalHelper::getKodeAkun('beban_kerugian');
             $kode_akun_pendapatan = JurnalHelper::getKodeAkun('pendapatan_lain');
 
             DB::table('t_jurnal_umum')->insert([
@@ -489,11 +489,17 @@ public function storeProduk(Request $request)
     $produkList = DB::table('t_produk')->get()->map(function($produk) {
         $stok_sistem = DB::table('t_kartupersproduk')
             ->where('kode_produk', $produk->kode_produk)
+            ->where('lokasi', 'Gudang') // Filter hanya lokasi Gudang
             ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
             ->value('stok') ?? 0;
         $produk->stok_sistem = $stok_sistem;
         return $produk;
     });
+
+    // Filter produk yang stoknya ada di Gudang saja
+    $produkList = $produkList->filter(function($produk) {
+        return $produk->stok_sistem > 0;
+    })->values();
 
     return view('stokopname.produk', compact('no_opname', 'produkList'));
 }

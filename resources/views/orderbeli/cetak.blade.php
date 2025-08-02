@@ -1,128 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
+    <title>Order Pembelian - {{ $order->no_order_beli }}</title>
     <style>
         @page {
             size: A5 landscape;
-            margin: 1.5cm;
+            margin: 0.5cm;
         }
-
         body {
-            font-family: Cambria, Helvetica, sans-serif;
-            font-size: 12px;
-            color: #000;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            margin: 0;
+            padding: 10px;
         }
-
         .header {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
-
-        .logo {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #d9d2cb;
-            margin: 0 auto 10px auto;
+        .header h1 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
         }
-
-        .company-name {
-            font-weight: bold;
-            font-size: 16px;
-        }
-
         .company-address {
-            font-size: 11px;
-            margin-top: 4px;
+            font-size: 12px;
+            margin: 2px 0;
         }
-
         .title {
             text-align: center;
             font-weight: bold;
-            margin: 20px 0 10px;
             font-size: 14px;
-        }
-
-        .info-table {
-            width: 100%;
             margin-bottom: 10px;
-            font-size: 12px;
+            text-decoration: underline;
         }
-
-        .info-table td {
-            vertical-align: top;
-            padding: 2px 0;
+        hr {
+            border: 1px solid #000;
+            margin: 10px 0;
         }
-
-        .order-table {
+        .info {
+            margin-bottom: 15px;
+        }
+        .info div {
+            margin: 3px 0;
+        }
+        table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
-
-        .order-table th,
-        .order-table td {
-            border: 1px solid #000;
-            padding: 5px 6px;
-            font-size: 11px;
+        table, th, td {
+            border: 1px solid black;
         }
-
-        .order-table th {
-            background-color: #f0f0f0;
+        th, td {
+            padding: 5px;
+            text-align: center;
         }
-
-        .summary-table {
-            width: 40%;
-            border-collapse: collapse;
-            float: right;
-            margin-top: 10px;
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
         }
-
-        .summary-table td {
-            border: 1px solid #000;
-            padding: 6px 8px;
-            font-size: 11px;
+        .summary {
+            margin-top: 15px;
         }
-
-        .clear { clear: both; }
+        .summary div {
+            margin: 5px 0;
+        }
+        .bold {
+            font-weight: bold;
+        }
+        @media print {
+            body {
+                padding: 0;
+                font-size: 13px;
+            }
+            .document-title {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <div class="logo"></div>
-        <div class="company-name">WINGKO BABAT PRATAMA</div>
+        <h1>WINGKO BABAT PRATAMA</h1>
         <div class="company-address">
-            Jl. Tumpang XIV, RT.02/RW.09, Gajahmungkur, Kec. Gajahmungkur, Kota Semarang, Jawa Tengah
+            Jl. Tumpang XIV, RT.02/RW.09, Gajahmungkur,
         </div>
-        <hr style="border: 1px solid #000; margin-top: 10px; margin-bottom: 20px;">
+        <div class="company-address">
+            Kec. Gajahmungkur, Kota Semarang, Jawa Tengah
+        </div>
+        <hr>
+        <div class="title">SURAT ORDER PEMBELIAN</div>
     </div>
 
-    <div class="title">SURAT ORDER PEMBELIAN</div>
+    <div class="info">
+        <div>Tanggal Order: {{ $order->tanggal_order }}</div>
+        <div>Supplier: {{ $order->supplier->nama_supplier ?? '-' }}</div>
+        <div>Nomor Order: {{ $order->no_order_beli }}</div>
+    </div>
 
-    <table class="info-table">
-        <tr>
-            <td style="width: 50%;">
-                <strong>Kode Order</strong> : {{ $order->no_order_beli }}<br>
-                <strong>Tanggal Order</strong> : {{ $order->tanggal_order }}
-            </td>
-            <td>
-                <strong>Supplier</strong> : {{ $order->supplier->nama_supplier ?? '-' }}<br>
-                {{ $order->supplier->alamat ?? '-' }}
-            </td>
-        </tr>
-    </table>
-
-    <table class="order-table">
+    <table>
         <thead>
             <tr>
-                <th>No</th>
-                <th>Nama Barang</th>
-                <th>Harga</th>
-                <th>Jumlah Order</th>
-                <th>Satuan</th>
-                <th>Sub Total</th>
+                <th style="width:5%">No</th>
+                <th style="width:35%">Nama Bahan</th>
+                <th style="width:10%">Satuan</th>
+                <th style="width:15%">Jumlah</th>
+                <th style="width:15%">Harga/Satuan</th>
+                <th style="width:20%">Sub Total</th>
             </tr>
         </thead>
         <tbody>
@@ -133,33 +117,21 @@
                     $grandTotal += $subTotal; 
                 @endphp
                 <tr>
-                    <td style="text-align:center">{{ $i + 1 }}</td>
+                    <td>{{ $i + 1 }}</td>
                     <td>{{ $d->nama_bahan }}</td>
-                    <td style="text-align:right">Rp {{ number_format($d->harga_beli, 0, ',', '.') }}</td>
-                    <td style="text-align:center">{{ $d->jumlah_beli }}</td>
-                    <td style="text-align:center">{{ $d->satuan }}</td>
-                    <td style="text-align:right">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
+                    <td>{{ $d->satuan }}</td>
+                    <td>{{ number_format($d->jumlah_beli, 0, ',', '.') }}</td>
+                    <td>Rp{{ number_format($d->harga_beli, 0, ',', '.') }}</td>
+                    <td>Rp{{ number_format($subTotal, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
         </tbody>
     </table>
 
-    <table class="summary-table">
-        <tr>
-            <td><strong>Total</strong></td>
-            <td style="text-align:right"><strong>Rp {{ number_format($grandTotal, 0, ',', '.') }}</strong></td>
-        </tr>
-        <tr>
-            <td>Uang Muka</td>
-            <td style="text-align:right">Rp {{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '-' }}</td>
-        </tr>
-        <tr>
-            <td>Sisa</td>
-            <td style="text-align:right">Rp {{ number_format($grandTotal - ($order->uang_muka ?? 0), 0, ',', '.') }}</td>
-        </tr>
-    </table>
-
-    <div class="clear"></div>
-
+    <div class="summary">
+        <div class="bold">Total Harga: Rp{{ number_format($grandTotal, 0, ',', '.') }}</div>
+        <div class="bold">Uang Muka: Rp{{ $order->uang_muka ? number_format($order->uang_muka, 0, ',', '.') : '0' }}</div>
+        <div class="bold">Sisa Pembayaran: Rp{{ number_format($grandTotal - ($order->uang_muka ?? 0), 0, ',', '.') }}</div>
+    </div>
 </body>
 </html>
