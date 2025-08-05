@@ -4,21 +4,21 @@
     <meta charset="UTF-8">
     <title>Nota Penjualan - {{ $penjualan->no_jual }}</title>
     <style>
-        body { font-family: Arial, sans-serif; font-size: 14px; }
-        .nota-container { width: 700px; margin: 0 auto; border: 1px solid #333; padding: 24px 32px; }
+        body { font-family: Arial, sans-serif; font-size: 11px; }
+        .nota-container { width: 540px; margin: 0 auto; border: 1px solid #333; padding: 16px 18px; text-align: center; }
         .nota-header { display: flex; align-items: center; justify-content: space-between; }
         .nota-logo { width: 80px; height: 80px; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 12px; }
-        .nota-title { text-align: left; flex: 1; margin-left: 24px; }
-        .nota-title h2 { margin: 0 0 4px 0; font-size: 20px; }
-        .nota-title .sub { font-size: 14px; }
+        .nota-title { text-align: left; flex: 1; margin-left: 0; }
+        .nota-title h2 { margin: 0 0 4px 0; font-size: 16px; }
+        .nota-title .sub { font-size: 12px; }
         .nota-print { text-align: right; }
         .nota-info { margin: 18px 0 10px 0; }
         .nota-info td { padding: 2px 8px 2px 0; }
         .nota-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
-        .nota-table th, .nota-table td { border: 1px solid #333; padding: 6px 8px; text-align: center; }
+        .nota-table th, .nota-table td { border: 1px solid #333; padding: 4px 6px; text-align: center; }
         .nota-table th { background: #f2f2f2; }
-        .nota-summary { margin-left: 0; }
-        .nota-summary td { padding: 4px 8px; }
+        .nota-summary { margin-left: auto; margin-right: auto; }
+        .nota-summary td { padding: 3px 6px; }
         .fw-bold { font-weight: bold; }
         @media print {
             .no-print { display: none; }
@@ -29,20 +29,15 @@
 <body>
 <div class="nota-container">
     <div class="nota-header">
-        <div class="nota-logo>
-            Logo
-        </div>
         <div class="nota-title">
             <h2 style="margin-bottom:12px;">WINGKO BABAT PRATAMA</h2>
             <div class="sub fw-bold" style="margin-bottom:8px;">Nota Penjualan</div>
             <div class="sub">Tanggal Penjualan: {{ $penjualan->tanggal_jual }}</div>
             <div class="sub">Nama Pelanggan: {{ $penjualan->nama_pelanggan ?? '-' }}</div>
         </div>
-        <div class="nota-print no-print">
-            <button onclick="window.print()" style="padding:4px 12px;">Print</button>
-        </div>
+        <!-- print button removed -->
     </div>
-    <div class="nota-info" style="margin-top:8px;">Nomor Penjualan: {{ $penjualan->no_jual }}</div>
+    <div class="nota-info" style="margin-top:8px; text-align:left;">Nomor Penjualan: {{ $penjualan->no_jual }}</div>
 
     <table class="nota-table" style="margin-top: 18px;">
         <thead>

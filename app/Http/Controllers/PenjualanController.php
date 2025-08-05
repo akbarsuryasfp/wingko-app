@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Penjualan;
 use App\Models\KartuPersKonsinyasi;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PenjualanController extends Controller
 {
@@ -624,7 +624,7 @@ class PenjualanController extends Controller
         $penjualan = DB::table('t_penjualan')
             ->leftJoin('t_pelanggan', 't_penjualan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
             ->where('no_jual', $no_jual)
-            ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan')
+            ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan', 't_penjualan.jenis_penjualan')
             ->first();
 
         // Ambil detail produk dari t_penjualan_detail saja (termasuk produk sendiri & konsinyasi jika sudah masuk di sini)
@@ -639,22 +639,29 @@ class PenjualanController extends Controller
             )
             ->get();
 
-        return view('penjualan.cetak', compact('penjualan', 'details'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penjualan.cetak', compact('penjualan', 'details'));
+        $pdf->setPaper('a5', 'landscape');
+        return $pdf->stream('nota-'.$no_jual.'.pdf');
     }
 
 
     public function cetakTagihan($no_jual)
     {
+        \Log::info('cetakTagihan: Mulai proses cetak tagihan', ['no_jual' => $no_jual]);
         // Ambil data penjualan beserta relasi pelanggan
         $penjualan = \App\Models\Penjualan::with(['pelanggan'])->where('no_jual', $no_jual)->firstOrFail();
+        \Log::debug('cetakTagihan: Data penjualan', ['penjualan' => $penjualan]);
         // Ambil tanggal_jatuh_tempo dari t_piutang jika ada
         $piutang = \DB::table('t_piutang')->where('no_jual', $no_jual)->first();
+        \Log::debug('cetakTagihan: Data piutang', ['piutang' => $piutang]);
         if ($piutang && isset($piutang->tanggal_jatuh_tempo)) {
             $penjualan->tanggal_jatuh_tempo = $piutang->tanggal_jatuh_tempo;
+            \Log::debug('cetakTagihan: Set tanggal_jatuh_tempo dari piutang', ['tanggal_jatuh_tempo' => $piutang->tanggal_jatuh_tempo]);
         }
 
         // Pastikan hanya status "belum lunas" yang bisa dicetak tagihannya
         if ($penjualan->status_pembayaran !== 'belum lunas') {
+            \Log::warning('cetakTagihan: Status pembayaran bukan belum lunas', ['status_pembayaran' => $penjualan->status_pembayaran]);
             abort(404, 'Tagihan hanya untuk penjualan yang belum lunas.');
         }
 
@@ -669,9 +676,24 @@ class PenjualanController extends Controller
                 \DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
             )
             ->get();
+        \Log::debug('cetakTagihan: Detail produk', ['details' => $details]);
 
-        // Kirim ke view cetak_tagihan
-        return view('penjualan.cetak_tagihan', compact('penjualan', 'details'));
+        // Render PDF langsung (bukan view HTML)
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penjualan.cetak_tagihan', compact('penjualan', 'details'));
+        $pdf->setPaper('a5', 'portrait');
+        \Log::info('cetakTagihan: PDF berhasil dibuat dan akan di-stream', ['no_jual' => $no_jual]);
+        return $pdf->stream('tagihan-'.$no_jual.'.pdf');
+    }
+
+    public function cetakTagihanPdf($no_jual)
+    {
+        $penjualan = \App\Models\Penjualan::with(['pelanggan'])->where('no_jual', $no_jual)->firstOrFail();
+        $details = \DB::table('t_penjualan_detail')
+            ->where('no_jual', $no_jual)
+            ->get();
+        $pdf = Pdf::loadView('penjualan.cetak_tagihan', compact('penjualan', 'details'));
+        $pdf->setPaper('a5', 'portrait');
+        return $pdf->stream('tagihan-'.$no_jual.'.pdf');
     }
         /**
      * Cetak laporan rekap penjualan (filter: tanggal, pelanggan, status, dsb)
@@ -683,6 +705,7 @@ class PenjualanController extends Controller
         $tanggal_akhir = $request->input('tanggal_akhir');
         $kode_pelanggan = $request->input('kode_pelanggan');
         $status_pembayaran = $request->input('status_pembayaran');
+        $jenis_penjualan = $request->input('jenis_penjualan');
 
         $query = DB::table('t_penjualan')
             ->leftJoin('t_pelanggan', 't_penjualan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
@@ -699,6 +722,9 @@ class PenjualanController extends Controller
         }
         if ($status_pembayaran) {
             $query->where('t_penjualan.status_pembayaran', $status_pembayaran);
+        }
+        if ($jenis_penjualan) {
+            $query->where('t_penjualan.jenis_penjualan', $jenis_penjualan);
         }
 
         $penjualan = $query->orderBy('t_penjualan.no_jual', 'asc')->get();
@@ -721,5 +747,50 @@ class PenjualanController extends Controller
 
         // Kirim ke view cetak_laporan (buat view jika belum ada)
         return view('penjualan.cetak_laporan', compact('penjualan', 'detailPenjualan', 'tanggal_awal', 'tanggal_akhir', 'kode_pelanggan', 'status_pembayaran'));
+    }
+
+    public function cetakLaporanPdf(Request $request)
+    {
+        // Ambil filter dari request
+        $tanggal_awal = $request->input('tanggal_awal');
+        $tanggal_akhir = $request->input('tanggal_akhir');
+        $kode_pelanggan = $request->input('kode_pelanggan');
+        $status_pembayaran = $request->input('status_pembayaran');
+        $jenis_penjualan = $request->input('jenis_penjualan');
+
+        $query = DB::table('t_penjualan')
+            ->leftJoin('t_pelanggan', 't_penjualan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+            ->select('t_penjualan.*', 't_pelanggan.nama_pelanggan');
+
+        if ($tanggal_awal) {
+            $query->whereDate('t_penjualan.tanggal_jual', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->whereDate('t_penjualan.tanggal_jual', '<=', $tanggal_akhir);
+        }
+        if ($kode_pelanggan) {
+            $query->where('t_penjualan.kode_pelanggan', $kode_pelanggan);
+        }
+        if ($status_pembayaran) {
+            $query->where('t_penjualan.status_pembayaran', $status_pembayaran);
+        }
+        if ($jenis_penjualan) {
+            $query->where('t_penjualan.jenis_penjualan', $jenis_penjualan);
+        }
+
+        $penjualan = $query->orderBy('t_penjualan.no_jual', 'asc')->get();
+
+        // Jika ingin detailPenjualan, bisa tambahkan di sini (opsional)
+        $detailPenjualan = [];
+        foreach ($penjualan as $jual) {
+            $details = DB::table('t_penjualan_detail')
+                ->where('no_jual', $jual->no_jual)
+                ->get();
+            $detailPenjualan[$jual->no_jual] = $details;
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penjualan.cetak_laporan', compact('penjualan', 'detailPenjualan', 'tanggal_awal', 'tanggal_akhir', 'kode_pelanggan', 'status_pembayaran'));
+        $pdf->setPaper('a4', 'landscape');
+        return $pdf->stream('laporan-penjualan.pdf');
     }
 }

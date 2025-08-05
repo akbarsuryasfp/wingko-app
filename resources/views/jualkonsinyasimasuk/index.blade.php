@@ -44,10 +44,10 @@
                 </div>
             </div>
             <div class="table-responsive">
-            <table class="table table-bordered mb-0 align-middle table-sm">
+            <table class="table table-bordered mb-0 align-middle table-sm konsinyasi-table">
                 <thead class="table-light">
                     <tr>
-                        <th class="text-center align-middle py-3" style="width:50px;">No</th>
+                        <th class="text-center align-middle py-3" style="width:28px;">No</th>
                         <th class="text-center align-middle py-3" style="width:160px;">No Jual</th>
                         <th class="text-center align-middle py-3" style="width:160px;">Tanggal Jual</th>
                         <th class="text-center align-middle py-3" style="width:220px;">Nama Pelanggan</th>
@@ -95,8 +95,8 @@
                                     <span>Rp</span><span>{{ number_format($detail->harga_satuan, 0, ',', '.') }}</span>
                                 </span>
                             </td>
-                            <td class="text-end align-middle py-3">
-                                <span style="display: inline-flex; gap: 2px; align-items: center; justify-content: flex-end; width: 100%;">
+                            <td class="text-center align-middle py-3">
+                                <span style="display: inline-flex; gap: 2px; align-items: center; justify-content: center; width: 100%;">
                                     <span>Rp</span><span>{{ number_format($detail->subtotal, 0, ',', '.') }}</span>
                                 </span>
                             </td>
@@ -113,7 +113,7 @@
                                 @endphp
                                 <span>Rp{{ number_format($komisi, 0, ',', '.') }}</span>
                             </td>
-                            <td class="text-end align-middle py-3">
+                            <td class="text-center align-middle py-3">
                                 @php
                                     $subtotal_komisi = ($komisi ?? 0) * ($detail->jumlah ?? 0);
                                 @endphp
@@ -135,11 +135,18 @@
 @endsection
 
 @push('styles')
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-dyZtM4Q1Q6l0e6QF6UVx/FuWRz5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-dyZtM4Q1Q6l0e6QF6UVx/FuWRz5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q5Q0Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
+    .konsinyasi-table th, .konsinyasi-table td {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
     .table td.text-end {
         font-variant-numeric: tabular-nums;
         padding-right: 1rem !important;
+        vertical-align: middle;
+    }
+    .konsinyasi-table td.text-center, .konsinyasi-table td.text-center.align-middle {
         vertical-align: middle;
     }
 </style>

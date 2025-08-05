@@ -10,7 +10,7 @@
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex flex-column align-items-md-end align-items-center gap-2">
                     <div class="d-flex flex-row gap-2 justify-content-md-end justify-content-center w-100">
-                        <a href="{{ route('penjualan.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success btn-icon-square d-inline-flex align-items-center gap-2" style="width: 140px; justify-content: center;">
+                        <a href="{{ route('penjualan.cetak_laporan_pdf') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success btn-icon-square d-inline-flex align-items-center gap-2" style="width: 140px; justify-content: center;">
                             <i class="bi bi-printer"></i> Cetak Laporan
                         </a>
                         <a href="{{ route('penjualan.create', ['jenis_penjualan' => 'langsung']) }}" class="btn btn-sm btn-primary">
