@@ -45,6 +45,49 @@ class PiutangController extends Controller
         $piutangs = $query->orderBy('t_piutang.no_piutang', $sort)->get();
         return view('piutang.cetak_laporan', compact('piutangs'));
     }
+
+    // Cetak laporan piutang langsung ke PDF (A4 landscape)
+    public function cetakLaporanPdf(Request $request)
+    {
+        // Ambil filter dari request (sama seperti cetakLaporan)
+        $status = $request->input('status_piutang');
+        $sort = $request->input('sort', 'asc');
+        $search = $request->input('search');
+        $tanggal_awal = $request->input('tanggal_awal');
+        $tanggal_akhir = $request->input('tanggal_akhir');
+        $query = \DB::table('t_piutang')
+            ->leftJoin('t_penjualan', 't_piutang.no_jual', '=', 't_penjualan.no_jual')
+            ->select(
+                't_piutang.*',
+                't_penjualan.piutang as sisa_piutang_penjualan',
+                't_penjualan.tanggal_jual'
+            );
+        if ($status === null || $status === '') {
+            $query->where('t_piutang.status_piutang', '!=', 'lunas');
+        } else {
+            $query->where('t_piutang.status_piutang', $status);
+        }
+        if ($tanggal_awal && $tanggal_akhir) {
+            $query->whereBetween('t_penjualan.tanggal_jual', [$tanggal_awal, $tanggal_akhir]);
+        } elseif ($tanggal_awal) {
+            $query->where('t_penjualan.tanggal_jual', '>=', $tanggal_awal);
+        } elseif ($tanggal_akhir) {
+            $query->where('t_penjualan.tanggal_jual', '<=', $tanggal_akhir);
+        }
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('t_piutang.no_piutang', 'like', "%$search%")
+                  ->orWhere('t_piutang.no_jual', 'like', "%$search%");
+            });
+        }
+        $piutangs = $query->orderBy('t_piutang.no_piutang', $sort)->get();
+
+        // Generate PDF menggunakan dompdf
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('piutang.cetak_laporan', compact('piutangs'));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->stream('laporan_piutang.pdf');
+    }
     // Tampilkan daftar piutang
     public function index(Request $request)
     {

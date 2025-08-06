@@ -7,6 +7,28 @@ use Illuminate\Support\Facades\DB;
 
 class PesananPenjualanController extends Controller
 {
+    public function cetakPdf($no_pesanan)
+    {
+        $pesanan = \DB::table('t_pesanan')
+            ->leftJoin('t_pelanggan', 't_pesanan.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+            ->where('no_pesanan', $no_pesanan)
+            ->select('t_pesanan.*', 't_pelanggan.nama_pelanggan')
+            ->first();
+
+        $details = \DB::table('t_pesanan_detail')
+            ->join('t_produk', 't_pesanan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->where('t_pesanan_detail.no_pesanan', $no_pesanan)
+            ->select(
+                't_pesanan_detail.*',
+                't_produk.nama_produk',
+                't_produk.satuan'
+            )
+            ->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pesananpenjualan.cetak', compact('pesanan', 'details'));
+        $pdf->setPaper('a5', 'landscape');
+        return $pdf->stream('nota-pesanan-'.$no_pesanan.'.pdf');
+    }
     public function index(Request $request)
     {
         $sort = $request->get('sort', 'asc');

@@ -40,6 +40,7 @@ use App\Http\Controllers\LaporanKeuanganController;
 use App\Http\Controllers\AsetTetapController;
 use App\Http\Controllers\OverheadController;
 
+
 Route::get('/', function () {
     $reminder = \App\Http\Controllers\BahanController::getReminderKadaluarsa();
     return view('welcome', compact('reminder'));
@@ -96,7 +97,7 @@ Route::get('/penjualan/cetak-laporan', [App\Http\Controllers\PenjualanController
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
 Route::get('/penjualan/{no_jual}/cetak', [PenjualanController::class, 'cetak'])->name('penjualan.cetak');
-Route::get('/penjualan/cetak-tagihan/{no_jual}', [PenjualanController::class, 'cetakTagihan'])->name('penjualan.cetak_tagihan');
+Route::get('/penjualan/cetak-tagihan/{no_jual}', [PenjualanController::class, 'cetakTagihanPdf'])->name('penjualan.cetak_tagihan');
 Route::get('create-pesanan', [PenjualanController::class, 'createPesanan'])->name('penjualan.createPesanan');
 
 // Route cetak laporan returjual (HARUS sebelum resource agar tidak tertimpa)
@@ -113,7 +114,7 @@ Route::get('/returjual/detail-penjualan/{no_jual}', [ReturJualController::class,
 // Route pesanan penjualan
 Route::resource('pesananpenjualan', PesananPenjualanController::class);
 Route::get('/pesananpenjualan/get-data/{no_pesanan}', [PesananPenjualanController::class, 'getData']);
-Route::get('/pesananpenjualan/{no_pesanan}/cetak', [PesananPenjualanController::class, 'cetak'])->name('pesananpenjualan.cetak');
+Route::get('/pesananpenjualan/{no_pesanan}/cetak', [PesananPenjualanController::class, 'cetakPdf'])->name('pesananpenjualan.cetak');
 
 
 // Route pembelian khusus (AJAX dan form)
@@ -206,6 +207,7 @@ Route::resource('kaskeluar', KaskeluarController::class);
 
 // Route cetak laporan piutang (HARUS sebelum semua route /piutang/{...} dan resource agar tidak tertimpa)
 Route::get('/piutang/cetak-laporan', [App\Http\Controllers\PiutangController::class, 'cetakLaporan'])->name('piutang.cetak_laporan');
+Route::get('/piutang/cetak-laporan-pdf', [App\Http\Controllers\PiutangController::class, 'cetakLaporanPdf'])->name('piutang.cetak_laporan_pdf');
 
 // Route piutang custom (letakkan setelah cetak laporan, sebelum resource)
 Route::get('/piutang/{no_piutang}/bayar', [PiutangController::class, 'bayar'])->name('piutang.bayar');
@@ -344,6 +346,13 @@ Route::get('returconsignor/{no_returconsignor}/edit', [App\Http\Controllers\Retu
 Route::put('returconsignor/{no_returconsignor}', [App\Http\Controllers\ReturConsignorController::class, 'update'])->name('returconsignor.update');
 
 Route::resource('returconsignor', App\Http\Controllers\ReturConsignorController::class);
+
+// Route laporan
+Route::get('/laporan/neraca', [LaporanKeuanganController::class, 'neraca'])->name('laporan.neraca');
+Route::get('/laporan/laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laporan.laba_rugi');
+Route::get('/laporan/perubahan-ekuitas', [LaporanKeuanganController::class, 'perubahanEkuitas'])->name('laporan.perubahan_ekuitas');
+Route::get('/laporan/keuangan', [LaporanKeuanganController::class, 'index'])->name('laporan.keuangan');
+Route::get('/laporan/keuangan/cetak', [LaporanKeuanganController::class, 'cetak'])->name('laporan.keuangan.cetak');
 Route::get('/konsinyasimasuk/{no_konsinyasimasuk}/detail-json', [\App\Http\Controllers\KonsinyasiMasukController::class, 'detailJson'])->name('konsinyasimasuk.detail-json');
 
 // Route cetak laporan retur consignee (HARUS sebelum resource dan parameterized route)
@@ -359,9 +368,9 @@ Route::resource('piutang', PiutangController::class);
 Route::get('/api/stok-produk/{kode_produk}', [\App\Http\Controllers\KartuStokController::class, 'getStokAkhirProduk']);
 Route::get('/api/stok-produk-konsinyasi/{kode_produk}', [\App\Http\Controllers\KartuPersKonsinyasiController::class, 'getStokAkhirProdukKonsinyasi']);
 
-// Route laporan
-Route::get('/laporan/neraca', [LaporanKeuanganController::class, 'neraca'])->name('laporan.neraca');
-Route::get('/laporan/laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laporan.laba_rugi');
-Route::get('/laporan/perubahan-ekuitas', [LaporanKeuanganController::class, 'perubahanEkuitas'])->name('laporan.perubahan_ekuitas');
-Route::get('/laporan/keuangan', [LaporanKeuanganController::class, 'index'])->name('laporan.keuangan');
-Route::get('/laporan/keuangan/cetak', [LaporanKeuanganController::class, 'cetak'])->name('laporan.keuangan.cetak');
+// Route custom
+Route::get('/penjualan/cetak-tagihan-pdf/{no_jual}', [PenjualanController::class, 'cetakTagihanPdf'])->name('penjualan.cetak_tagihan_pdf');
+
+// Route PDF untuk cetak laporan penjualan dan nota penjualan
+Route::get('/penjualan/cetak-laporan-pdf', [PenjualanController::class, 'cetakLaporanPdf'])->name('penjualan.cetak_laporan_pdf');
+Route::get('/penjualan/cetak-pdf/{no_jual}', [App\Http\Controllers\PenjualanController::class, 'cetakPdf'])->name('penjualan.cetak_pdf');

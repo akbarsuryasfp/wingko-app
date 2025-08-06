@@ -344,7 +344,13 @@ class ReturConsignorController extends Controller
                 ->where('kode_produk', $item->kode_produk)
                 ->where('no_batch', $no_konsinyasimasuk)
                 ->sum('jumlah');
-            $item->maks_retur = max(0, ($item->jumlah_stok - $keluar));
+            // Hitung retur sebelumnya (selain retur yang sedang dibuat)
+            $retur_sebelumnya = \DB::table('t_returconsignor_detail')
+                ->join('t_returconsignor', 't_returconsignor_detail.no_returconsignor', '=', 't_returconsignor.no_returconsignor')
+                ->where('t_returconsignor.no_konsinyasimasuk', $no_konsinyasimasuk)
+                ->where('t_returconsignor_detail.kode_produk', $item->kode_produk)
+                ->sum('t_returconsignor_detail.jumlah_retur');
+            $item->maks_retur = max(0, ($item->jumlah_stok - $keluar - $retur_sebelumnya));
             return $item;
         });
         return response()->json(['produk' => $produk]);

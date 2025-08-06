@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'SISTEM INFORMASI AKUNTANSI PRATAMA')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/build/assets/app-BI67HnPS.css">
+    <link rel="stylesheet" href="/build/assets/app-BpfK2waZ.css">
     @stack('styles')
 </head>
 <body>

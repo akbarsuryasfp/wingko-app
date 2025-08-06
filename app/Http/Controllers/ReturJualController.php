@@ -366,7 +366,11 @@ class ReturJualController extends Controller
             )
             ->get();
 
-        return view('returjual.cetak', compact('returjual', 'details'));
+        // Generate PDF langsung stream, ukuran A5 landscape
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('returjual.cetak', compact('returjual', 'details'));
+        $pdf->setPaper('A5', 'landscape');
+        return $pdf->stream('nota_retur_penjualan.pdf');
     }
 
     public function filterPenjualan(Request $request)
