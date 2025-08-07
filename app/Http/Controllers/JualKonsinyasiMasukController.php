@@ -11,6 +11,11 @@ use App\Models\Consignor;
 
 class JualKonsinyasiMasukController extends Controller
 {
+    // Prevent error for undefined show method
+    public function show($id)
+    {
+        abort(404, 'Halaman tidak ditemukan');
+    }
     public function index(Request $request)
     {
         $query = \App\Models\Penjualan::with(['pelanggan', 'details.produk'])
@@ -22,6 +27,20 @@ class JualKonsinyasiMasukController extends Controller
         }
         if ($request->filled('tanggal_akhir')) {
             $query->where('tanggal_jual', '<=', $request->tanggal_akhir);
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('no_jual', 'like', "%$search%")
+                  ->orWhereHas('pelanggan', function($q2) use ($search) {
+                      $q2->where('nama_pelanggan', 'like', "%$search%");
+                  })
+                  ->orWhereHas('details', function($q3) use ($search) {
+                      $q3->whereHas('produk', function($q4) use ($search) {
+                          $q4->where('nama_produk', 'like', "%$search%");
+                      });
+                  });
+            });
         }
         $sort = $request->get('sort', 'asc');
         $query->orderBy('no_jual', $sort);
@@ -60,63 +79,36 @@ class JualKonsinyasiMasukController extends Controller
         return redirect()->route('jualkonsinyasimasuk.index')->with('success', 'Data berhasil disimpan!');
     }
 
-    public function show($no_jualkonsinyasimasuk)
-    {
-        $jual = JualKonsinyasiMasuk::with(['consignor', 'details'])->where('no_jualkonsinyasimasuk', $no_jualkonsinyasimasuk)->firstOrFail();
-        $produkMaster = DB::table('t_produk')->select('kode_produk', 'nama_produk')->get();
-        return view('jualkonsinyasimasuk.detail', compact('jual', 'produkMaster'));
-    }
 
-    public function edit($no_jualkonsinyasimasuk)
+    public function cetakLaporan(Request $request)
     {
-        $jual = JualKonsinyasiMasuk::with(['consignor', 'details'])->where('no_jualkonsinyasimasuk', $no_jualkonsinyasimasuk)->firstOrFail();
-        $consignor = Consignor::all();
-        $produkKonsinyasi = ProdukKonsinyasi::all();
-        $details = $jual->details;
-        return view('jualkonsinyasimasuk.edit', compact('jual', 'consignor', 'produkKonsinyasi', 'details'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'detail_json' => 'required|json',
-        ]);
-        DB::transaction(function () use ($request, $id) {
-            $jual = JualKonsinyasiMasuk::where('no_jualkonsinyasimasuk', $id)->firstOrFail();
-            $jual->update([
-                'tanggal_jual' => $request->tanggal_jual,
-                'kode_consignor' => $request->kode_consignor,
-                'total_jual' => $request->total_jual,
-                'keterangan' => $request->keterangan,
-            ]);
-            JualKonsinyasiMasukDetail::where('no_jualkonsinyasimasuk', $id)->delete();
-            $details = json_decode($request->detail_json, true);
-            foreach ($details as $d) {
-                JualKonsinyasiMasukDetail::create([
-                    'no_jualkonsinyasimasuk' => $id,
-                    'kode_produk' => $d['kode_produk'],
-                    'jumlah' => $d['jumlah'],
-                    'harga_jual' => $d['harga_jual'],
-                    'subtotal' => $d['subtotal'],
-                ]);
-            }
-        });
-        return redirect()->route('jualkonsinyasimasuk.index')->with('success', 'Data berhasil diupdate!');
-    }
-
-    public function destroy($id)
-    {
-        DB::transaction(function () use ($id) {
-            JualKonsinyasiMasukDetail::where('no_jualkonsinyasimasuk', $id)->delete();
-            JualKonsinyasiMasuk::where('no_jualkonsinyasimasuk', $id)->delete();
-        });
-        return redirect()->route('jualkonsinyasimasuk.index')->with('success', 'Data berhasil dihapus!');
-    }
-
-    public function cetak($no_jualkonsinyasimasuk)
-    {
-        $jual = JualKonsinyasiMasuk::with(['consignor', 'details'])->where('no_jualkonsinyasimasuk', $no_jualkonsinyasimasuk)->firstOrFail();
-        $produkMaster = DB::table('t_produk')->select('kode_produk', 'nama_produk')->get();
-        return view('jualkonsinyasimasuk.cetak', compact('jual', 'produkMaster'));
+        $query = \App\Models\Penjualan::with(['pelanggan', 'details.produk'])
+            ->whereHas('details', function($q) {
+                $q->where('kode_produk', 'like', 'PKM%');
+            });
+        if ($request->filled('tanggal_awal')) {
+            $query->where('tanggal_jual', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->where('tanggal_jual', '<=', $request->tanggal_akhir);
+        }
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('no_jual', 'like', "%$search%")
+                  ->orWhereHas('pelanggan', function($q2) use ($search) {
+                      $q2->where('nama_pelanggan', 'like', "%$search%");
+                  })
+                  ->orWhereHas('details', function($q3) use ($search) {
+                      $q3->whereHas('produk', function($q4) use ($search) {
+                          $q4->where('nama_produk', 'like', "%$search%");
+                      });
+                  });
+            });
+        }
+        $sort = $request->get('sort', 'asc');
+        $query->orderBy('no_jual', $sort);
+        $penjualanKonsinyasi = $query->get();
+        return view('jualkonsinyasimasuk.cetak_laporan', compact('penjualanKonsinyasi'));
     }
 }

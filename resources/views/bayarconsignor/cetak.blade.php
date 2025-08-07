@@ -49,9 +49,10 @@
             <tr>
                 <th>No</th>
                 <th>Nama Produk</th>
+                <th>Satuan</th>
                 <th>Stok</th>
                 <th>Jumlah Terjual</th>
-                <th>Harga Satuan</th>
+                <th>Harga/Satuan</th>
                 <th>Subtotal</th>
             </tr>
         </thead>
@@ -61,6 +62,7 @@
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>{{ $d->produk->nama_produk ?? '-' }}</td>
+                <td>{{ $d->produk->satuan ?? '-' }}</td>
                 <td>{{ $d->jumlah_stok ?? ($d->produk->jumlah_stok ?? '-') }}</td>
                 <td>{{ $d->jumlah_terjual }}</td>
                 <td>Rp{{ number_format($d->harga_satuan,0,',','.') }}</td>

@@ -2,24 +2,26 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">INPUT PENERIMAAN KONSINYASI</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('penerimaankonsinyasi.store') }}" method="POST">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-4">INPUT PENERIMAAN KONSINYASI</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form action="{{ route('penerimaankonsinyasi.store') }}" method="POST">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <!-- Kolom Kiri: Data Penerimaan -->
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Penerimaan Konsinyasi</label>
-                    <input type="text" name="no_penerimaankonsinyasi" id="no_penerimaankonsinyasi" class="form-control" value="{{ $no_penerimaankonsinyasi ?? old('no_penerimaankonsinyasi') }}" readonly required>
+                    <input type="text" name="no_penerimaankonsinyasi" id="no_penerimaankonsinyasi" class="form-control" value="{{ $no_penerimaankonsinyasi ?? old('no_penerimaankonsinyasi') }}" readonly required style="pointer-events: none; background: #e9ecef;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Konsinyasi Keluar</label>
@@ -28,8 +30,9 @@
                         @php
                             // Ambil daftar no_konsinyasikeluar yang sudah dipakai di penerimaan konsinyasi
                             $sudahDipakai = isset($sudahDipakaiKonsinyasiKeluar) ? $sudahDipakaiKonsinyasiKeluar : [];
+                            $kksorted = $konsinyasiKeluarList->sortBy('no_konsinyasikeluar');
                         @endphp
-                        @foreach($konsinyasiKeluarList as $kk)
+                        @foreach($kksorted as $kk)
                             @if(!in_array($kk->no_konsinyasikeluar, $sudahDipakai))
                                 <option value="{{ $kk->no_konsinyasikeluar }}" data-kode_consignee="{{ $kk->kode_consignee }}">{{ $kk->no_konsinyasikeluar }} - {{ $kk->consignee->nama_consignee ?? '' }}</option>
                             @endif
@@ -69,9 +72,9 @@
                 <tr>
                     <th>No</th>
                     <th>Nama Produk</th>
+                    <th>Satuan</th>
                     <th>Jumlah Setor</th>
                     <th>Jumlah Terjual</th>
-                    <th>Satuan</th>
                     <th>Harga/Satuan</th>
                     <th>Subtotal</th>
                 </tr>
@@ -87,13 +90,18 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <label class="mb-0">Total Terima</label>
-                <input type="text" class="form-control" id="total_terima" value="Rp0" readonly style="width:180px;">
+                <div class="input-group" style="width: 180px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" class="form-control" id="total_terima" value="0" readonly style="background:#e9ecef;pointer-events:none;">
+                </div>
                 <input type="hidden" name="total_terima" id="input_total_terima" value="0">
                 <button type="submit" class="btn btn-success">Submit</button>
             </div>
         </div>
         <input type="hidden" name="detail_json" id="detail_json">
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 <script>
 let produkKonsinyasiKeluar = [];
@@ -117,6 +125,7 @@ noKonsinyasiKeluarSelect.addEventListener('change', function() {
                         kode_produk: p.kode_produk,
                         nama_produk: p.nama_produk,
                         jumlah_setor: p.jumlah_setor,
+                        jumlah_retur: p.jumlah_retur || 0,
                         jumlah_terjual: 0,
                         satuan: p.satuan,
                         harga_satuan: p.harga_satuan,
@@ -158,20 +167,24 @@ function renderTabelProdukTerima() {
         const subtotal = (item.jumlah_terjual || 0) * (item.harga_satuan || 0);
         produkTerimaList[idx].subtotal = subtotal;
         total += subtotal;
+        const maxTerjual = (item.jumlah_setor || 0) - (item.jumlah_retur || 0);
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${idx + 1}</td>
             <td>${item.nama_produk}</td>
-            <td>${item.jumlah_setor}</td>
-            <td><input type="number" min="0" max="${item.jumlah_setor}" value="${item.jumlah_terjual}" class="form-control form-control-sm" onchange="ubahJumlahTerjual(${idx}, this.value)"></td>
             <td>${item.satuan}</td>
+            <td>${item.jumlah_setor}</td>
+            <td>
+                <input type="number" min="0" max="${maxTerjual}" value="${item.jumlah_terjual}" class="form-control form-control-sm" onchange="ubahJumlahTerjual(${idx}, this.value)">
+                <div style="font-size:12px;color:#888;">Max Dapat Diinput: ${maxTerjual}</div>
+            </td>
             <td>Rp${item.harga_satuan.toLocaleString('id-ID')}</td>
             <td>Rp${subtotal.toLocaleString('id-ID')}</td>
         `;
         tbody.appendChild(tr);
     });
     // Update total terima dan field hidden
-    document.getElementById('total_terima').value = 'Rp' + total.toLocaleString('id-ID');
+    document.getElementById('total_terima').value = total > 0 ? total.toLocaleString('id-ID') : '';
     document.getElementById('input_total_terima').value = total;
     document.getElementById('detail_json').value = JSON.stringify(produkTerimaList);
 }

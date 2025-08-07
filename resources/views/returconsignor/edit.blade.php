@@ -2,74 +2,80 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h3 class="mb-4">EDIT RETUR CONSIGNOR</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('returconsignor.update', $returconsignor->no_returconsignor) }}" method="POST">
-        @csrf
-        @method('PUT')
-        <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
-            <div style="flex: 1;">
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Retur Consignor</label>
-                    <input type="text" name="no_returconsignor" class="form-control" value="{{ $returconsignor->no_returconsignor }}" readonly>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-4">EDIT RETUR CONSIGNOR</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">No Konsinyasi Masuk</label>
-                    <input type="text" class="form-control" value="{{ $returconsignor->no_konsinyasimasuk }} | {{ $returconsignor->consignor->nama_consignor ?? '-' }}" readonly>
-                    <input type="hidden" name="no_konsinyasimasuk" id="no_konsinyasimasuk" value="{{ $returconsignor->no_konsinyasimasuk }}">
+            @endif
+            <form action="{{ route('returconsignor.update', $returconsignor->no_returconsignor) }}" method="POST">
+                @csrf
+                @method('PUT')
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                    <div style="flex: 1;">
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">No Retur Consignor</label>
+                            <input type="text" name="no_returconsignor" class="form-control" value="{{ $returconsignor->no_returconsignor }}" readonly style="pointer-events: none; background: #e9ecef;">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">No Konsinyasi Masuk</label>
+                            <input type="text" class="form-control" value="{{ $returconsignor->no_konsinyasimasuk }} | {{ $returconsignor->consignor->nama_consignor ?? '-' }}" readonly style="pointer-events: none; background: #e9ecef;">
+                            <input type="hidden" name="no_konsinyasimasuk" id="no_konsinyasimasuk" value="{{ $returconsignor->no_konsinyasimasuk }}">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Tanggal Retur</label>
+                            <input type="date" name="tanggal_returconsignor" class="form-control" value="{{ $returconsignor->tanggal_returconsignor }}">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Nama Consignor (Pemilik Barang)</label>
+                            <input type="text" name="nama_consignor" id="nama_consignor" class="form-control" value="{{ $returconsignor->consignor->nama_consignor ?? '' }}" readonly style="pointer-events: none; background: #e9ecef;">
+                            <input type="hidden" name="kode_consignor" id="kode_consignor" value="{{ $returconsignor->kode_consignor }}">
+                        </div>
+                        <div class="mb-3 d-flex align-items-center">
+                            <label class="me-2" style="width: 180px;">Keterangan</label>
+                            <input type="text" name="keterangan" class="form-control" value="{{ $returconsignor->keterangan }}">
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Tanggal Retur</label>
-                    <input type="date" name="tanggal_returconsignor" class="form-control" value="{{ $returconsignor->tanggal_returconsignor }}">
+                <hr>
+                <h4 class="text-center mb-3">DAFTAR PRODUK RETUR CONSIGNOR</h4>
+                <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Produk</th>
+                            <th>Satuan</th>
+                            <th>Jumlah Retur</th>
+                            <th>Harga/Satuan</th>
+                            <th>Alasan</th>
+                            <th>Subtotal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="d-flex justify-content-between mt-4">
+                    <div>
+                        <a href="{{ route('returconsignor.index') }}" class="btn btn-secondary">Back</a>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <label class="mb-0">Total Retur</label>
+                        <div class="input-group" style="width: 180px;">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" id="total_nilai_retur_view" readonly class="form-control fw-bold" tabindex="-1" style="background:#e9ecef;pointer-events:none;">
+                        </div>
+                        <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
+                        <button type="submit" class="btn btn-success">Update</button>
+                    </div>
                 </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Consignor</label>
-                    <input type="text" name="nama_consignor" id="nama_consignor" class="form-control" value="{{ $returconsignor->consignor->nama_consignor ?? '' }}" readonly>
-                    <input type="hidden" name="kode_consignor" id="kode_consignor" value="{{ $returconsignor->kode_consignor }}">
-                </div>
-                <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 180px;">Keterangan</label>
-                    <input type="text" name="keterangan" class="form-control" value="{{ $returconsignor->keterangan }}">
-                </div>
-            </div>
-        </div>
-        <hr>
-        <h4 class="text-center mb-3">DAFTAR PRODUK RETUR CONSIGNOR</h4>
-        <table class="table table-bordered text-center align-middle" id="daftar-produk-retur">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Produk</th>
-                    <th>Jumlah Retur</th>
-                    <th>Harga Satuan</th>
-                    <th>Alasan</th>
-                    <th>Subtotal</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <div class="d-flex justify-content-between mt-4">
-            <div>
-                <a href="{{ route('returconsignor.index') }}" class="btn btn-secondary">Back</a>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <label class="mb-0">Total Retur</label>
-                <input type="text" id="total_nilai_retur_view" readonly class="form-control" style="width: 160px;">
-                <input type="hidden" id="total_nilai_retur" name="total_nilai_retur">
-                <button type="submit" class="btn btn-success">Update</button>
-            </div>
-        </div>
-        <input type="hidden" name="detail_json" id="detail_json">
+                <input type="hidden" name="detail_json" id="detail_json">
 <script>
     let daftarProdukRetur = [];
     let maxJumlahPerProduk = {};
@@ -80,7 +86,7 @@
     }
 
     function formatRupiah(angka) {
-        return 'Rp' + Number(angka).toLocaleString('id-ID');
+        return Number(angka).toLocaleString('id-ID');
     }
 
     function updateTabelRetur() {
@@ -101,17 +107,18 @@
                     <tr>
                         <td>${index + 1}</td>
                         <td>${item.nama_produk}</td>
+                        <td>${item.satuan || '-'}</td>
                         <td>
                             <input type="number" class="form-control form-control-sm" min="0" max="${max}" value="${item.jumlah_retur}" 
                                 onchange="updateJumlahRetur(${index}, this.value)">
                             <small class="text-muted">Maks: ${max}</small>
                         </td>
-                        <td>${formatRupiah(item.harga_satuan)}</td>
+                        <td>Rp${formatRupiah(item.harga_satuan)}</td>
                         <td>
                             <input type="text" class="form-control form-control-sm" value="${item.alasan || ''}" 
                                 onchange="updateAlasanRetur(${index}, this.value)">
                         </td>
-                        <td>${formatRupiah(subtotal)}</td>
+                        <td>Rp${formatRupiah(subtotal)}</td>
                         <td>
                             <button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisRetur(${index})" title="Hapus">
                                 <i class="bi bi-trash"></i>
@@ -173,10 +180,11 @@
                             daftarProdukRetur.push({
                                 kode_produk: item.kode_produk,
                                 nama_produk: item.nama_produk,
+                                satuan: item.satuan || '-',
                                 jumlah_retur: existing ? existing.jumlah_retur : 0,
-                                harga_satuan: item.harga_setor,
+                                harga_satuan: existing && existing.harga_satuan !== undefined ? existing.harga_satuan : (item.harga_setor || 0),
                                 alasan: existing ? existing.alasan : '',
-                                subtotal: existing ? existing.subtotal : 0
+                                subtotal: existing && existing.subtotal !== undefined ? existing.subtotal : 0
                             });
                             maxJumlahPerProduk[item.kode_produk] = item.jumlah_setor;
                         });
@@ -192,3 +200,4 @@
     </form>
 </div>
 @endsection
+// Pastikan detailsArray dari backend sudah mengandung harga_satuan, subtotal, jumlah_retur, alasan
