@@ -15,7 +15,23 @@ class KaryawanController extends Controller
 
     public function create()
     {
-        return view('karyawan.create');
+        // Ambil kode terakhir dari database
+        $last = \DB::table('t_karyawan')
+            ->orderBy('kode_karyawan', 'desc')
+            ->first();
+
+        if ($last && preg_match('/PGT(\d+)/', $last->kode_karyawan, $m)) {
+            $next = (int)$m[1] + 1;
+        } else {
+            $next = 1;
+        }
+        $kodeBaru = 'PGT' . str_pad($next, 4, '0', STR_PAD_LEFT);
+
+        // Enum value untuk dropdown
+        $jabatan = ['Staff', 'Kepala Bagian'];
+        $departemen = ['Produksi', 'Penjualan', 'Gudang'];
+
+        return view('karyawan.create', compact('kodeBaru', 'jabatan', 'departemen'));
     }
 
     public function store(Request $request)
@@ -28,7 +44,6 @@ class KaryawanController extends Controller
             'gaji' => 'nullable|numeric',
             'tanggal_masuk' => 'nullable|date',
             'alamat' => 'nullable',
-            'email' => 'nullable|email',
             'no_telepon' => 'nullable',
         ]);
 
@@ -51,7 +66,6 @@ class KaryawanController extends Controller
             'gaji' => 'nullable|numeric',
             'tanggal_masuk' => 'nullable|date',
             'alamat' => 'nullable',
-            'email' => 'nullable|email',
             'no_telepon' => 'nullable',
         ]);
 

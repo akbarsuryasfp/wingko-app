@@ -20,7 +20,6 @@
         </div>
         <div class="col-auto">
             <button class="btn btn-primary">Tampilkan</button>
-            <a href="{{ route('hpp.laporan.pdf', ['bulan'=>$bulan, 'tahun'=>$tahun]) }}" class="btn btn-danger" target="_blank">Cetak PDF</a>
         </div>
     </form>
 
@@ -42,7 +41,7 @@
             <tr>
                 <td>+ Persediaan Awal Bahan Baku</td>
                 <td class="text-end">Rp {{ number_format($persediaan_awal ?? 0,0,',','.') }}</td>
-            </tr>
+            </tr>   
             <tr>
                 <td>- Persediaan Akhir Bahan Baku</td>
                 <td class="text-end">Rp {{ number_format($persediaan_akhir ?? 0,0,',','.') }}</td>

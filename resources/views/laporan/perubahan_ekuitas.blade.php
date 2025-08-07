@@ -1,4 +1,3 @@
-{{-- filepath: resources/views/laporan/perubahan_ekuitas.blade.php --}}
 @extends('layouts.app')
 @section('content')
 <div class="container">

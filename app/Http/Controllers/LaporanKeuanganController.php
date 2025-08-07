@@ -140,31 +140,72 @@ class LaporanKeuanganController extends Controller
     public function labaRugi(Request $request)
     {
         $periode = $request->input('periode', date('Y-m'));
-        $start = Carbon::parse($periode . '-01')->startOfMonth();
-        $end = Carbon::parse($periode . '-01')->endOfMonth();
+        $start = \Carbon\Carbon::parse($periode . '-01')->startOfMonth();
+        $end = \Carbon\Carbon::parse($periode . '-01')->endOfMonth();
 
-        $akun = [
-            'penjualan' => JurnalHelper::getKodeAkun('penjualan'),
-            'hpp'       => JurnalHelper::getKodeAkun('hpp'),
-            'beban'     => JurnalHelper::getKodeAkun('beban_operasional'),
+        // Helper function untuk ambil saldo akun
+        $getSaldo = function($kodeAkun, $tipe = 'pendapatan') use ($start, $end) {
+            $query = \DB::table('t_jurnal_detail')
+                ->join('t_jurnal_umum', 't_jurnal_detail.no_jurnal', '=', 't_jurnal_umum.no_jurnal')
+                ->where('t_jurnal_detail.kode_akun', $kodeAkun)
+                ->whereBetween('t_jurnal_umum.tanggal', [$start, $end]);
+            $debit = $query->sum('debit');
+            $kredit = $query->sum('kredit');
+            // Untuk pendapatan: kredit - debit, untuk beban: debit - kredit
+            return $tipe === 'pendapatan' ? ($kredit - $debit) : ($debit - $kredit);
+        };
+
+        // Mapping kode akun sesuai AKUN.sql
+        $penjualan         = $getSaldo(4000, 'pendapatan');
+        $pendapatan_lain   = $getSaldo(4010, 'pendapatan');
+        $retur_penjualan   = $getSaldo(4025, 'pendapatan'); // jika retur penjualan, biasanya tipe pendapatan (dikurangkan)
+        $diskon_penjualan  = $getSaldo(5070, 'pendapatan'); // dikurangkan dari penjualan
+
+        $hpp               = $getSaldo(5000, 'beban');
+
+        // Beban Operasional (bisa tambah kode akun lain sesuai kebutuhan)
+        $kodeBeban = [
+            5001 => 'Biaya Listrik',
+            5010 => 'Beban Operasional',
+            5011 => 'Beban Kerugian',
+            5012 => 'Beban Penyusutan Bangunan',
+            5013 => 'Beban Penyusutan Mesin',
+            5020 => 'Beban Gaji',
+            5030 => 'Beban Overhead Pabrik',
+            5040 => 'Beban Lain-lain',
+            5050 => 'Diskon Pembelian',
+            5060 => 'Ongkir Pembelian',
         ];
-
-        $saldo = [];
-        foreach ($akun as $key => $kode) {
-            $saldo[$key] = JurnalDetail::where('kode_akun', $kode)
-                ->whereHas('jurnalUmum', function($q) use ($start, $end) {
-                    $q->whereBetween('tanggal', [$start, $end]);
-                })
-                ->sum('kredit') - JurnalDetail::where('kode_akun', $kode)
-                ->whereHas('jurnalUmum', function($q) use ($start, $end) {
-                    $q->whereBetween('tanggal', [$start, $end]);
-                })
-                ->sum('debit');
+        $list_beban = [];
+        $beban_operasional = 0;
+        foreach ($kodeBeban as $kode => $nama) {
+            $saldo = $getSaldo($kode, 'beban');
+            if ($saldo != 0) {
+                $list_beban[] = ['nama' => $nama, 'saldo' => $saldo];
+                $beban_operasional += $saldo;
+            }
         }
 
-        $laba_bersih = ($saldo['penjualan'] ?? 0) - ($saldo['hpp'] ?? 0) - ($saldo['beban'] ?? 0);
+        // Multiple step calculation
+        $pendapatan_bersih = $penjualan + $pendapatan_lain - $retur_penjualan - $diskon_penjualan;
+        $laba_kotor        = $pendapatan_bersih - $hpp;
+        $laba_usaha        = $laba_kotor - $beban_operasional;
+        $laba_bersih       = $laba_usaha;
 
-        return view('laporan.laba_rugi', compact('saldo', 'periode', 'laba_bersih'));
+        return view('laporan.laba_rugi', compact(
+            'periode',
+            'penjualan',
+            'pendapatan_lain',
+            'retur_penjualan',
+            'diskon_penjualan',
+            'pendapatan_bersih',
+            'hpp',
+            'laba_kotor',
+            'list_beban',
+            'beban_operasional',
+            'laba_usaha',
+            'laba_bersih'
+        ));
     }
 
     public function perubahanEkuitas(Request $request)
@@ -205,5 +246,38 @@ class LaporanKeuanganController extends Controller
         $modal_akhir = $modal_awal + $tambahan_modal + $laba_bersih - $prive;
 
         return view('laporan.perubahan_ekuitas', compact('periode', 'modal_awal', 'tambahan_modal', 'laba_bersih', 'prive', 'modal_akhir'));
+    }
+
+    public function hppPenjualan(Request $request)
+    {
+        $bulan = $request->input('bulan', date('m'));
+        $tahun = $request->input('tahun', date('Y'));
+
+        // Persediaan Awal Barang Jadi (akhir bulan sebelumnya)
+        $bulanSebelumnya = $bulan == 1 ? 12 : $bulan - 1;
+        $tahunSebelumnya = $bulan == 1 ? $tahun - 1 : $tahun;
+        $persediaan_awal_jadi = \DB::table('t_kartupersproduk')
+            ->whereDate('tanggal', '<=', date('Y-m-t', strtotime("$tahunSebelumnya-$bulanSebelumnya-01")))
+            ->sum(\DB::raw('(masuk - keluar) * hpp'));
+
+        // Harga Pokok Produksi: SUM(hpp_per_produk * jumlah_unit) bulan berjalan
+        $harga_pokok_produksi = \DB::table('t_hpp_per_produk')
+            ->join('t_produksi_detail', 't_hpp_per_produk.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
+            ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', $bulan)
+            ->whereYear('t_produksi.tanggal_produksi', $tahun)
+            ->sum(\DB::raw('t_hpp_per_produk.hpp_per_produk * t_produksi_detail.jumlah_unit'));
+
+        // Persediaan Akhir Barang Jadi (akhir bulan ini)
+        $persediaan_akhir_jadi = \DB::table('t_kartupersproduk')
+            ->whereDate('tanggal', '<=', date('Y-m-t', strtotime("$tahun-$bulan-01")))
+            ->sum(\DB::raw('(masuk - keluar) * hpp'));
+
+        // Hitung HPP Penjualan
+        $hpp_penjualan = ($persediaan_awal_jadi ?? 0) + ($harga_pokok_produksi ?? 0) - ($persediaan_akhir_jadi ?? 0);
+
+        return view('laporan.hpp_penjualan', compact(
+            'bulan', 'tahun', 'persediaan_awal_jadi', 'harga_pokok_produksi', 'persediaan_akhir_jadi', 'hpp_penjualan'
+        ));
     }
 }

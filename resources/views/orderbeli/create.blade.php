@@ -11,7 +11,7 @@ input[readonly] {
                     </style>
 
 <div class="card-header bg-transparent border-0 text-center py-3">
-    <h4 class="mb-0">Tambah Permintaan Pembelian</h4>
+    <h4 class="mb-0">Tambah Order Pembelian</h4>
 </div>
         
         <div class="card-body">
