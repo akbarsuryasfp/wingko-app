@@ -1,41 +1,59 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h4 class="mb-4">DAFTAR PEMBAYARAN CONSIGNOR (PEMILIK BARANG)</h4>
-    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap">
-        <form method="GET" class="d-flex align-items-center gap-2 mb-0 flex-wrap">
-            @foreach(request()->except(['tanggal_awal','tanggal_akhir','page','sort']) as $key => $val)
-                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
-            @endforeach
-            <span class="fw-semibold">Periode:</span>
-            <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
-            <span class="mx-1">s/d</span>
-            <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
-            <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
-            @php
-                $sort = request('sort', 'asc');
-                $nextSort = $sort === 'asc' ? 'desc' : 'asc';
-                $icon = $sort === 'asc' ? '▲' : '▼';
-            @endphp
-            <a href="{{ route('bayarconsignor.index', array_merge(request()->except('page'), ['sort' => $nextSort])) }}"
-               class="btn btn-outline-secondary btn-sm ms-2">
-                Urutkan No Bayar Consignor {!! $icon !!}
-            </a>
-        </form>
-        <div>
-            <a href="{{ route('bayarconsignor.create') }}" class="btn btn-primary btn-sm" title="Tambah Data">
-                Tambah Pembayaran
-            </a>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-body p-0">
-            <table class="table table-bordered mb-0">
+<div class="container-fluid px-3">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6 col-12 text-md-start text-center">
+                    <h4 class="mb-0 fw-semibold">Daftar Pembayaran Consignor (Pemilik Barang)</h4>
+                </div>
+                <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex justify-content-md-end justify-content-center gap-2">
+                    <a href="{{ route('bayarconsignor.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                        <i class="bi bi-printer"></i> Cetak Laporan
+                    </a>
+                    <a href="{{ route('bayarconsignor.create') }}" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle"></i> Tambah Konsinyasi Masuk
+                    </a>
+                </div>
+            </div>
+            <div class="row align-items-center mb-3">
+                <div class="col-md-8 col-12 text-md-start text-start mb-2 mb-md-0">
+                    <form method="GET" class="d-flex align-items-center gap-2 flex-wrap w-100 mt-1 justify-content-start">
+                        <span class="fw-semibold">Periode:</span>
+                        <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+                        <span class="mx-1">s/d</span>
+                        <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-funnel"></i> Terapkan
+                        </button>
+                        @php
+                            $sort = request('sort', 'asc');
+                            $nextSort = $sort === 'asc' ? 'desc' : 'asc';
+                            $icon = $sort === 'asc' ? '▲' : '▼';
+                        @endphp
+                        <a href="{{ route('bayarconsignor.index', array_merge(request()->except('page'), ['sort' => $nextSort])) }}"
+                           class="btn btn-sm btn-outline-secondary ms-2">
+                            Urutkan No Bayar Consignor {!! $icon !!}
+                        </a>
+                    </form>
+                </div>
+                <div class="col-md-4 col-12 text-md-end text-start">
+                    <form method="GET" action="{{ route('bayarconsignor.index') }}" class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari No Konsinyasi/Nama Consig" value="{{ request('search') }}" style="max-width: 220px;" autocomplete="off">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i> Cari
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+            <table class="table table-bordered mb-0 align-middle table-sm">
                 <thead class="thead-light">
                     <tr>
                         <th class="text-center align-middle" style="width: 5%;">No</th>
                         <th class="text-center align-middle">No Bayar Consignor</th>
+                        <th class="text-center align-middle">Kode Produk</th>
                         <th class="text-center align-middle">Tanggal Bayar</th>
                         <th class="text-center align-middle">Nama Consignor (Pemilik Barang)</th>
                         <th class="text-center align-middle">Jumlah Terjual & Nama Produk</th>
@@ -55,7 +73,14 @@
                         <tr>
                             <td class="text-center align-middle">{{ $no++ }}</td>
                             <td class="text-center align-middle">{{ $row->no_bayarconsignor }}</td>
-                            <td class="text-center align-middle">{{ $row->tanggal_bayar }}</td>
+                            <td class="text-center align-middle">
+                                @if(count($row->details) > 0)
+                                    {{ collect($row->details)->pluck('kode_produk')->implode(', ') }}
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="text-center align-middle">{{ \Carbon\Carbon::parse($row->tanggal_bayar)->format('d-m-Y') }}</td>
                             <td class="text-center align-middle">{{ $consignor->nama_consignor ?? '-' }}</td>
                             <td class="text-center align-middle">
                                 @foreach($row->details as $detail)
@@ -68,7 +93,7 @@
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if (\Route::has('bayarconsignor.cetak'))
-                                <a href="{{ route('bayarconsignor.cetak', $row->no_bayarconsignor) }}" class="btn btn-success btn-sm me-1" title="Cetak" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
+                                <a href="{{ route('bayarconsignor.cetak', $row->no_bayarconsignor) }}" class="btn btn-success btn-sm me-1" title="Cetak Bukti Pembayaran Consignor (Pemilik Barang)" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
                                     <i class="bi bi-printer"></i>
                                 </a>
                                 @endif

@@ -1,6 +1,150 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
   #sidebar {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    min-height: 100vh;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    width: 280px;
+  }
+  
+  .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin: 3px 0;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    position: relative;
+  }
+  
+  .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  
+  .nav-link.active {
+    background-color: rgba(16, 185, 129, 0.2); /* Teal background */
+    color: white;
+    font-weight: 500;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.3); /* Subtle border */
+  }
+
+  .nav-link.current-page {
+    background-color: rgba(16, 185, 129, 0.25); /* Stronger teal */
+    color: white;
+    font-weight: 500;
+  }
+  
+  .nav-link.current-page:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #10b981; /* Solid teal */
+    border-radius: 3px 0 0 3px;
+  }
+  
+  .nav-link i {
+    margin-right: 12px;
+    font-size: 1.1rem;
+    width: 24px;
+    text-align: center;
+  }
+  
+  /* Dark mode adjustments */
+  .dark-mode .nav-link.active {
+    background-color: rgba(16, 185, 129, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
+  }
+
+  .dark-mode .nav-link.current-page {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .dark-mode .nav-link.current-page:before {
+    background-color: #0d9488; /* Darker teal for dark mode */
+  }
+
+  /* Keep all other existing styles the same */
+  .nav-flex-column {
+    padding-left: 8px;
+    gap: 0.3rem;
+  }
+  
+  .ms-3 {
+    margin-left: 20px !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .submenu-header {
+    font-weight: 500;
+    position: relative;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  
+  .submenu-header:after {
+    content: "\F282";
+    font-family: "bootstrap-icons";
+    position: absolute;
+    right: 12px;
+    font-size: 1rem;
+    transition: transform 0.2s;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .submenu-header.submenu-active:after {
+    transform: rotate(90deg);
+    color: white;
+  }
+  
+  .submenu-item {
+    padding-left: 20px;
+    font-size: 0.9rem;
+  }
+  
+  #sidebar .text-center.mb-4 {
+    margin-bottom: 1.5rem !important;
+    padding: 0.75rem;
+  }
+  
+  #sidebar .text-center h5 {
+    font-size: 1.2rem;
+    padding: 12px 0;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  .dark-mode #sidebar {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  }
+
+  .dark-mode .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .dark-mode .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .dark-mode .ms-3 {
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+  }
+</style>
+
+<div id="sidebar" class="p-2">
+    <div class="text-center mb-3">
+        <h5 class="text-white">MENU NAVIGASI</h5>
+    </div>
+    
+<style>
+  #sidebar {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-right: 1px solid #dee2e6;
     min-height: 100vh;
@@ -108,7 +252,9 @@
     
     <ul class="nav flex-column">
         <!-- Master Menu -->
+        <!-- Master Menu -->
         <li>
+            <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-master', this)">
             <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-master', this)">
                 <i class="bi bi-folder"></i><span>Master</span>
             </a>
@@ -120,31 +266,49 @@
                 <li><a href="/pelanggan" class="nav-link submenu-item"><i class="bi bi-person"></i>Data Pelanggan</a></li>
                 <li><a href="/consignor" class="nav-link submenu-item"><i class="bi bi-person-badge"></i>Data Consignor</a></li>
                 <li><a href="/consignee" class="nav-link submenu-item"><i class="bi bi-person-bounding-box"></i>Data Consignee</a></li>
+                <li><a href="/bahan" class="nav-link submenu-item"><i class="bi bi-box"></i>Data Bahan</a></li>
+                <li><a href="/produk" class="nav-link submenu-item"><i class="bi bi-cup-straw"></i>Data Produk</a></li>
+                <li><a href="/supplier" class="nav-link submenu-item"><i class="bi bi-truck"></i>Data Supplier</a></li>
+                <li><a href="/karyawan" class="nav-link submenu-item"><i class="bi bi-people"></i>Data Karyawan</a></li>
+                <li><a href="/pelanggan" class="nav-link submenu-item"><i class="bi bi-person"></i>Data Pelanggan</a></li>
+                <li><a href="/consignor" class="nav-link submenu-item"><i class="bi bi-person-badge"></i>Data Consignor</a></li>
+                <li><a href="/consignee" class="nav-link submenu-item"><i class="bi bi-person-bounding-box"></i>Data Consignee</a></li>
             </ul>
         </li>
         
         <!-- Transaksi Menu -->
+        
+        <!-- Transaksi Menu -->
         <li>
+            <a href="javascript:void(0)" class="nav-link active submenu-header" onclick="toggleSubMenu('submenu-transaksi', this)">
             <a href="javascript:void(0)" class="nav-link active submenu-header" onclick="toggleSubMenu('submenu-transaksi', this)">
                 <i class="bi bi-arrow-left-right"></i><span>Transaksi</span>
             </a>
             <ul id="submenu-transaksi" class="nav flex-column ms-3" style="display:block;">
                 <!-- Pembelian Submenu -->
+            <ul id="submenu-transaksi" class="nav flex-column ms-3" style="display:block;">
+                <!-- Pembelian Submenu -->
                 <li>
+                    <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-pembelian', this)">
+                        <i class="bi bi-cart"></i><span>Pembelian</span>
                     <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-pembelian', this)">
                         <i class="bi bi-cart"></i><span>Pembelian</span>
                     </a>
                     <ul id="submenu-pembelian" class="nav flex-column ms-3" style="display:none;">
-                        <li><a href="/orderbeli" class="nav-link submenu-item">Order Pembelian</a></li>
-                        <li><a href="/terimabahan" class="nav-link submenu-item">Penerimaan Bahan</a></li>
-                        <li><a href="/pembelian" class="nav-link submenu-item">Pembelian</a></li>
-                        <li><a href="/returbeli" class="nav-link submenu-item">Retur Pembelian</a></li>
-                        <li><a href="/hutang" class="nav-link submenu-item">Hutang</a></li>
+<li><a href="/orderbeli" class="nav-link submenu-item"><i class="bi bi-cart-plus"></i> Order Pembelian</a></li>
+<li><a href="/terimabahan" class="nav-link submenu-item"><i class="bi bi-truck"></i> Penerimaan Bahan</a></li>
+<li><a href="/pembelian" class="nav-link submenu-item"><i class="bi bi-credit-card"></i> Pembelian</a></li>
+<li><a href="/returbeli" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i> Retur Pembelian</a></li>
+<li><a href="/hutang" class="nav-link submenu-item"><i class="bi bi-receipt"></i> Hutang </a></li>
+
                     </ul>
                 </li>
                 
                 <!-- Produksi Submenu -->
+                
+                <!-- Produksi Submenu -->
                 <li>
+                    <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-produksi', this)">
                     <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-produksi', this)">
                         <i class="bi bi-gear"></i><span>Produksi</span>
                     </a>
@@ -157,7 +321,10 @@
                 </li>
                 
                 <!-- Penjualan Submenu -->
+                
+                <!-- Penjualan Submenu -->
                 <li>
+                    <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penjualan', this)">
                     <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penjualan', this)">
                         <i class="bi bi-basket"></i><span>Penjualan</span>
                     </a>
@@ -166,15 +333,23 @@
                         <li><a href="/pesananpenjualan" class="nav-link submenu-item"><i class="bi bi-bag-dash"></i>Pesanan</a></li>
                         <li><a href="/piutang" class="nav-link submenu-item"><i class="bi bi-cash-stack"></i>Piutang</a></li>
                         <li><a href="/returjual" class="nav-link submenu-item"><i class="bi bi-arrow-counterclockwise"></i>Retur Penjualan</a></li>
+                        <li><a href="/penjualan" class="nav-link submenu-item"><i class="bi bi-bag"></i>Penjualan</a></li>
+                        <li><a href="/pesananpenjualan" class="nav-link submenu-item"><i class="bi bi-bag-dash"></i>Pesanan</a></li>
+                        <li><a href="/piutang" class="nav-link submenu-item"><i class="bi bi-cash-stack"></i>Piutang</a></li>
+                        <li><a href="/returjual" class="nav-link submenu-item"><i class="bi bi-arrow-counterclockwise"></i>Retur Penjualan</a></li>
                     </ul>
                 </li>
-
                 <!-- Konsinyasi Masuk Submenu -->
                 <li>
+                    <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-konsinyasi', this)">
                     <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-konsinyasi', this)">
                         <i class="bi bi-box-arrow-in-down"></i><span>Konsinyasi Masuk</span>
                     </a>
                     <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
+                        <li><a href="{{ route('konsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk dan Komisi Konsinyasi Masuk</span></a></li>
+                        <li><a href="{{ route('jualkonsinyasimasuk.index') }}" class="nav-link"><i class="bi bi-arrow-left-right"></i><span>Penjualan Produk Konsinyasi Masuk</span></a></li>
+                        <li><a href="{{ route('bayarconsignor.index') }}" class="nav-link"><i class="bi bi-credit-card-2-back"></i><span>Pembayaran ke Consignor (Pemilik Barang)</span></a></li>
+                        <li><a href="{{ route('returconsignor.index') }}" class="nav-link"><i class="bi bi-arrow-return-left"></i><span>Retur ke Consignor (Pemilik Barang)</span></a></li>
                         <li><a href="/konsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Masuk</a></li>
                         <li><a href="/jualkonsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-arrow-left-right"></i>Penjualan Produk Konsinyasi Masuk</a></li>
                         <li><a href="/bayarconsignor" class="nav-link submenu-item"><i class="bi bi-credit-card-2-back"></i>Pembayaran ke Consignor</a></li>
@@ -184,11 +359,16 @@
                 </li>
 
                 <!-- Konsinyasi Keluar Submenu -->
+                <!-- Konsinyasi Keluar Submenu -->
                 <li>
+                    <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-konsinyasikeluar', this)">
                     <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-konsinyasikeluar', this)">
                         <i class="bi bi-box-arrow-up"></i><span>Konsinyasi Keluar</span>
                     </a>
                     <ul id="submenu-konsinyasikeluar" class="nav flex-column ms-3" style="display:none;">
+                        <li><a href="{{ route('konsinyasikeluar.index') }}" class="nav-link"><i class="bi bi-box-seam"></i><span>Input Data Produk Konsinyasi Keluar</span></a></li>
+                        <li><a href="{{ route('penerimaankonsinyasi.index') }}" class="nav-link"><i class="bi bi-cash-coin"></i><span>Penerimaan Hasil Penjualan Produk Konsinyasi Keluar</span></a></li>
+                        <li><a href="{{ route('returconsignee.index') }}" class="nav-link"><i class="bi bi-arrow-return-right"></i><span>Retur dari Consignee (Mitra)</span></a></li>
                         <li><a href="/konsinyasikeluar" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Keluar</a></li>
                         <li><a href="/penerimaankonsinyasi" class="nav-link submenu-item"><i class="bi bi-cash-coin"></i>Penerimaan Hasil Penjualan Produk Konsinyasi</a></li>
                         <li><a href="/returconsignee" class="nav-link submenu-item"><i class="bi bi-arrow-return-right"></i>Retur dari Consignee</a></li>
@@ -201,11 +381,20 @@
                         <i class="bi bi-cash-stack"></i><span>Pengeluaran Kas</span>
                     </a>
                 </li>
+                <!-- Pengeluaran Kas -->
+                <li>
+                    <a href="/kaskeluar" class="nav-link">
+                        <i class="bi bi-cash-stack"></i><span>Pengeluaran Kas</span>
+                    </a>
+                </li>
             </ul>
         </li>
         
         <!-- Penyesuaian Menu -->
+        
+        <!-- Penyesuaian Menu -->
         <li>
+            <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penyesuaian', this)">
             <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penyesuaian', this)">
                 <i class="bi bi-sliders"></i><span>Penyesuaian</span>
             </a>
@@ -213,13 +402,45 @@
                 <li><a href="/stokopname/bahan" class="nav-link submenu-item"><i class="bi bi-clipboard-check"></i>Stok Opname Bahan</a></li>
                 <li><a href="/stokopname/produk" class="nav-link submenu-item"><i class="bi bi-clipboard-data"></i>Stok Opname Produk</a></li>
             </ul>
+                <li><a href="/stokopname/bahan" class="nav-link submenu-item"><i class="bi bi-clipboard-check"></i>Stok Opname Bahan</a></li>
+                <li><a href="/stokopname/produk" class="nav-link submenu-item"><i class="bi bi-clipboard-data"></i>Stok Opname Produk</a></li>
+            </ul>
         </li>
+        
+        <!-- Laporan Menu -->
         
         <!-- Laporan Menu -->
         <li>
             <a href="javascript:void(0)" class="nav-link active submenu-header" onclick="toggleSubMenu('submenu-laporan', this)">
+            <a href="javascript:void(0)" class="nav-link active submenu-header" onclick="toggleSubMenu('submenu-laporan', this)">
                 <i class="bi bi-file-earmark-text"></i><span>Laporan</span>
             </a>
+            <ul id="submenu-laporan" class="nav flex-column ms-3" style="display:block;">
+                <!-- Persediaan Submenu -->
+                <li>
+                    <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-kartustok', this)">
+                        <i class="bi bi-cart"></i><span>Persediaan</span>
+                    </a>
+                    <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
+                        <li><a href="/kartustok/bahan" class="nav-link submenu-item"><i class="bi bi-box"></i>Kartu Persediaan Bahan</a></li>
+                        <li><a href="/kartustok/produk" class="nav-link submenu-item"><i class="bi bi-cup-straw"></i>Kartu Persediaan Produk</a></li>
+                        <li><a href="/kartuperskonsinyasi" class="nav-link submenu-item"><i class="bi bi-boxes"></i>Kartu Persediaan Produk Konsinyasi Masuk</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Jurnal Umum -->
+                <li>
+                    <a href="/jurnal" class="nav-link">
+                        <i class="bi bi-journal-bookmark"></i><span>Jurnal Umum</span>
+                    </a>
+                </li>
+                
+                <!-- Buku Besar -->
+                <li>
+                    <a href="/jurnal/buku_besar" class="nav-link">
+                        <i class="bi bi-book"></i><span>Buku Besar</span>
+                    </a>
+                </li>
             <ul id="submenu-laporan" class="nav flex-column ms-3" style="display:block;">
                 <!-- Persediaan Submenu -->
                 <li>
@@ -251,6 +472,56 @@
     </ul>
 </div>
 
+<script>
+// Function to highlight current page and open parent menus
+function highlightCurrentPage() {
+    const currentPath = window.location.pathname;
+    
+    document.querySelectorAll('#sidebar .nav-link[href]').forEach(link => {
+        const linkPath = new URL(link.href).pathname;
+        
+        if (currentPath === linkPath) {
+            link.classList.add('current-page');
+            
+            // Open all parent menus
+            let parentMenu = link.closest('ul');
+            while (parentMenu && parentMenu.id) {
+                parentMenu.style.display = 'block';
+                
+                // Find and activate the parent header
+                const parentHeader = parentMenu.previousElementSibling;
+                if (parentHeader && parentHeader.classList.contains('submenu-header')) {
+                    parentHeader.classList.add('submenu-active');
+                }
+                
+                parentMenu = parentMenu.parentElement.closest('ul');
+            }
+        }
+    });
+}
+
+// Function to toggle submenus
+function toggleSubMenu(id, element) {
+    const submenu = document.getElementById(id);
+    if (submenu.style.display === 'none') {
+        submenu.style.display = 'block';
+        element.classList.add('submenu-active');
+    } else {
+        submenu.style.display = 'none';
+        element.classList.remove('submenu-active');
+    }
+}
+
+// Initialize sidebar
+document.addEventListener('DOMContentLoaded', function() {
+    // Open default menus
+    document.getElementById('submenu-transaksi').style.display = 'block';
+    document.getElementById('submenu-laporan').style.display = 'block';
+    
+    // Highlight current page
+    highlightCurrentPage();
+});
+</script>
 <script>
 // Function to highlight current page and open parent menus
 function highlightCurrentPage() {

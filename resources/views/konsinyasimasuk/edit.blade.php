@@ -2,17 +2,19 @@
 
 @section('content')
 <div class="container">
-    <h3 class="mb-4">EDIT KONSINYASI MASUK</h3>
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-    <form action="{{ route('konsinyasimasuk.update', $konsinyasi->no_surattitipjual) }}" method="POST" id="form-edit-konsinyasi">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h3 class="mb-4">EDIT KONSINYASI MASUK</h3>
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            <form action="{{ route('konsinyasimasuk.update', $konsinyasi->no_konsinyasimasuk) }}" method="POST" id="form-edit-konsinyasi">
         @csrf
         @method('PUT')
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -20,21 +22,22 @@
             <div style="flex: 1;">
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Konsinyasi Masuk</label>
-                    <input type="text" name="no_konsinyasimasuk" class="form-control" value="{{ $konsinyasi->no_konsinyasimasuk }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events: none;">
+                    <input type="text" name="no_konsinyasimasuk" id="no_konsinyasimasuk" class="form-control" value="{{ $konsinyasi->no_konsinyasimasuk }}" readonly tabindex="-1" style="background:#e9ecef; pointer-events: none;">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">No Surat Titip Jual</label>
-                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $konsinyasi->no_surattitipjual }}" required>
-                    <input type="hidden" name="no_surattitipjual_lama" value="{{ $konsinyasi->no_surattitipjual }}">
+                    <input type="text" name="no_surattitipjual" class="form-control" value="{{ $konsinyasi->no_surattitipjual }}" required readonly style="pointer-events: none; background: #e9ecef;">
+                    <input type="hidden" id="no_konsinyasimasuk_lama" name="no_konsinyasimasuk_lama" value="{{ $konsinyasi->no_konsinyasimasuk }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Nama Consignor (Pemilik Barang)</label>
-                    <select name="kode_consignor" class="form-control" required>
+                    <select name="kode_consignor" class="form-control" required disabled tabindex="-1">
                         <option value="">---Pilih Consignor---</option>
                         @foreach($consignor as $c)
                             <option value="{{ $c->kode_consignor }}" {{ $konsinyasi->kode_consignor == $c->kode_consignor ? 'selected' : '' }}>{{ $c->nama_consignor }}</option>
                         @endforeach
                     </select>
+                    <input type="hidden" name="kode_consignor" value="{{ $konsinyasi->kode_consignor }}">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Tanggal Masuk</label>
@@ -61,8 +64,11 @@
                     <input type="number" id="jumlah_stok" class="form-control">
                 </div>
                 <div class="mb-3 d-flex align-items-center">
-                    <label class="me-2" style="width: 120px;">Harga Titip/Produk</label>
-                    <input type="number" id="harga_titip" class="form-control">
+                    <label class="me-2" style="width: 120px;">Harga Titip/Satuan</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" id="harga_titip" class="form-control" autocomplete="off">
+                    </div>
                 </div>
                 <div class="mb-3">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="tambahProdukTitip()">Tambah Produk</button>
@@ -79,7 +85,7 @@
                     <th>No</th>
                     <th>Nama Produk</th>
                     <th>Jumlah Stok</th>
-                    <th>Harga Titip/Produk</th>
+                    <th>Harga Titip/Satuan</th>
                     <th>Subtotal</th>
                     <th>Aksi</th>
                 </tr>
@@ -93,29 +99,61 @@
             </div>
             <div class="d-flex align-items-center gap-3">
                 <label class="mb-0">Total Titip</label>
-                <input type="text" id="total_titip_view" readonly class="form-control" style="width: 160px;">
+                <div class="input-group" style="width: 180px;">
+                    <span class="input-group-text">Rp</span>
+                    <input type="text" id="total_titip_view" readonly class="form-control" style="background:#e9ecef;pointer-events:none;">
+                </div>
                 <input type="hidden" id="total_titip" name="total_titip">
                 <button type="submit" class="btn btn-success">Update</button>
             </div>
+
         </div>
 
         <input type="hidden" name="detail_json" id="detail_json">
-    </form>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
+    // Format ribuan otomatis untuk input harga_titip
+    function formatNumberInput(val) {
+        val = String(val).replace(/[^\d]/g, '');
+        if (!val) return '';
+        return val.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    function parseNumberInput(val) {
+        return parseInt(String(val).replace(/\D/g, '')) || 0;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const hargaTitipInput = document.getElementById('harga_titip');
+        if (hargaTitipInput) {
+            hargaTitipInput.addEventListener('input', function(e) {
+                const cursor = this.selectionStart;
+                const oldLength = this.value.length;
+                let val = this.value;
+                this.value = formatNumberInput(val);
+                const newLength = this.value.length;
+                this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+            });
+        }
+    });
     // Inisialisasi dari backend
     let daftarProdukTitip = @json($details);
     const allProdukKonsinyasi = @json($produkKonsinyasi);
-    // Pastikan setiap detail punya nama_produk
+    // Pastikan setiap detail punya nama_produk dan field lain tetap ada
     const produkKonsinyasiMap = {};
     allProdukKonsinyasi.forEach(function(pr) {
         produkKonsinyasiMap[pr.kode_produk] = pr.nama_produk;
     });
     daftarProdukTitip = daftarProdukTitip.map(function(item) {
+        // Jangan hapus properti apapun, hanya update nama_produk dan subtotal
         if (!item.nama_produk && produkKonsinyasiMap[item.kode_produk]) {
             item.nama_produk = produkKonsinyasiMap[item.kode_produk];
         }
+        // Jangan ubah tipe harga_titip, hanya gunakan Number() untuk subtotal
+        item.subtotal = Number(item.jumlah_stok) * Number(item.harga_titip);
         return item;
     });
 
@@ -141,7 +179,7 @@
         const kode_produk = produkSelect.value;
         const nama_produk = produkSelect.options[produkSelect.selectedIndex]?.dataset.nama || '';
         const jumlah_stok = Number(document.getElementById('jumlah_stok').value);
-        const harga_titip = Number(document.getElementById('harga_titip').value);
+        const harga_titip = parseNumberInput(document.getElementById('harga_titip').value);
 
         if (!kode_produk || isNaN(jumlah_stok) || isNaN(harga_titip) || jumlah_stok <= 0 || harga_titip <= 0) {
             alert("Silakan lengkapi data produk titip dengan benar.");
@@ -154,8 +192,17 @@
             return;
         }
 
+        // Field lain (harga_jual, komisi, dsb) null/default
         const subtotal = jumlah_stok * harga_titip;
-        daftarProdukTitip.push({ kode_produk, nama_produk, jumlah_stok, harga_titip, subtotal });
+        daftarProdukTitip.push({
+            kode_produk,
+            nama_produk,
+            jumlah_stok,
+            harga_titip,
+            subtotal,
+            harga_jual: null,
+            komisi: null
+        });
         updateTabelTitip();
 
         // Reset input produk titip
@@ -179,29 +226,70 @@
         tbody.innerHTML = '';
         let totalTitip = 0;
         daftarProdukTitip.forEach((item, index) => {
-            const subtotal = Number(item.jumlah_stok) * Number(item.harga_titip);
-            item.subtotal = subtotal;
-            totalTitip += subtotal;
+            // Jangan hapus properti apapun, hanya update subtotal
+            item.harga_titip = parseInt(item.harga_titip);
+            item.subtotal = Number(item.jumlah_stok) * Number(item.harga_titip);
+            totalTitip += item.subtotal;
             const row = `
                 <tr>
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
                     <td><input type="number" class="form-control form-control-sm" value="${item.jumlah_stok}" min="1" onchange="ubahJumlahStok(${index}, this.value)"></td>
-                    <td><input type="number" class="form-control form-control-sm" value="${item.harga_titip}" min="1" onchange="ubahHargaTitip(${index}, this.value)"></td>
-                    <td>${formatRupiah(subtotal)}</td>
-                    <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisTitip(${index})" title="Hapus"><span style='font-size:1.2em;'>&#128465;</span></button></td>
+                    <td>
+                        <div class="input-group">
+                            <span class="input-group-text">Rp</span>
+                            <input type="text" class="form-control form-control-sm harga-titip-edit" data-idx="${index}" value="${formatNumberInput(item.harga_titip)}" inputmode="numeric" autocomplete="off" style="min-width:90px;">
+                        </div>
+                    </td>
+                    <td>${formatRupiah(item.subtotal)}</td>
+                    <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBarisTitip(${index})" title="Hapus"><i class='bi bi-trash'></i></button></td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('beforeend', row);
         });
+        // Tambahkan event listener untuk input harga titip di tabel agar live format ribuan
+        document.querySelectorAll('.harga-titip-edit').forEach(input => {
+            input.addEventListener('input', function(e) {
+                const idx = this.dataset.idx;
+                const cursor = this.selectionStart;
+                const oldLength = this.value.length;
+                let val = this.value;
+                this.value = formatNumberInput(val);
+                let newLength = this.value.length;
+                this.setSelectionRange(cursor + (newLength - oldLength), cursor + (newLength - oldLength));
+                // Update data
+                const harga = parseNumberInput(this.value);
+                daftarProdukTitip[idx].harga_titip = harga;
+                daftarProdukTitip[idx].subtotal = harga * daftarProdukTitip[idx].jumlah_stok;
+                // Update subtotal kolom
+                this.closest('tr').querySelector('td:nth-child(5)').textContent = formatRupiah(daftarProdukTitip[idx].subtotal);
+                // Update total titip dan field hidden
+                const totalTitip = daftarProdukTitip.reduce((a,b)=>a+(b.subtotal||0),0);
+                document.getElementById('total_titip_view').value = formatRupiah(totalTitip);
+                document.getElementById('total_titip').value = totalTitip;
+                document.getElementById('detail_json').value = JSON.stringify(daftarProdukTitip);
+            });
+            input.addEventListener('blur', function() {
+                if (this.value) {
+                    this.value = formatNumberInput(this.value);
+                }
+            });
+            input.addEventListener('focus', function() {
+                let val = (daftarProdukTitip[this.dataset.idx]?.harga_titip || 0).toString();
+                this.value = val;
+                this.setSelectionRange(this.value.length, this.value.length);
+            });
+        });
         document.getElementById('total_titip_view').value = formatRupiah(totalTitip);
         document.getElementById('total_titip').value = totalTitip;
+        // Kirim seluruh properti detail (termasuk no_detailkonsinyasimasuk, harga_jual, komisi, dsb)
         document.getElementById('detail_json').value = JSON.stringify(daftarProdukTitip);
     }
 
     window.ubahJumlahStok = function(idx, val) {
         const jumlah = Number(val);
         if (jumlah > 0) {
+            // Hanya update jumlah_stok dan subtotal, field lain tetap
             daftarProdukTitip[idx].jumlah_stok = jumlah;
             daftarProdukTitip[idx].subtotal = jumlah * daftarProdukTitip[idx].harga_titip;
             updateTabelTitip();
@@ -211,6 +299,7 @@
     window.ubahHargaTitip = function(idx, val) {
         const harga = Number(val);
         if (harga > 0) {
+            // Hanya update harga_titip dan subtotal, field lain tetap
             daftarProdukTitip[idx].harga_titip = harga;
             daftarProdukTitip[idx].subtotal = harga * daftarProdukTitip[idx].jumlah_stok;
             updateTabelTitip();
@@ -242,10 +331,11 @@
         document.getElementById('total_titip').value = daftarProdukTitip.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0);
     });
 
-    // Pastikan form action update pakai value lama saat submit
+    // Pastikan form action update pakai value no_konsinyasimasuk (tidak mengandung /)
     document.getElementById('form-edit-konsinyasi').addEventListener('submit', function(e) {
-        const noSuratLama = document.querySelector('input[name="no_surattitipjual_lama"]').value;
-        this.action = this.action.replace(/update\/(.+)$/, 'update/' + encodeURIComponent(noSuratLama));
+        const noKonsinyasiLama = document.getElementById('no_konsinyasimasuk_lama').value;
+        const baseUrl = this.action.replace(/\/konsinyasimasuk\/.*/, '/konsinyasimasuk');
+        this.action = baseUrl + '/' + encodeURIComponent(noKonsinyasiLama);
     });
 </script>
 @endsection

@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class PenerimaanKonsinyasiDetail extends Model
 {
     protected $table = 't_penerimaankonsinyasi_detail';
+    protected $primaryKey = 'no_detailpenerimaankonsinyasi';
+    public $incrementing = false;
     public $timestamps = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'no_detailpenerimaankonsinyasi',
         'no_penerimaankonsinyasi',

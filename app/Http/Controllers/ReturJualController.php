@@ -7,68 +7,128 @@ use Illuminate\Support\Facades\DB;
 
 class ReturJualController extends Controller
 {
-public function index(Request $request)
-{
-    $sort = $request->get('sort', 'asc');
+    public function index(Request $request)
+    {
+        $sort = $request->get('sort', 'asc');
 
-    $query = DB::table('t_returjual')
-        ->leftJoin('t_pelanggan', 't_returjual.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
-        ->select('t_returjual.*', 't_pelanggan.nama_pelanggan');
-            
-    // Filter periode tanggal retur
-    if ($request->filled('tanggal_awal')) {
-        $query->whereDate('t_returjual.tanggal_returjual', '>=', $request->tanggal_awal);
-    }
-    if ($request->filled('tanggal_akhir')) {
-        $query->whereDate('t_returjual.tanggal_returjual', '<=', $request->tanggal_akhir);
-    }
+        $query = DB::table('t_returjual')
+            ->leftJoin('t_pelanggan', 't_returjual.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+            ->select('t_returjual.*', 't_pelanggan.nama_pelanggan');
 
-    // Filter jenis retur
-    if ($request->filled('jenis_retur')) {
-        $query->where('t_returjual.jenis_retur', $request->jenis_retur);
-    }
-
-    $returjual = $query->orderBy('t_returjual.no_returjual', $sort)->get();
-
-    $allDetails = DB::table('t_returjual_detail')
-        ->join('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
-        ->select(
-            't_returjual_detail.no_returjual',
-            't_returjual_detail.jumlah_retur',
-            't_produk.nama_produk',
-            't_returjual_detail.alasan'
-        )
-        ->get()
-        ->groupBy('no_returjual');
-
-    foreach ($returjual as $rj) {
-        $key = trim((string) $rj->no_returjual);
-        $details = $allDetails[$key] ?? [];
-        
-        $produkList = [];
-        foreach ($details as $detail) {
-            $produkText = "<b>{$detail->jumlah_retur}</b> x {$detail->nama_produk}";
-            if (!empty($detail->alasan)) {
-                $produkText .= " (" . trim($detail->alasan) . ")";
-            }
-            $produkList[] = $produkText;
+        // Filter periode tanggal retur
+        if ($request->filled('tanggal_awal')) {
+            $query->whereDate('t_returjual.tanggal_returjual', '>=', $request->tanggal_awal);
         }
-        
-        $rj->produk_jumlah = !empty($produkList) ? implode('<br>', $produkList) : '-';
-    }
+        if ($request->filled('tanggal_akhir')) {
+            $query->whereDate('t_returjual.tanggal_returjual', '<=', $request->tanggal_akhir);
+        }
 
-    $jenisList = ['Barang', 'Uang'];
-    return view('returjual.index', compact('returjual', 'jenisList'));
-}
+        // Filter jenis retur
+        if ($request->filled('jenis_retur')) {
+            $query->where('t_returjual.jenis_retur', $request->jenis_retur);
+        }
+
+        // Search by no_returjual or nama_pelanggan
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('t_returjual.no_returjual', 'like', "%$search%")
+                  ->orWhere('t_pelanggan.nama_pelanggan', 'like', "%$search%");
+            });
+        }
+
+        $returjual = $query->orderBy('t_returjual.no_returjual', $sort)->get();
+
+        $allDetails = DB::table('t_returjual_detail')
+            ->leftJoin('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_returjual_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->select(
+                't_returjual_detail.no_returjual',
+                't_returjual_detail.jumlah_retur',
+                DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                't_returjual_detail.alasan'
+            )
+            ->get()
+            ->groupBy('no_returjual');
+
+        foreach ($returjual as $rj) {
+            $key = trim((string) $rj->no_returjual);
+            $details = $allDetails[$key] ?? [];
+            $produkList = [];
+            foreach ($details as $detail) {
+                $produkText = "<b>{$detail->jumlah_retur}</b> x {$detail->nama_produk}";
+                if (!empty($detail->alasan)) {
+                    $produkText .= " ({$detail->alasan})";
+                }
+                $produkList[] = $produkText;
+            }
+            $rj->produk_jumlah = !empty($produkList) ? implode('<br>', $produkList) : '-';
+        }
+
+        $jenisList = ['Barang', 'Uang'];
+        return view('returjual.index', compact('returjual', 'jenisList'));
+    }
+    public function cetakLaporan(Request $request)
+    {
+        $sort = $request->get('sort', 'asc');
+
+        $query = DB::table('t_returjual')
+            ->leftJoin('t_pelanggan', 't_returjual.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+            ->select('t_returjual.*', 't_pelanggan.nama_pelanggan');
+
+        // Filter periode tanggal retur
+        if ($request->filled('tanggal_awal')) {
+            $query->whereDate('t_returjual.tanggal_returjual', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->whereDate('t_returjual.tanggal_returjual', '<=', $request->tanggal_akhir);
+        }
+
+        // Filter jenis retur
+        if ($request->filled('jenis_retur')) {
+            $query->where('t_returjual.jenis_retur', $request->jenis_retur);
+        }
+
+        // Search by no_returjual or nama_pelanggan
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('t_returjual.no_returjual', 'like', "%$search%")
+                  ->orWhere('t_pelanggan.nama_pelanggan', 'like', "%$search%");
+            });
+        }
+
+        $returjual = $query->orderBy('t_returjual.no_returjual', $sort)->get();
+
+        $allDetails = DB::table('t_returjual_detail')
+            ->leftJoin('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_returjual_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->select(
+                't_returjual_detail.no_returjual',
+                't_returjual_detail.jumlah_retur',
+                DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan'),
+                't_returjual_detail.harga_satuan',
+                't_returjual_detail.alasan',
+                't_returjual_detail.subtotal'
+            )
+            ->get()
+            ->groupBy('no_returjual');
+
+        // Tidak perlu lagi membangun produk_jumlah, detail sudah lengkap untuk cetak_laporan
+
+        return view('returjual.cetak_laporan', compact('returjual'));
+    }
 
     public function create()
     {
         // Ambil semua no_jual yang sudah pernah diretur
         $noJualSudahRetur = DB::table('t_returjual')->pluck('no_jual')->toArray();
 
-        // Hanya tampilkan penjualan yang belum pernah diretur
+        // Hanya tampilkan penjualan yang belum pernah diretur dan tanggal jual < 1x24 jam dari sekarang
         $penjualan = DB::table('t_penjualan')
             ->whereNotIn('no_jual', $noJualSudahRetur)
+            ->where('tanggal_jual', '>=', now()->subDay()->toDateString())
             ->get();
 
         // Generate kode returjual otomatis
@@ -160,11 +220,13 @@ public function index(Request $request)
         $produk = DB::table('t_produk')->get();
 
         $details = DB::table('t_returjual_detail')
-            ->join('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
-            ->where('t_returjual_detail.no_returjual', $no_returjual) // Perbaikan di sini
+            ->leftJoin('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_returjual_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->where('t_returjual_detail.no_returjual', $no_returjual)
             ->select(
                 't_returjual_detail.kode_produk',
-                't_produk.nama_produk',
+                DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan'),
                 't_returjual_detail.jumlah_retur',
                 't_returjual_detail.harga_satuan',
                 't_returjual_detail.alasan',
@@ -177,6 +239,7 @@ public function index(Request $request)
             $detailsArr[] = [
                 'kode_produk' => $d->kode_produk,
                 'nama_produk' => $d->nama_produk,
+                'satuan' => $d->satuan,
                 'jumlah_retur' => $d->jumlah_retur,
                 'harga_satuan' => $d->harga_satuan,
                 'alasan' => $d->alasan,
@@ -274,11 +337,13 @@ public function index(Request $request)
             ->first();
 
         $details = DB::table('t_returjual_detail')
-            ->join('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
-            ->where('t_returjual_detail.no_returjual', $no_returjual) // Perbaikan di sini
+            ->leftJoin('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_returjual_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->where('t_returjual_detail.no_returjual', $no_returjual)
             ->select(
                 't_returjual_detail.*',
-                't_produk.nama_produk'
+                DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
             )
             ->get();
 
@@ -291,12 +356,21 @@ public function index(Request $request)
 
         // Ambil detail dengan join ke produk agar nama_produk selalu ada
         $details = \DB::table('t_returjual_detail')
-            ->join('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk', 't_returjual_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_returjual_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
             ->where('t_returjual_detail.no_returjual', $no_returjual)
-            ->select('t_returjual_detail.*', 't_produk.nama_produk')
+            ->select(
+                't_returjual_detail.*',
+                \DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                \DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
+            )
             ->get();
 
-        return view('returjual.cetak', compact('returjual', 'details'));
+        // Generate PDF langsung stream, ukuran A5 landscape
+        $pdf = app('dompdf.wrapper');
+        $pdf->loadView('returjual.cetak', compact('returjual', 'details'));
+        $pdf->setPaper('A5', 'landscape');
+        return $pdf->stream('nota_retur_penjualan.pdf');
     }
 
     public function filterPenjualan(Request $request)
@@ -316,9 +390,16 @@ public function index(Request $request)
     public function getDetailPenjualan($no_jual)
     {
         $details = \DB::table('t_penjualan_detail')
-            ->join('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_penjualan_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
             ->where('t_penjualan_detail.no_jual', $no_jual)
-            ->select('t_penjualan_detail.kode_produk', 't_produk.nama_produk', 't_penjualan_detail.jumlah', 't_penjualan_detail.harga_satuan')
+            ->select(
+                't_penjualan_detail.kode_produk',
+                \DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
+                't_penjualan_detail.jumlah',
+                't_penjualan_detail.harga_satuan',
+                \DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
+            )
             ->get();
 
         $penjualan = \DB::table('t_penjualan')->where('no_jual', $no_jual)->first();

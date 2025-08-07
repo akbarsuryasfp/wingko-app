@@ -2,36 +2,57 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <h4 class="mb-4">DAFTAR KONSINYASI MASUK</h4>
-    <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap">
-        <form method="GET" class="d-flex align-items-center gap-2 mb-0 flex-wrap">
-            @foreach(request()->except(['tanggal_awal','tanggal_akhir','page','sort']) as $key => $val)
-                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
-            @endforeach
-            <span class="fw-semibold">Periode:</span>
-            <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
-            <span class="mx-1">s/d</span>
-            <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
-            <button type="submit" class="btn btn-secondary btn-sm">Terapkan</button>
-            @php
-                $sort = request('sort', 'asc');
-                $nextSort = $sort === 'asc' ? 'desc' : 'asc';
-                $icon = $sort === 'asc' ? '▲' : '▼';
-            @endphp
-            <a href="{{ route('konsinyasimasuk.index', array_merge(request()->except('page'), ['sort' => $nextSort])) }}"
-               class="btn btn-outline-secondary btn-sm ms-2">
-                Urutkan No Konsinyasi Masuk {!! $icon !!}
-            </a>
-        </form>
-        <div>
-            <a href="{{ route('konsinyasimasuk.create') }}" class="btn btn-primary btn-sm" title="Tambah Data">
-                Tambah Data
-            </a>
-        </div>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-bordered align-middle">
+<div class="container-fluid px-3">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center mb-3">
+                <div class="col-md-6 col-12 text-md-start text-center">
+                    <h4 class="mb-0 fw-semibold">Daftar Konsinyasi Masuk</h4>
+                </div>
+                <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex justify-content-md-end justify-content-center gap-2">
+                    <a href="{{ route('konsinyasimasuk.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                        <i class="bi bi-printer"></i> Cetak Laporan
+                    </a>
+                    <a href="{{ route('konsinyasimasuk.create') }}" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle"></i> Tambah Konsinyasi Masuk
+                    </a>
+                </div>
+            </div>
+            <div class="row align-items-center mb-3">
+                <div class="col-md-8 col-12 text-md-start text-start mb-2 mb-md-0">
+                    <form method="GET" class="d-flex align-items-center gap-2 flex-wrap w-100 mt-1 justify-content-start">
+                        @foreach(request()->except(['tanggal_awal','tanggal_akhir','page','sort','search']) as $key => $val)
+                            <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                        @endforeach
+                        <span class="fw-semibold">Periode:</span>
+                        <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+                        <span class="mx-1">s/d</span>
+                        <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-funnel"></i> Terapkan
+                        </button>
+                        @php
+                            $sort = request('sort', 'asc');
+                            $nextSort = $sort === 'asc' ? 'desc' : 'asc';
+                            $icon = $sort === 'asc' ? '▲' : '▼';
+                        @endphp
+                        <a href="{{ route('konsinyasimasuk.index', array_merge(request()->except('page','sort'), ['sort' => $nextSort])) }}"
+                           class="btn btn-sm btn-outline-secondary ms-2">
+                            Urutkan No Konsinyasi Masuk {!! $icon !!}
+                        </a>
+                    </form>
+                </div>
+                <div class="col-md-4 col-12 text-md-end text-start">
+                    <form method="GET" action="{{ route('konsinyasimasuk.index') }}" class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari No Konsinyasi/Nama Consignor..." value="{{ request('search') }}" style="max-width: 220px;" autocomplete="off">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i> Cari
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 align-middle table-sm">
             <thead class="table-light">
                 <tr>
                     <th class="text-center align-middle" style="width:40px;">No</th>
@@ -39,9 +60,10 @@
                     <th class="text-center align-middle" style="width:140px;">No Surat Titip Jual</th>
                     <th class="text-center align-middle" style="width:110px;">Tanggal Masuk</th>
                     <th class="text-center align-middle" style="width:180px;">Nama Consignor (Pemilik Barang)</th>
-                    <th class="text-center align-middle" style="width:210px;">Jumlah Stok & Nama Produk</th>
-                    <th class="text-center align-middle" style="width:140px;">Harga Titip/Produk</th>
-                    <th class="text-center align-middle" style="width:140px;">Harga Jual/Produk</th>
+                    <th class="text-center align-middle" style="width:250px;">Jumlah Stok & Nama Produk</th>
+                    <th class="text-center align-middle" style="width:120px;">Harga Titip/Satuan</th>
+                    <th class="text-center align-middle" style="width:120px;">Harga Jual/Satuan</th>
+                    <th class="text-center align-middle" style="width:120px;">Komisi/Satuan</th>
                     <th class="text-center align-middle" style="width:110px;">Aksi</th>
                 </tr>
             </thead>
@@ -54,46 +76,44 @@
                         <td class="text-center align-middle">{{ \Carbon\Carbon::parse($konsinyasi->tanggal_titip ?? $konsinyasi->tanggal_masuk)->format('d-m-Y') }}</td>
                         <td class="text-center align-middle">{{ $konsinyasi->consignor->nama_consignor ?? '-' }}</td>
                         <td class="text-center align-middle">
-                            @php
-                                $produkList = $konsinyasi->details;
-                            @endphp
+                            @php $produkList = $konsinyasi->details; @endphp
                             @if($produkList && count($produkList))
                                 @foreach($produkList as $produk)
                                     <div>
                                         <b>{{ $produk->jumlah_stok }}</b> x {{ $produk->produk->nama_produk ?? $produk->nama_produk ?? '-' }}
                                     </div>
                                 @endforeach
-                            @else
-                                -
-                            @endif
+                            @else - @endif
                         </td>
                         <td class="text-center align-middle">
-                            @php
-                                $produkList = $konsinyasi->details;
-                            @endphp
+                            @php $produkList = $konsinyasi->details; @endphp
                             @if($produkList && count($produkList))
                                 @foreach($produkList as $produk)
                                     <div>
                                         Rp{{ number_format($produk->harga_titip, 0, ',', '.') }}
                                     </div>
                                 @endforeach
-                            @else
-                                -
-                            @endif
+                            @else - @endif
                         </td>
                         <td class="text-center align-middle">
-                            @php
-                                $produkList = $konsinyasi->details;
-                            @endphp
+                            @php $produkList = $konsinyasi->details; @endphp
                             @if($produkList && count($produkList))
                                 @foreach($produkList as $produk)
                                     <div data-konsinyasi="{{ $konsinyasi->no_konsinyasimasuk }}" data-produk="{{ $produk->id }}">
                                         Rp{{ number_format($produk->harga_jual, 0, ',', '.') }}
                                     </div>
                                 @endforeach
-                            @else
-                                -
-                            @endif
+                            @else - @endif
+                        </td>
+                        <td class="text-center align-middle">
+                            @php $produkList = $konsinyasi->details; @endphp
+                            @if($produkList && count($produkList))
+                                @foreach($produkList as $produk)
+                                    <div>
+                                        Rp{{ number_format(($produk->harga_jual ?? 0) - ($produk->harga_titip ?? 0), 0, ',', '.') }}
+                                    </div>
+                                @endforeach
+                            @else - @endif
                         </td>
                         <td class="text-center align-middle">
                             <div class="d-flex justify-content-center gap-1" style="min-width: 180px;">
@@ -115,13 +135,16 @@
                                 </form>
                             </div>
                         </td>
+                    </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center">Data tidak ditemukan.</td>
+                        <td colspan="10" class="text-center py-3">Data tidak ditemukan.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
+            </div>
+        </div>
     </div>
 </div>
 @include('konsinyasimasuk.create_komisi')

@@ -29,4 +29,16 @@ class KartuPersKonsinyasiController extends Controller
         $data = $query->orderBy('tanggal')->orderBy('id')->get();
         return response()->json($data);
     }
+    
+    // API: Menghitung stok akhir produk konsinyasi
+    public function getStokAkhirProdukKonsinyasi($kode_produk)
+    {
+        $data = \DB::table('t_kartuperskonsinyasi')
+            ->select('harga_konsinyasi', \DB::raw('SUM(masuk) - SUM(keluar) as sisa'))
+            ->where('kode_produk', $kode_produk)
+            ->groupBy('harga_konsinyasi')
+            ->havingRaw('sisa > 0')
+            ->get();
+        return response()->json($data);
+    }
 }

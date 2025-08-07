@@ -63,16 +63,10 @@ public function index(Request $request)
         $transfer->details = $details;
     }
 
-<<<<<<< Updated upstream
     return view('transferproduk.index', compact('transfers', 'listLokasi'));
 }
-=======
-        return view('transferproduk.index', compact('transfers'));
-    }
->>>>>>> Stashed changes
 
-    // Tampilkan form create
-    // Tampilkan form create
+
     public function create()
     {
         $lokasiAsal = 'Gudang';

@@ -12,13 +12,44 @@ use App\Models\Produk;
 
 class ReturConsigneeController extends Controller
 {
+    public function cetakLaporan(Request $request)
+    {
+        $query = \App\Models\ReturConsignee::with(['consignee', 'konsinyasikeluar', 'details.produk']);
+
+        // Filter periode
+        $tanggal_awal = $request->input('tanggal_awal');
+        $tanggal_akhir = $request->input('tanggal_akhir');
+        if ($tanggal_awal && $tanggal_akhir) {
+            $query->whereBetween('tanggal_returconsignee', [$tanggal_awal, $tanggal_akhir]);
+        } elseif ($tanggal_awal) {
+            $query->where('tanggal_returconsignee', '>=', $tanggal_awal);
+        } elseif ($tanggal_akhir) {
+            $query->where('tanggal_returconsignee', '<=', $tanggal_akhir);
+        }
+
+        // Filter search
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_returconsignee', 'like', "%$search%")
+                  ->orWhereHas('consignee', function($qc) use ($search) {
+                      $qc->where('nama_consignee', 'like', "%$search%");
+                  });
+            });
+        }
+
+        // Sorting
+        $sort = $request->input('sort', 'asc');
+        $query->orderBy('no_returconsignee', $sort === 'desc' ? 'desc' : 'asc');
+
+        $returconsignees = $query->get();
+        return view('returconsignee.cetak_laporan', compact('returconsignees'));
+    }
     // Form khusus create retur dari penerimaan konsinyasi
 public function createReturTerima(Request $request)
 {
-    $noSudahRetur = ReturConsignee::pluck('no_konsinyasikeluar')->toArray();
-    $konsinyasikeluar = KonsinyasiKeluar::with('consignee')
-        ->whereNotIn('no_konsinyasikeluar', $noSudahRetur)
-        ->get();
+    // Tidak perlu filter, semua konsinyasi keluar bisa diretur berkali-kali
+    $konsinyasikeluar = KonsinyasiKeluar::with('consignee')->get();
     $last = ReturConsignee::orderBy('no_returconsignee', 'desc')->first();
     $newNumber = $last ? intval(substr($last->no_returconsignee, 2)) + 1 : 1;
     $no_returconsignee = 'RC' . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
@@ -41,6 +72,7 @@ if ($urlNoKonsinyasi && $prefillRetur) {
             ->select(
                 'pd.kode_produk',
                 'p.nama_produk',
+                'p.satuan',
                 'pd.jumlah_setor',
                 'pd.jumlah_terjual',
                 'pd.harga_satuan as harga_setor'
@@ -62,9 +94,37 @@ if ($urlNoKonsinyasi && $prefillRetur) {
         'prefillRetur'
     ));
 }
-    public function index()
+    public function index(Request $request)
     {
-        $returconsignees = ReturConsignee::with(['consignee', 'konsinyasikeluar'])->orderBy('tanggal_returconsignee', 'desc')->get();
+        $query = ReturConsignee::with(['consignee', 'konsinyasikeluar', 'details.produk']);
+
+        // Filter periode
+        $tanggal_awal = $request->input('tanggal_awal');
+        $tanggal_akhir = $request->input('tanggal_akhir');
+        if ($tanggal_awal && $tanggal_akhir) {
+            $query->whereBetween('tanggal_returconsignee', [$tanggal_awal, $tanggal_akhir]);
+        } elseif ($tanggal_awal) {
+            $query->where('tanggal_returconsignee', '>=', $tanggal_awal);
+        } elseif ($tanggal_akhir) {
+            $query->where('tanggal_returconsignee', '<=', $tanggal_akhir);
+        }
+
+        // Filter search
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_returconsignee', 'like', "%$search%")
+                  ->orWhereHas('consignee', function($qc) use ($search) {
+                      $qc->where('nama_consignee', 'like', "%$search%");
+                  });
+            });
+        }
+
+        // Sorting
+        $sort = $request->input('sort', 'asc');
+        $query->orderBy('no_returconsignee', $sort === 'desc' ? 'desc' : 'asc');
+
+        $returconsignees = $query->get();
         return view('returconsignee.index', compact('returconsignees'));
     }
     // Endpoint AJAX: cek asal produk dan jumlah_terjual dari penerimaankonsinyasi_detail
@@ -143,7 +203,8 @@ if ($urlNoKonsinyasi && $prefillRetur) {
         }
 
         DB::transaction(function () use ($request, $details) {
-            ReturConsignee::create([
+            // Simpan retur dan detail
+            $retur = ReturConsignee::create([
                 'no_returconsignee' => $request->no_returconsignee,
                 'no_konsinyasikeluar' => $request->no_konsinyasikeluar,
                 'tanggal_returconsignee' => $request->tanggal_returconsignee,
@@ -151,6 +212,7 @@ if ($urlNoKonsinyasi && $prefillRetur) {
                 'total_nilai_retur' => $request->total_nilai_retur,
                 'keterangan' => $request->keterangan,
             ]);
+            $fromReturTerima = $request->input('from_retur_terima');
             foreach ($details as $i => $detail) {
                 ReturConsigneeDetail::create([
                     'no_detailreturconsignee' => $request->no_returconsignee . '-' . ($i+1),
@@ -158,11 +220,38 @@ if ($urlNoKonsinyasi && $prefillRetur) {
                     'kode_produk' => $detail['kode_produk'],
                     'jumlah_retur' => $detail['jumlah_retur'],
                     'harga_satuan' => $detail['harga_satuan'],
-                    'alasan' => $detail['alasan'] ?? '',
+                    'alasan' => $detail['alasan'] ?? null,
                     'subtotal' => $detail['subtotal'] ?? ($detail['jumlah_retur'] * $detail['harga_satuan']),
                 ]);
+
+                // Tambah ke kartu stok (t_kartupersproduk) sebagai barang masuk (stok opname)
+                DB::table('t_kartupersproduk')->insert([
+                    'kode_produk' => $detail['kode_produk'],
+                    'tanggal' => $request->tanggal_returconsignee,
+                    'masuk' => $detail['jumlah_retur'],
+                    'keluar' => 0,
+                    'hpp' => $detail['harga_satuan'],
+                    'satuan' => $detail['satuan'] ?? null,
+                    'keterangan' => 'Retur Consignee Masuk',
+                    'no_transaksi' => $request->no_returconsignee,
+                ]);
+
+                // Jika BUKAN dari create_returterima, selalu lakukan barang keluar otomatis (penukaran)
+                if (empty($fromReturTerima) || $fromReturTerima != '1') {
+                    DB::table('t_kartupersproduk')->insert([
+                        'kode_produk' => $detail['kode_produk'],
+                        'tanggal' => $request->tanggal_returconsignee,
+                        'masuk' => 0,
+                        'keluar' => $detail['jumlah_retur'],
+                        'hpp' => $detail['harga_satuan'],
+                        'satuan' => $detail['satuan'] ?? null,
+                        'keterangan' => 'Penukaran Barang Baru (Retur Consignee)',
+                        'no_transaksi' => $request->no_returconsignee,
+                    ]);
+                }
             }
         });
+
         return redirect()->route('returconsignee.index')->with('success', 'Retur Consignee berhasil disimpan!');
     }
 
@@ -172,8 +261,15 @@ if ($urlNoKonsinyasi && $prefillRetur) {
         $konsinyasikeluar = \App\Models\KonsinyasiKeluar::with('consignee')->get();
         // Data detail untuk JS
         $detailsArray = $returconsignee->details->map(function($d) {
+            // Ambil satuan dari relasi produk jika belum ada
+            $satuan = $d->satuan;
+            if (!$satuan && $d->produk) {
+                $satuan = $d->produk->satuan;
+            }
             return [
                 'kode_produk' => $d->kode_produk,
+                'nama_produk' => $d->nama_produk ?? ($d->produk->nama_produk ?? ''),
+                'satuan' => $satuan,
                 'jumlah_retur' => $d->jumlah_retur,
                 'harga_satuan' => $d->harga_satuan,
                 'alasan' => $d->alasan,
@@ -239,7 +335,7 @@ if ($urlNoKonsinyasi && $prefillRetur) {
         $returconsignee = ReturConsignee::with(['consignee', 'konsinyasikeluar'])->where('no_returconsignee', $no_returconsignee)->firstOrFail();
         $details = ReturConsigneeDetail::where('no_returconsignee', $no_returconsignee)
             ->join('t_produk', 't_returconsignee_detail.kode_produk', '=', 't_produk.kode_produk')
-            ->select('t_returconsignee_detail.*', 't_produk.nama_produk')
+            ->select('t_returconsignee_detail.*', 't_produk.nama_produk', 't_produk.satuan')
             ->get();
         return view('returconsignee.detail', compact('returconsignee', 'details'));
     }
@@ -260,18 +356,20 @@ if ($urlNoKonsinyasi && $prefillRetur) {
         $no_konsinyasikeluar = $request->no_konsinyasikeluar;
         $produk = KonsinyasiKeluarDetail::where('no_konsinyasikeluar', $no_konsinyasikeluar)
             ->join('t_produk', 't_konsinyasikeluar_detail.kode_produk', '=', 't_produk.kode_produk')
-            ->select([
+            ->select(array(
                 't_konsinyasikeluar_detail.kode_produk as kode_produk',
                 't_produk.nama_produk as nama_produk',
+                't_produk.satuan as satuan',
                 't_konsinyasikeluar_detail.jumlah_setor as jumlah_setor',
                 't_konsinyasikeluar_detail.harga_setor as harga_setor'
-            ])
+            ))
             ->get();
         // pastikan hasilnya array biasa
         return response()->json(['produk' => $produk->map(function($item){
             return [
                 'kode_produk' => $item->kode_produk,
                 'nama_produk' => $item->nama_produk,
+                'satuan' => $item->satuan,
                 'jumlah_setor' => $item->jumlah_setor,
                 'harga_setor' => $item->harga_setor
             ];
