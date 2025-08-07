@@ -1,39 +1,41 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
   #sidebar {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-right: 1px solid #dee2e6;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     min-height: 100vh;
-    padding: 0.5rem;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    width: 280px;
   }
   
   .nav-link {
-    color: #495057;
-    border-radius: 3px;
-    padding: 6px 10px;
-    margin: 1px 0;
+    color: rgba(255, 255, 255, 0.8);
+    border-radius: 5px;
+    padding: 10px 15px;
+    margin: 3px 0;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    font-size: 0.9rem;
-    line-height: 1.3;
+    font-size: 0.95rem;
+    line-height: 1.4;
     position: relative;
   }
   
   .nav-link:hover {
-    background-color: #e9ecef;
-    color: #0d6efd;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
   }
   
   .nav-link.active {
-    background-color: #e9ecef;
-    color: #0d6efd;
+    background-color: rgba(16, 185, 129, 0.2); /* Teal background */
+    color: white;
     font-weight: 500;
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.3); /* Subtle border */
   }
 
   .nav-link.current-page {
-    background-color: #e7f1ff;
-    color: #0d6efd;
+    background-color: rgba(16, 185, 129, 0.25); /* Stronger teal */
+    color: white;
     font-weight: 500;
   }
   
@@ -43,67 +45,102 @@
     left: 0;
     top: 0;
     bottom: 0;
-    width: 3px;
-    background-color: #0d6efd;
+    width: 4px;
+    background-color: #10b981; /* Solid teal */
     border-radius: 3px 0 0 3px;
   }
   
   .nav-link i {
-    margin-right: 8px;
-    font-size: 0.95rem;
-    width: 20px;
+    margin-right: 12px;
+    font-size: 1.1rem;
+    width: 24px;
     text-align: center;
   }
   
+  /* Dark mode adjustments */
+  .dark-mode .nav-link.active {
+    background-color: rgba(16, 185, 129, 0.15);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
+  }
+
+  .dark-mode .nav-link.current-page {
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+
+  .dark-mode .nav-link.current-page:before {
+    background-color: #0d9488; /* Darker teal for dark mode */
+  }
+
+  /* Keep all other existing styles the same */
   .nav-flex-column {
-    padding-left: 3px;
-    gap: 0.1rem;
+    padding-left: 8px;
+    gap: 0.3rem;
   }
   
   .ms-3 {
-    margin-left: 12px !important;
-    border-left: 1px solid #dee2e6;
+    margin-left: 20px !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .submenu-header {
     font-weight: 500;
     position: relative;
     cursor: pointer;
+    font-size: 0.95rem;
   }
   
   .submenu-header:after {
     content: "\F282";
     font-family: "bootstrap-icons";
     position: absolute;
-    right: 8px;
-    font-size: 0.8rem;
+    right: 12px;
+    font-size: 1rem;
     transition: transform 0.2s;
+    color: rgba(255, 255, 255, 0.6);
   }
   
   .submenu-header.submenu-active:after {
     transform: rotate(90deg);
-    color: #0d6efd;
+    color: white;
   }
   
   .submenu-item {
-    padding-left: 10px;
-    font-size: 0.85rem;
+    padding-left: 20px;
+    font-size: 0.9rem;
   }
   
   #sidebar .text-center.mb-4 {
-    margin-bottom: 0.75rem !important;
-    padding: 0.25rem;
+    margin-bottom: 1.5rem !important;
+    padding: 0.75rem;
   }
   
   #sidebar .text-center h5 {
-    font-size: 1rem;
-    padding: 8px 0;
+    font-size: 1.2rem;
+    padding: 12px 0;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  .dark-mode #sidebar {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  }
+
+  .dark-mode .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .dark-mode .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .dark-mode .ms-3 {
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
   }
 </style>
 
 <div id="sidebar" class="p-2">
     <div class="text-center mb-3">
-        <h5 class="text-primary">MENU NAVIGASI</h5>
+        <h5 class="text-white">MENU NAVIGASI</h5>
     </div>
     
     <ul class="nav flex-column">
@@ -135,11 +172,11 @@
                         <i class="bi bi-cart"></i><span>Pembelian</span>
                     </a>
                     <ul id="submenu-pembelian" class="nav flex-column ms-3" style="display:none;">
-                        <li><a href="/orderbeli" class="nav-link submenu-item">Order Pembelian</a></li>
-                        <li><a href="/terimabahan" class="nav-link submenu-item">Penerimaan Bahan</a></li>
-                        <li><a href="/pembelian" class="nav-link submenu-item">Pembelian</a></li>
-                        <li><a href="/returbeli" class="nav-link submenu-item">Retur Pembelian</a></li>
-                        <li><a href="/hutang" class="nav-link submenu-item">Hutang</a></li>
+<li><a href="/orderbeli" class="nav-link submenu-item"><i class="bi bi-cart-plus"></i> Order Pembelian</a></li>
+<li><a href="/terimabahan" class="nav-link submenu-item"><i class="bi bi-truck"></i> Penerimaan Bahan</a></li>
+<li><a href="/pembelian" class="nav-link submenu-item"><i class="bi bi-credit-card"></i> Pembelian</a></li>
+<li><a href="/returbeli" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i> Retur Pembelian</a></li>
+<li><a href="/hutang" class="nav-link submenu-item"><i class="bi bi-receipt"></i> Hutang </a></li>
                     </ul>
                 </li>
                 
