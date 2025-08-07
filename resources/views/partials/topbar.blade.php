@@ -12,16 +12,29 @@
         </div>
         
         <!-- Search Form -->
-        <form class="d-none d-md-flex me-3" method="GET" action="#" style="max-width:300px;">
-            <div class="input-group">
-                <input class="form-control border-end-0" type="search" placeholder="Cari..." aria-label="Search" style="box-shadow: none;">
-                <button class="btn btn-light border-start-0" type="submit" style="background-color: white;">
-                    <i class="bi bi-search text-secondary"></i>
-                </button>
-            </div>
+        <form class="d-none d-md-flex me-3 position-relative" id="sidebarSearchForm" method="GET" action="#" style="max-width:250px;">
+            <input class="form-control me-2" type="search" placeholder="Cari..." aria-label="Search" id="sidebarSearchInput" autocomplete="off">
+            <button class="btn btn-outline-success" type="submit">
+                <i class="bi bi-search"></i>
+            </button>
+            <!-- Dropdown hasil pencarian -->
+            <div id="sidebarSearchDropdown" class="dropdown-menu w-100" style="max-height:220px; overflow-y:auto; position:absolute; top:100%; left:0; z-index:9999; display:none;"></div>
         </form>
         
         <!-- User Dropdown -->
+        <div class="dropdown me-3">
+            @php
+                // Ambil nama lokasi aktif dari session
+                $lokasiAktif = null;
+                if(session('lokasi_aktif')) {
+                    $lokasiAktif = \App\Models\Lokasi::where('kode_lokasi', session('lokasi_aktif'))->first();
+                }
+            @endphp
+            <span class="badge bg-primary align-middle" style="font-size:0.95em;">
+                <i class="bi bi-geo-alt-fill me-1"></i>
+                {{ $lokasiAktif ? $lokasiAktif->nama_lokasi : 'Lokasi belum terdeteksi' }}
+            </span>
+        </div>
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="position-relative">
@@ -93,3 +106,64 @@
         box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
     }
 </style>
+<!-- Bootstrap Icons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('sidebarSearchInput');
+    const searchDropdown = document.getElementById('sidebarSearchDropdown');
+    const sidebarLinks = Array.from(document.querySelectorAll('#sidebar .nav-link, #sidebar .submenu-item'));
+
+    searchInput.addEventListener('input', function() {
+        const keyword = this.value.trim().toLowerCase();
+        searchDropdown.innerHTML = '';
+        if (!keyword) {
+            searchDropdown.style.display = 'none';
+            return;
+        }
+        const matches = sidebarLinks.filter(link => {
+            const text = link.textContent.trim().toLowerCase();
+            return text.includes(keyword) && link.href && link.href !== 'javascript:void(0)';
+        });
+        if (matches.length === 0) {
+            const notFound = document.createElement('span');
+            notFound.className = 'dropdown-item text-muted';
+            notFound.textContent = 'Tidak ditemukan';
+            notFound.style.cursor = 'pointer';
+            notFound.onclick = function() {
+                searchDropdown.style.display = 'none';
+            };
+            searchDropdown.appendChild(notFound);
+            searchDropdown.style.display = 'block';
+            return;
+        }
+        matches.forEach(link => {
+            const item = document.createElement('a');
+            item.href = link.href;
+            item.className = 'dropdown-item';
+            item.textContent = link.textContent.trim();
+            item.onclick = function() {
+                searchDropdown.style.display = 'none';
+            };
+            searchDropdown.appendChild(item);
+        });
+        searchDropdown.style.display = 'block';
+    });
+
+    // Sembunyikan dropdown saat klik di luar
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+            searchDropdown.style.display = 'none';
+        }
+    });
+
+    // Enter pada form: arahkan ke hasil pertama jika ada
+    document.getElementById('sidebarSearchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const first = searchDropdown.querySelector('a.dropdown-item');
+        if (first) {
+            window.location.href = first.href;
+        }
+    });
+});
+</script>

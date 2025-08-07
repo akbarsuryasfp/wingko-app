@@ -15,7 +15,7 @@
         </style>
 
         <div class="card-header bg-transparent border-0 text-center py-3">
-            <h4 class="mb-0">Edit Permintaan Pembelian</h4>
+            <h4 class="mb-0">Edit Order Pembelian</h4>
         </div>
         
         <div class="card-body">

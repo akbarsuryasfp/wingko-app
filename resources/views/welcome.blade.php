@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+@if(session('error'))
+    <div class="alert alert-danger">
+        {{ session('error') }}
+    </div>
+@endif
 <div class="container">
     <h4>Selamat Datang</h4>
     <div class="alert alert-info mt-3">
@@ -272,6 +277,97 @@ $groupedProduk = $kadaluarsaProduk->groupBy('lokasi');
 
 </div>
 
+@php
+    $bulan = date('m');
+    $tahun = date('Y');
+    // Data summary
+    $penjualanBulanIni = DB::table('t_penjualan')
+        ->select(
+            DB::raw('COUNT(*) as total_transaksi'),
+            DB::raw('SUM(total) as total_penjualan'),
+            DB::raw('AVG(total) as rata_rata')
+        )
+        ->whereMonth('tanggal_jual', $bulan)
+        ->whereYear('tanggal_jual', $tahun)
+        ->first();
+
+    // Data harian untuk grafik
+    $grafikPenjualan = DB::table('t_penjualan')
+        ->select(
+            DB::raw('DAY(tanggal_jual) as hari'),
+            DB::raw('SUM(total) as total')
+        )
+        ->whereMonth('tanggal_jual', $bulan)
+        ->whereYear('tanggal_jual', $tahun)
+        ->groupBy(DB::raw('DAY(tanggal_jual)'))
+        ->orderBy('hari')
+        ->get();
+
+    $labels = $grafikPenjualan->pluck('hari')->map(fn($h) => str_pad($h, 2, '0', STR_PAD_LEFT))->toArray();
+    $dataGrafik = $grafikPenjualan->pluck('total')->toArray();
+@endphp
+
+<div class="row g-3 mt-2">
+    <div class="col-md-6">
+        <div class="card border-primary shadow-sm mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-primary">
+                    Laporan Penjualan Bulan {{ date('F Y') }}
+                </h5>
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="fw-bold fs-4">{{ $penjualanBulanIni->total_transaksi ?? 0 }}</div>
+                        <div class="text-muted">Transaksi</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-4">{{ number_format($penjualanBulanIni->total_penjualan ?? 0, 0, ',', '.') }}</div>
+                        <div class="text-muted">Total Penjualan (Rp)</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold fs-4">{{ number_format($penjualanBulanIni->rata_rata ?? 0, 0, ',', '.') }}</div>
+                        <div class="text-muted">Rata-rata / Transaksi</div>
+                    </div>
+                </div>
+                <div>
+                    <canvas id="grafikPenjualan" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('grafikPenjualan').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {!! json_encode($labels) !!},
+            datasets: [{
+                label: 'Penjualan Harian (Rp)',
+                data: {!! json_encode($dataGrafik) !!},
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0,123,255,0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Hari' } },
+                y: { title: { display: true, text: 'Total Penjualan (Rp)' }, beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+});
+</script>
+
 <!-- Script toggle -->
 <script>
 function toggleBox(id) {
@@ -280,4 +376,37 @@ function toggleBox(id) {
 }
 </script>
 
+@if(!session('lokasi_aktif'))
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            fetch("{{ route('lokasi.set') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    location.reload();
+                } else {
+                    alert('Lokasi tidak ditemukan di database!');
+                }
+            });
+        }, function(error) {
+            alert('Gagal mendeteksi lokasi: ' + error.message);
+        });
+    } else {
+        alert('Browser tidak mendukung geolocation');
+    }
+});
+</script>
+@endif
 @endsection

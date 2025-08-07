@@ -33,11 +33,11 @@
             {{-- Header --}}
             <div class="row align-items-center mb-2">
                 <div class="col-md-6 col-12 text-md-start text-center">
-                    <h4 class="mb-0 fw-semibold">Daftar Permintaan Pembelian</h4>
+                    <h4 class="mb-0 fw-semibold">Daftar Order Pembelian</h4>
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
                     <a href="{{ route('orderbeli.create') }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> Tambah Permintaan Pembelian
+                        <i class="bi bi-plus-circle"></i> Tambah Order Pembelian
                     </a>
                 </div>
             </div>

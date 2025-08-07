@@ -15,13 +15,14 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $login = $request->input('email'); // field input tetap 'email' di form
+        $login = $request->input('email');
         $password = $request->input('password');
-
-        // Cek apakah input berupa email atau username
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (Auth::attempt([$fieldType => $login, 'password' => $password])) {
+        $success = Auth::attempt([$fieldType => $login, 'password' => $password]);
+        //dd($success, Auth::user(), session()->all());
+
+        if ($success) {
             return redirect()->intended('/');
         }
         return back()->with('error', 'Email/Username atau password salah');
