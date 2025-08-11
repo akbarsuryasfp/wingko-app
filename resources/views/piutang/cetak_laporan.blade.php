@@ -65,7 +65,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <th colspan="5" class="text-right">TOTAL</th>
+                <th colspan="5" class="text-right">GRAND TOTAL</th>
                 <th>Rp{{ number_format($total_tagihan,0,',','.') }}</th>
                 <th>Rp{{ number_format($total_bayar,0,',','.') }}</th>
                 <th>Rp{{ number_format($total_sisa,0,',','.') }}</th>

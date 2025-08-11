@@ -93,6 +93,8 @@ Route::get('/terimabahan/sisa-order/{no_order}', [TerimaBahanController::class, 
 Route::get('/get-order-detail/{no_order_beli}', [TerimaBahanController::class, 'getOrderDetail']);
 
 // Route cetak laporan penjualan (HARUS sebelum resource agar tidak tertimpa)
+Route::get('/penjualan/cetak-laporan-pdf', [PenjualanController::class, 'cetakLaporanPdf'])->name('penjualan.cetak_laporan_pdf');
+Route::get('/penjualan/cetak-pdf/{no_jual}', [App\Http\Controllers\PenjualanController::class, 'cetakPdf'])->name('penjualan.cetak_pdf');
 Route::get('/penjualan/cetak-laporan', [App\Http\Controllers\PenjualanController::class, 'cetakLaporan'])->name('penjualan.cetak_laporan');
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
@@ -101,13 +103,24 @@ Route::get('/penjualan/cetak-tagihan/{no_jual}', [PenjualanController::class, 'c
 Route::get('create-pesanan', [PenjualanController::class, 'createPesanan'])->name('penjualan.createPesanan');
 
 // Route cetak laporan returjual (HARUS sebelum resource agar tidak tertimpa)
-Route::get('/returjual/cetak-laporan', [ReturJualController::class, 'cetakLaporan'])->name('returjual.cetak_laporan');
+Route::get('/returjual/cetak-laporan', [ReturJualController::class, 'cetakLaporanPdf'])->name('returjual.cetak_laporan');
 // Route retur penjualan
 Route::resource('returjual', ReturJualController::class);
 Route::get('/returjual/{no_returjual}/cetak', [ReturJualController::class, 'cetak'])->name('returjual.cetak');
 
 // Route cetak retur consignor (pemilik barang)
 Route::get('/returconsignor/{no_returconsignor}/cetak', [\App\Http\Controllers\ReturConsignorController::class, 'cetak'])->name('returconsignor.cetak');
+Route::get('/returconsignor/{no_returconsignor}/cetak/pdf', function ($no_returconsignor) {
+    $returconsignor = \App\Models\ReturConsignor::with(['consignor', 'konsinyasimasuk'])->where('no_returconsignor', $no_returconsignor)->firstOrFail();
+    $details = \App\Models\ReturConsignorDetail::where('no_returconsignor', $no_returconsignor)
+        ->join('t_produk_konsinyasi', 't_returconsignor_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+        ->select('t_returconsignor_detail.*', 't_produk_konsinyasi.nama_produk', 't_produk_konsinyasi.satuan')
+        ->get();
+    $html = view('returconsignor.cetak', compact('returconsignor', 'details'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+    $pdf->setPaper('A4', 'landscape');
+    return $pdf->stream('nota_retur_consignor_'.$no_returconsignor.'.pdf');
+})->name('returconsignor.cetak_pdf');
 Route::get('/returjual/filter-penjualan', [\App\Http\Controllers\ReturJualController::class, 'filterPenjualan'])->name('returjual.filter-penjualan');
 Route::get('/returjual/detail-penjualan/{no_jual}', [ReturJualController::class, 'getDetailPenjualan']);
 
@@ -133,8 +146,59 @@ Route::resource('pembelian', PembelianController::class);
 
 // Route bayar consignor
 Route::get('/bayarconsignor/cetak-laporan', [\App\Http\Controllers\BayarConsignorController::class, 'cetakLaporan'])->name('bayarconsignor.cetak_laporan');
+Route::get('/bayarconsignor/cetak-laporan/pdf', function (\Illuminate\Http\Request $request) {
+    $sort = $request->get('sort', 'asc');
+    $tanggal_awal = $request->get('tanggal_awal');
+    $tanggal_akhir = $request->get('tanggal_akhir');
+    $query = \App\Models\BayarConsignor::with(['details.produk', 'consignor'])->orderBy('no_bayarconsignor', $sort);
+    if ($tanggal_awal) {
+        $query->where('tanggal_bayar', '>=', $tanggal_awal);
+    }
+    if ($tanggal_akhir) {
+        $query->where('tanggal_bayar', '<=', $tanggal_akhir);
+    }
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where(function($q) use ($search) {
+            $q->where('no_bayarconsignor', 'like', "%$search%")
+              ->orWhereHas('consignor', function($q2) use ($search) {
+                  $q2->where('nama_consignor', 'like', "%$search%");
+              });
+        });
+    }
+    $list = $query->get();
+    $html = view('bayarconsignor.cetak_laporan', compact('list'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+    $pdf->setPaper('A4', 'landscape');
+    return $pdf->stream('laporan_pembayaran_consignor.pdf');
+})->name('bayarconsignor.cetak_laporan_pdf');
 Route::resource('bayarconsignor', App\Http\Controllers\BayarConsignorController::class);
 Route::get('/bayarconsignor/{no_bayarconsignor}/cetak', [App\Http\Controllers\BayarConsignorController::class, 'cetak'])->name('bayarconsignor.cetak');
+Route::get('/bayarconsignor/{no_bayarconsignor}/cetak/pdf', function ($no_bayarconsignor) {
+    $header = \App\Models\BayarConsignor::with(['details.produk', 'consignor'])->where('no_bayarconsignor', $no_bayarconsignor)->firstOrFail();
+    // Ambil jumlah_stok dari t_konsinyasimasuk_detail untuk setiap detail
+    foreach ($header->details as $detail) {
+        $no_konsinyasimasuk = $detail->no_konsinyasimasuk ?? null;
+        $kode_produk = $detail->kode_produk ?? null;
+        if ($no_konsinyasimasuk && $kode_produk) {
+            $stok = \DB::table('t_konsinyasimasuk_detail')
+                ->where('no_konsinyasimasuk', $no_konsinyasimasuk)
+                ->where('kode_produk', $kode_produk)
+                ->value('jumlah_stok');
+            $detail->jumlah_stok = $stok;
+        } else {
+            $stok = \DB::table('t_konsinyasimasuk_detail')
+                ->where('kode_produk', $kode_produk)
+                ->orderByDesc('no_konsinyasimasuk')
+                ->value('jumlah_stok');
+            $detail->jumlah_stok = $stok;
+        }
+    }
+    $html = view('bayarconsignor.cetak', compact('header'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+    $pdf->setPaper('A4', 'landscape');
+    return $pdf->stream('bukti_pembayaran_consignor_'.$no_bayarconsignor.'.pdf');
+})->name('bayarconsignor.cetak_pdf');
 
 // Route retur pembelian
 Route::get('/returbeli/laporan/pdf', [ReturBeliController::class, 'laporanPdf'])->name('returbeli.laporan.pdf');
@@ -220,12 +284,46 @@ Route::resource('piutang', PiutangController::class);
 // Route index dan cetak
 // Route Konsinyasi Masuk
 Route::post('/konsinyasimasuk/{no_konsinyasimasuk}/update-harga-jual', [\App\Http\Controllers\KonsinyasiMasukController::class, 'updateHargaJual'])->name('konsinyasimasuk.update-harga-jual');
-Route::get('/konsinyasimasuk/cetak-laporan', [KonsinyasiMasukController::class, 'cetakLaporan'])->name('konsinyasimasuk.cetak_laporan');
+Route::get('/konsinyasimasuk/cetak-laporan', [\App\Http\Controllers\KonsinyasiMasukController::class, 'cetakLaporan'])->name('konsinyasimasuk.cetak_laporan');
+Route::get('/konsinyasimasuk/cetak-laporan-pdf', [\App\Http\Controllers\KonsinyasiMasukController::class, 'cetakLaporanPdf'])->name('konsinyasimasuk.cetak_laporan_pdf');
 Route::resource('konsinyasimasuk', \App\Http\Controllers\KonsinyasiMasukController::class);
 // Route Konsinyasi Masuk
 // Route Jual Konsinyasi Masuk
 Route::get('/jualkonsinyasimasuk', [\App\Http\Controllers\JualKonsinyasiMasukController::class, 'index'])->name('jualkonsinyasimasuk.index');
 Route::get('/jualkonsinyasimasuk/cetak-laporan', [\App\Http\Controllers\JualKonsinyasiMasukController::class, 'cetakLaporan'])->name('jualkonsinyasimasuk.cetak_laporan');
+Route::get('/jualkonsinyasimasuk/cetak-laporan-pdf', function(\Illuminate\Http\Request $request) {
+    $query = \App\Models\Penjualan::with(['pelanggan', 'details.produk'])
+        ->whereHas('details', function($q) {
+            $q->where('kode_produk', 'like', 'PKM%');
+        });
+    if ($request->filled('tanggal_awal')) {
+        $query->where('tanggal_jual', '>=', $request->tanggal_awal);
+    }
+    if ($request->filled('tanggal_akhir')) {
+        $query->where('tanggal_jual', '<=', $request->tanggal_akhir);
+    }
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where(function($q) use ($search) {
+            $q->where('no_jual', 'like', "%$search%")
+              ->orWhereHas('pelanggan', function($q2) use ($search) {
+                  $q2->where('nama_pelanggan', 'like', "%$search%");
+              })
+              ->orWhereHas('details', function($q3) use ($search) {
+                  $q3->whereHas('produk', function($q4) use ($search) {
+                      $q4->where('nama_produk', 'like', "%$search%");
+                  });
+              });
+        });
+    }
+    $sort = $request->get('sort', 'asc');
+    $query->orderBy('no_jual', $sort);
+    $penjualanKonsinyasi = $query->get();
+    $html = view('jualkonsinyasimasuk.cetak_laporan', compact('penjualanKonsinyasi'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+    $pdf->setPaper('a4', 'landscape');
+    return $pdf->stream('laporan-penjualan-konsinyasi-masuk.pdf');
+})->name('jualkonsinyasimasuk.cetak_laporan_pdf');
 // Route pembayaran ke consignor (untuk sidebar konsinyasi)
 Route::get('/bayarconsignor', [App\Http\Controllers\BayarConsignorController::class, 'index'])->name('bayarconsignor.index');
 
@@ -234,6 +332,44 @@ Route::get('/komisijual', [App\Http\Controllers\KomisiJualController::class, 'in
 
 // Route cetak laporan retur consignor (HARUS sebelum resource dan parameterized route)
 Route::get('/returconsignor/cetak-laporan', [App\Http\Controllers\ReturConsignorController::class, 'cetakLaporan'])->name('returconsignor.cetak_laporan');
+Route::get('/returconsignor/cetak-laporan/pdf', function (\Illuminate\Http\Request $request) {
+    $sort = $request->get('sort', 'asc');
+    $query = \App\Models\ReturConsignor::with(['details.produk', 'consignor', 'konsinyasimasuk']);
+    $tanggal_awal = $request->tanggal_awal;
+    $tanggal_akhir = $request->tanggal_akhir;
+    if ($tanggal_awal) {
+        $query->whereDate('tanggal_returconsignor', '>=', $tanggal_awal);
+    }
+    if ($tanggal_akhir) {
+        $query->whereDate('tanggal_returconsignor', '<=', $tanggal_akhir);
+    }
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('no_returconsignor', 'like', "%$search%")
+              ->orWhereHas('consignor', function($qc) use ($search) {
+                  $qc->where('nama_consignor', 'like', "%$search%");
+              });
+        });
+    }
+    $returconsignor = $query->orderBy('no_returconsignor', $sort)->get();
+    // Pastikan setiap detail ada field satuan (ambil dari relasi produk jika ada)
+    foreach ($returconsignor as $rc) {
+        if ($rc->details) {
+            foreach ($rc->details as $detail) {
+                if (isset($detail->produk) && isset($detail->produk->satuan)) {
+                    $detail->satuan = $detail->produk->satuan;
+                } else {
+                    $detail->satuan = \DB::table('t_produk_konsinyasi')->where('kode_produk', $detail->kode_produk)->value('satuan') ?? '-';
+                }
+            }
+        }
+    }
+    $html = view('returconsignor.cetak_laporan', compact('returconsignor', 'tanggal_awal', 'tanggal_akhir'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+    $pdf->setPaper('A4', 'landscape');
+    return $pdf->stream('laporan_retur_consignor.pdf');
+})->name('returconsignor.cetak_laporan_pdf');
 // Route retur konsinyasi ke consignor
 Route::get('/returconsignor', [App\Http\Controllers\ReturConsignorController::class, 'index'])->name('returconsignor.index');
 Route::get('/returconsignor/create', [App\Http\Controllers\ReturConsignorController::class, 'create'])->name('returconsignor.create');
@@ -286,18 +422,114 @@ Route::get('jualkonsinyasimasuk/cetak-laporan', [App\Http\Controllers\JualKonsin
 
 // Route cetak laporan konsinyasi keluar (letakkan sebelum resource agar tidak tertimpa)
 Route::get('/konsinyasikeluar/cetak-laporan', [App\Http\Controllers\KonsinyasiKeluarController::class, 'cetakLaporan'])->name('konsinyasikeluar.cetak_laporan');
+// Route PDF landscape output for konsinyasikeluar laporan
+Route::get('/konsinyasikeluar/cetak-laporan-pdf', function (\Illuminate\Http\Request $request) {
+    $query = \App\Models\KonsinyasiKeluar::with(['consignee', 'details.produk']);
+    if ($request->filled('tanggal_awal')) {
+        $query->whereDate('tanggal_setor', '>=', $request->tanggal_awal);
+    }
+    if ($request->filled('tanggal_akhir')) {
+        $query->whereDate('tanggal_setor', '<=', $request->tanggal_akhir);
+    }
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where(function($q) use ($search) {
+            $q->where('no_konsinyasikeluar', 'like', "%$search%")
+              ->orWhereHas('consignee', function($qc) use ($search) {
+                  $qc->where('nama_consignee', 'like', "%$search%" );
+              });
+        });
+    }
+    $sort = $request->get('sort', 'asc');
+    $query->orderBy('no_konsinyasikeluar', $sort);
+    $konsinyasiKeluarList = $query->get();
+    $tanggal_awal = $request->tanggal_awal;
+    $tanggal_akhir = $request->tanggal_akhir;
+    $html = view('konsinyasikeluar.cetak_laporan', compact('konsinyasiKeluarList', 'tanggal_awal', 'tanggal_akhir'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'landscape');
+    return $pdf->stream('laporan_konsinyasi_keluar.pdf');
+})->name('konsinyasikeluar.cetak_laporan_pdf');
 // Route konsinyasi keluar
 Route::resource('konsinyasikeluar', KonsinyasiKeluarController::class);
+// Route PDF landscape output for surat pengiriman produk konsinyasi keluar
+Route::get('/konsinyasikeluar/{no_konsinyasikeluar}/cetak-pdf', function ($no_konsinyasikeluar) {
+    $header = \App\Models\KonsinyasiKeluar::with(['consignee', 'details.produk'])->where('no_konsinyasikeluar', $no_konsinyasikeluar)->firstOrFail();
+    $html = view('konsinyasikeluar.cetak', compact('header'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'landscape');
+    return $pdf->stream('surat_pengiriman_konsinyasi.pdf');
+})->name('konsinyasikeluar.cetak_pdf');
 Route::get('/konsinyasikeluar/{no_konsinyasikeluar}/cetak', [KonsinyasiKeluarController::class, 'cetak'])->name('konsinyasikeluar.cetak');
 Route::get('/konsinyasikeluar/{id}/cetak', [App\Http\Controllers\KonsinyasiKeluarController::class, 'cetak'])->name('konsinyasikeluar.cetak');
 
 // Route cetak laporan penerimaan konsinyasi (letakkan sebelum resource agar tidak tertimpa)
 Route::get('/penerimaankonsinyasi/cetak-laporan', [App\Http\Controllers\PenerimaanKonsinyasiController::class, 'cetakLaporan'])->name('penerimaankonsinyasi.cetak_laporan');
+// Route PDF landscape output for penerimaan konsinyasi laporan
+Route::get('/penerimaankonsinyasi/cetak-laporan-pdf', function (\Illuminate\Http\Request $request) {
+    $query = \App\Models\PenerimaanKonsinyasi::with(['consignee', 'details.produk']);
+    if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
+        $query->whereBetween('tanggal_terima', [$request->tanggal_awal, $request->tanggal_akhir]);
+    } elseif ($request->filled('tanggal_awal')) {
+        $query->where('tanggal_terima', '>=', $request->tanggal_awal);
+    } elseif ($request->filled('tanggal_akhir')) {
+        $query->where('tanggal_terima', '<=', $request->tanggal_akhir);
+    }
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('no_penerimaankonsinyasi', 'like', "%$search%")
+              ->orWhereHas('consignee', function($qc) use ($search) {
+                  $qc->where('nama_consignee', 'like', "%$search%" );
+              });
+        });
+    }
+    $sort = $request->get('sort', 'asc');
+    $query->orderBy('no_penerimaankonsinyasi', $sort === 'desc' ? 'desc' : 'asc');
+    $penerimaanKonsinyasiList = $query->get();
+    $html = view('penerimaankonsinyasi.cetak_laporan', compact('penerimaanKonsinyasiList'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'landscape');
+    return $pdf->stream('laporan_penerimaan_konsinyasi.pdf');
+})->name('penerimaankonsinyasi.cetak_laporan_pdf');
 // Route penerimaan konsinyasi
 Route::resource('penerimaankonsinyasi', App\Http\Controllers\PenerimaanKonsinyasiController::class);
-
+// Route cetak nota retur consignee (PDF, landscape, like returconsignor)
+Route::get('/returconsignee/{no_returconsignee}/cetak', function($no_returconsignee) {
+    $returconsignee = \App\Models\ReturConsignee::with(['consignee', 'konsinyasikeluar'])->where('no_returconsignee', $no_returconsignee)->firstOrFail();
+    $details = \App\Models\ReturConsigneeDetail::where('no_returconsignee', $no_returconsignee)
+        ->leftJoin('t_produk', 't_returconsignee_detail.kode_produk', '=', 't_produk.kode_produk')
+        ->select('t_returconsignee_detail.*', 't_produk.nama_produk', 't_produk.satuan')
+        ->get();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('returconsignee.cetak', compact('returconsignee', 'details'))
+        ->setPaper('a4', 'landscape');
+    return $pdf->stream('Nota_Retur_Consignee_' . $returconsignee->no_returconsignee . '.pdf');
+})->name('returconsignee.cetak');
 // Route cetak laporan retur consignee (HARUS sebelum resource dan parameterized route)
 Route::get('/returconsignee/cetak-laporan', [App\Http\Controllers\ReturConsigneeController::class, 'cetakLaporan'])->name('returconsignee.cetak_laporan');
+// Route PDF landscape output for returconsignee laporan
+Route::get('/returconsignee/cetak-laporan-pdf', function (\Illuminate\Http\Request $request) {
+    $query = \App\Models\ReturConsignee::with(['consignee', 'konsinyasikeluar', 'details.produk']);
+    $tanggal_awal = $request->input('tanggal_awal');
+    $tanggal_akhir = $request->input('tanggal_akhir');
+    if ($tanggal_awal && $tanggal_akhir) {
+        $query->whereBetween('tanggal_returconsignee', [$tanggal_awal, $tanggal_akhir]);
+    } elseif ($tanggal_awal) {
+        $query->where('tanggal_returconsignee', '>=', $tanggal_awal);
+    } elseif ($tanggal_akhir) {
+        $query->where('tanggal_returconsignee', '<=', $tanggal_akhir);
+    }
+    $search = $request->input('search');
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('no_returconsignee', 'like', "%$search%")
+              ;
+        });
+    }
+    $sort = $request->input('sort', 'asc');
+    $query->orderBy('no_returconsignee', $sort === 'desc' ? 'desc' : 'asc');
+    $returconsignees = $query->get();
+    $html = view('returconsignee.cetak_laporan', compact('returconsignees'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'landscape');
+    return $pdf->stream('laporan_returconsignee.pdf');
+})->name('returconsignee.cetak_laporan_pdf');
 // Route AJAX produk konsinyasi keluar untuk returconsignee (HARUS DI ATAS resource)
 Route::get('/returconsignee/produk-keluar', [App\Http\Controllers\ReturConsigneeController::class, 'getProdukKonsinyasiKeluar'])->name('returconsignee.produk_keluar');
 // Route retur consignee
@@ -308,6 +540,29 @@ Route::get('returconsignee/create-returterima', [App\Http\Controllers\ReturConsi
 Route::resource('returconsignee', App\Http\Controllers\ReturConsigneeController::class);
 
 // Route kartu persediaan produk konsinyasi masuk
+
+// Route PDF landscape output for kartuperskonsinyasi laporan
+Route::get('/kartuperskonsinyasi/cetak-laporan-pdf', function (\Illuminate\Http\Request $request) {
+    $query = \App\Models\KartuPersKonsinyasi::with(['produk']);
+    if ($request->filled('tanggal_awal')) {
+        $query->whereDate('tanggal', '>=', $request->tanggal_awal);
+    }
+    if ($request->filled('tanggal_akhir')) {
+        $query->whereDate('tanggal', '<=', $request->tanggal_akhir);
+    }
+    if ($request->filled('kode_produk_konsinyasi')) {
+        $query->where('kode_produk', $request->kode_produk_konsinyasi);
+    }
+    if ($request->filled('lokasi_konsinyasi')) {
+        $query->where('lokasi', $request->lokasi_konsinyasi);
+    }
+    $sort = $request->get('sort', 'asc');
+    $query->orderBy('tanggal', $sort);
+    $kartuperskonsinyasi = $query->get();
+    $html = view('kartuperskonsinyasi.cetak_laporan', compact('kartuperskonsinyasi'))->render();
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)->setPaper('a4', 'landscape');
+    return $pdf->stream('laporan_kartu_persediaan_konsinyasi.pdf');
+})->name('kartuperskonsinyasi.cetak_laporan_pdf');
 Route::resource('kartuperskonsinyasi', App\Http\Controllers\KartuPersKonsinyasiController::class);
 
 // Route jurnal
@@ -372,5 +627,3 @@ Route::get('/api/stok-produk-konsinyasi/{kode_produk}', [\App\Http\Controllers\K
 Route::get('/penjualan/cetak-tagihan-pdf/{no_jual}', [PenjualanController::class, 'cetakTagihanPdf'])->name('penjualan.cetak_tagihan_pdf');
 
 // Route PDF untuk cetak laporan penjualan dan nota penjualan
-Route::get('/penjualan/cetak-laporan-pdf', [PenjualanController::class, 'cetakLaporanPdf'])->name('penjualan.cetak_laporan_pdf');
-Route::get('/penjualan/cetak-pdf/{no_jual}', [App\Http\Controllers\PenjualanController::class, 'cetakPdf'])->name('penjualan.cetak_pdf');

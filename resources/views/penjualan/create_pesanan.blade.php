@@ -122,7 +122,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" id="diskon" name="diskon" class="form-control" min="0" oninput="hitungTotalLain()">
+                            <input type="text" id="diskon" name="diskon" class="form-control" autocomplete="off">
                         </div>
                     </div>
                 </div>
@@ -282,7 +282,7 @@
                     <td>${satuan}</td>
                     <td>${item.jumlah}</td>
                     <td>${formatRupiah(parseInt(item.harga_satuan), true)}</td>
-                    <td><div class="input-group input-group-sm"><span class="input-group-text">Rp</span><input type="text" min="0" class="form-control form-control-sm text-center diskon-satuan-input" data-index="${index}" value="${formatRupiah(diskon_satuan)}"></div></td>
+                    <td><span style="display:inline-block; min-width:90px; text-align:center;">(Rp${diskon_satuan.toLocaleString('id-ID')})</span></td>
                     <td class="subtotal-col">${formatRupiah(item.subtotal, true)}</td>
                 </tr>
             `;

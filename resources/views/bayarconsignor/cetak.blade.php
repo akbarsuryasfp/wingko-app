@@ -34,9 +34,7 @@
             <div class="sub" style="margin-bottom:8px;">Tanggal Pembayaran: {{ $header->tanggal_bayar }}</div>
             <div class="sub">Kepada Yth: {{ $header->consignor->nama_consignor ?? '-' }}</div>
         </div>
-        <div class="nota-print no-print">
-            <button onclick="window.print()" style="padding:4px 12px;">Print</button>
-        </div>
+    <!-- print button removed -->
     </div>
     <div class="nota-info" style="margin-top:8px;">No Bukti Pembayaran: {{ $header->no_bayarconsignor }}</div>
     <div class="nota-info" style="margin-top:2px;">Alamat: {{ $header->consignor->alamat ?? '-' }}</div>

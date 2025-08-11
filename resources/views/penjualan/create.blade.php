@@ -111,7 +111,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="total_harga" name="total_harga" value="0" readonly>
+                            <input type="text" class="form-control" id="total_harga" name="total_harga" value="0" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -120,7 +120,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" class="form-control" id="diskon" name="diskon" value="0" min="0">
+                            <input type="text" class="form-control" id="diskon" name="diskon" value="0" autocomplete="off">
                         </div>
                     </div>
                 </div>
@@ -129,7 +129,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="total_jual" name="total_jual" value="0" readonly>
+                            <input type="text" class="form-control" id="total_jual" name="total_jual" value="0" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -147,7 +147,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="kembalian" name="kembalian" value="0" readonly>
+                            <input type="text" class="form-control" id="kembalian" name="kembalian" value="0" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -156,7 +156,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="piutang" name="piutang" value="0" readonly>
+                            <input type="text" class="form-control" id="piutang" name="piutang" value="0" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -307,10 +307,10 @@
                     <td>${index + 1}</td>
                     <td>${item.nama_produk}</td>
                     <td>${item.jumlah}</td>
-                    <td>${item.satuan || ''}</td>
-                    <td>${formatRupiah(item.harga_satuan)}</td>
-                    <td>${formatRupiah(item.diskon_satuan)}</td>
-                    <td>${formatRupiah(item.subtotal)}</td>
+                    <td>${item.satuan}</td>
+                    <td>Rp${item.harga_satuan.toLocaleString('id-ID')}</td>
+                    <td>(Rp${(item.diskon_satuan || 0).toLocaleString('id-ID')})</td>
+                    <td>Rp${item.subtotal.toLocaleString('id-ID')}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">
                             <i class="bi bi-trash"></i>

@@ -67,7 +67,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="total_harga" name="total_harga" value="{{ number_format($penjualan->total_harga,0,',','.') }}" readonly>
+                            <input type="text" class="form-control" id="total_harga" name="total_harga" value="{{ number_format($penjualan->total_harga,0,',','.') }}" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="total_jual" name="total_jual" value="{{ number_format($penjualan->total_jual,0,',','.') }}" readonly>
+                            <input type="text" class="form-control" id="total_jual" name="total_jual" value="{{ number_format($penjualan->total_jual,0,',','.') }}" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -103,7 +103,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="kembalian" name="kembalian" value="{{ number_format($penjualan->kembalian,0,',','.') }}" readonly>
+                            <input type="text" class="form-control" id="kembalian" name="kembalian" value="{{ number_format($penjualan->kembalian,0,',','.') }}" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control" id="piutang" name="piutang" value="{{ number_format($penjualan->piutang,0,',','.') }}" readonly>
+                            <input type="text" class="form-control" id="piutang" name="piutang" value="{{ number_format($penjualan->piutang,0,',','.') }}" readonly style="background: #e9ecef; pointer-events: none;">
                         </div>
                     </div>
                 </div>
@@ -125,7 +125,7 @@
                 <div class="row mb-3 align-items-center">
                     <label class="col-sm-4 col-form-label">Status Pembayaran</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" name="status_pembayaran" id="status_pembayaran" value="{{ $penjualan->status_pembayaran }}" readonly tabindex="-1">
+                        <input type="text" class="form-control" name="status_pembayaran" id="status_pembayaran" value="{{ $penjualan->status_pembayaran }}" readonly tabindex="-1" style="background: #e9ecef; pointer-events: none;">
                     </div>
                 </div>
             </div>
@@ -152,9 +152,14 @@
                     <tr>
                         <td class="text-center align-middle">{{ $i+1 }}</td>
                         <td class="text-center align-middle">{{ $detail['nama_produk'] }}</td>
-                        <td class="text-center align-middle">{{ $detail['jumlah'] }}</td>
-                        <td class="text-center align-middle">{{ (int) $detail['harga_satuan'] }}</td>
-                        <td class="text-center align-middle">{{ isset($detail['diskon_satuan']) ? (int)$detail['diskon_satuan'] : 0 }}</td>
+                        <td class="text-center align-middle">
+                            <span style="display: inline-block; min-width: 60px; text-align: center;">{{ $detail['jumlah'] }}</span>
+                        </td>
+                        <td class="text-center align-middle">{{ number_format((int) $detail['harga_satuan'],0,',','.') }}</td>
+                        <td class="text-center align-middle">
+                            @php $diskon = isset($detail['diskon_satuan']) ? (int)$detail['diskon_satuan'] : 0; @endphp
+                            <span style="display: inline-block; min-width: 90px; text-align: center;">(Rp{{ number_format($diskon,0,',','.') }})</span>
+                        </td>
                         <td class="text-center align-middle">{{ number_format($detail['subtotal'],0,',','.') }}</td>
                         <td class="text-center align-middle" rowspan="{{ count($details) }}" style="vertical-align: middle; font-weight: bold; background: #f8f9fa;">
                             @if($i == 0)
@@ -255,7 +260,6 @@ jQuery(function($) {
         daftarProduk.forEach((item, i) => {
             if (typeof item.diskon_satuan === 'undefined') item.diskon_satuan = 0;
             if (typeof item.satuan === 'undefined') item.satuan = '-';
-            // Pastikan diskon_satuan tidak lebih besar dari harga_satuan
             let diskonSatuan = parseInt(item.diskon_satuan) || 0;
             let hargaSatuan = parseInt(item.harga_satuan) || 0;
             if (diskonSatuan > hargaSatuan) diskonSatuan = hargaSatuan;
@@ -266,9 +270,9 @@ jQuery(function($) {
                 <td style="text-align:center;">${i+1}</td>
                 <td style="text-align:center;">${item.nama_produk}</td>
                 <td style="text-align:center;">${item.satuan}</td>
-                <td><input type="number" class="form-control jumlah-edit" value="${item.jumlah}" data-index="${i}" min="1"></td>
+                <td><span style="display:inline-block; min-width:60px; text-align:center;">${item.jumlah}</span></td>
                 <td class="harga-satuan-edit">Rp${hargaSatuan.toLocaleString('id-ID')}</td>
-                <td><input type="number" class="form-control diskon-edit" value="${diskonSatuan}" data-index="${i}" min="0" max="${hargaSatuan}"></td>
+                <td><span style="display:inline-block; min-width:90px; text-align:center;">(Rp${diskonSatuan.toLocaleString('id-ID')})</span></td>
                 <td class="subtotal-edit">Rp${subtotal.toLocaleString('id-ID')}</td>
             </tr>`;
             totalHarga += subtotal;
