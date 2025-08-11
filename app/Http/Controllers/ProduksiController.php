@@ -87,7 +87,7 @@ class ProduksiController extends Controller
                     'satuan' => $produkData->satuan,
                     'keterangan' => 'Hasil produksi',
                     'tanggal_exp' => $tanggal_expired,
-                    'lokasi' => 'Gudang',
+                    'lokasi' => '1',
                 ]);
             }
 

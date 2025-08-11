@@ -205,6 +205,9 @@ class KonsinyasiMasukController extends Controller
         // Hapus detail lama
         DB::table('t_konsinyasimasuk_detail')->where('no_konsinyasimasuk', $id)->delete();
 
+        // Hapus kartu stok konsinyasi lama untuk transaksi ini
+        DB::table('t_kartuperskonsinyasi')->where('no_transaksi', $id)->where('keterangan', 'like', 'Konsinyasi Masuk%')->delete();
+
         // Insert detail baru dan catat ke kartu stok konsinyasi
         foreach ($details as $d) {
             DB::table('t_konsinyasimasuk_detail')->insert([
@@ -323,6 +326,7 @@ class KonsinyasiMasukController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Harga jual dan komisi berhasil diperbarui'
+                
             ]);
 
         } catch (\Exception $e) {

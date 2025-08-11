@@ -280,8 +280,8 @@ class PembelianController extends Controller
         $ongkir           = $request->ongkir;
         $diskon           = $request->diskon;
         $dibayar_sekarang = $request->total_bayar;
-        $uang_muka        = $uang_muka_dipakai ?? 0; // dari logika sebelumnya
         $sisa_hutang      = $kurang_bayar;
+        $uang_muka        = 0; // <-- Tambahkan baris ini
 
         // Kode akun dari mapping JurnalHelper
         $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
@@ -501,12 +501,14 @@ $ongkir           = $request->ongkir;
 $diskon           = $request->diskon;
 $dibayar_sekarang = $request->total_bayar;
 $sisa_hutang      = $hutang;
+$uang_muka        = 0; // <-- Tambahkan baris ini
 
 // Kode akun dari mapping JurnalHelper
 $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
 $kode_akun_ongkir     = JurnalHelper::getKodeAkun('ongkos_kirim');
 $kode_akun_diskon     = JurnalHelper::getKodeAkun('diskon_pembelian');
 $kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
+$kode_akun_uangmuka   = JurnalHelper::getKodeAkun('uang_muka');
 $kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
 
 // 1. Persediaan Barang (Debit)
@@ -1104,8 +1106,8 @@ $nilai_persediaan = $total_harga;
 $ongkir           = $request->ongkir;
 $diskon           = $request->diskon;
 $dibayar_sekarang = $request->total_bayar;
-$uang_muka        = $uang_muka_dipakai ?? 0;
-$sisa_hutang      = $kurang_bayar;
+$sisa_hutang      = $hutang;
+$uang_muka        = 0; // <-- Tambahkan baris ini
 
 // Kode akun dari mapping JurnalHelper
 $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_bahan');
@@ -1115,7 +1117,7 @@ $kode_akun_kas        = JurnalHelper::getKodeAkun('kas_bank');
 $kode_akun_uangmuka   = JurnalHelper::getKodeAkun('uang_muka');
 $kode_akun_hutang     = JurnalHelper::getKodeAkun('utang_usaha');
 
-// Untuk setiap detail:
+// 1. Persediaan Barang (Debit)
 DB::table('t_jurnal_detail')->insert([
     'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal_baru),
     'no_jurnal'        => $no_jurnal_baru,

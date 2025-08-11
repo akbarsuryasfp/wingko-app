@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -27,34 +26,30 @@
                         @endforeach
                     </select>
                 </div>
-                
                 <!-- Satuan -->
                 <div class="col-md-2">
                     <label for="satuan_produk" class="form-label">Satuan</label>
                     <input type="text" id="satuan_produk" name="satuan_produk" class="form-control" value="{{ $satuan ?? '' }}" readonly>
                 </div>
-                
                 <!-- Periode -->
                 <div class="col-md-2">
                     <label for="periode_produk" class="form-label">Periode</label>
                     <input type="month" id="periode_produk" name="periode_produk" class="form-control" value="{{ date('Y-m') }}">
                 </div>
-                
                 <!-- Lokasi -->
                 <div class="col-md-2">
                     <label for="lokasi" class="form-label">Lokasi</label>
                     <select id="lokasi" name="lokasi" class="form-select">
                         <option value="">-- Semua Lokasi --</option>
-                        <option value="Gudang">Gudang</option>
-                        <option value="Toko 1">Toko 1</option>
-                        <option value="Toko 2">Toko 2</option>
+                        @foreach($lokasiList as $kode => $nama)
+                            <option value="{{ $kode }}" {{ (old('lokasi', $lokasiAktif) == $kode) ? 'selected' : '' }}>{{ $nama }}</option>
+                        @endforeach
                     </select>
                 </div>
-                
-                <!-- Show -->
+                <!-- Show per page -->
                 <div class="col-md-3 d-flex align-items-end">
                     <div class="w-100">
-                        <label for="rowsPerPageProduk" class="form-label">Show</label>
+                        <label for="rowsPerPageProduk" class="form-label">Page</label>
                         <div class="d-flex align-items-center">
                             <select id="rowsPerPageProduk" class="form-select" onchange="rowsPerPageProduk = this.value; currentPageProduk = 1; renderTableProduk(); renderPaginationProduk();">
                                 <option value="10" selected>10</option>
@@ -224,7 +219,7 @@ function renderTableProduk() {
                         <td>${masuk}</td>
                         <td>${keluar}</td>
                         <td>${saldoQty}</td>
-                        <td>${row.lokasi || '-'}</td>
+                        <td>${row.nama_lokasi || '-'}</td>
                     </tr>
                 `;
             }
