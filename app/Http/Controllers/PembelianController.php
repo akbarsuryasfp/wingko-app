@@ -168,7 +168,13 @@ class PembelianController extends Controller
             'total_bayar'        => 'required|numeric|min:0',
             'metode_bayar'       => 'required|string', // ganti dari jenis_pembayaran
             'jatuh_tempo' => 'nullable|date',
+            'bukti_nota' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
+
+        $bukti_nota_path = null;
+        if ($request->hasFile('bukti_nota')) {
+            $bukti_nota_path = $request->file('bukti_nota')->store('bukti_nota', 'public');
+        }
 
         $uang_muka = 0;
         // Ambil no_order_beli dari t_terimabahan
@@ -234,6 +240,7 @@ class PembelianController extends Controller
             'uang_muka'        => $uang_muka_dipakai,
             'metode_bayar'     => $request->metode_bayar,
             'no_nota'          => $request->no_nota,
+            'bukti_nota' => $bukti_nota_path,
 
         ]);
 
@@ -369,7 +376,13 @@ class PembelianController extends Controller
             'tanggal_exp'        => 'required|array',
             'metode_bayar'       => 'required|string', // ganti dari jenis_pembayaran
             'jatuh_tempo' => 'nullable|date',
+            'bukti_nota' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
+
+        $bukti_nota_path = null;
+        if ($request->hasFile('bukti_nota')) {
+            $bukti_nota_path = $request->file('bukti_nota')->store('bukti_nota', 'public');
+        }
 
         $hutang = $request->total_pembelian - $request->total_bayar;
         $status = $hutang > 0 ? 'Hutang' : 'Lunas';
@@ -436,7 +449,7 @@ $no_terima_bahan = $last
         // --- 4. Simpan ke t_pembelian ---
         DB::table('t_pembelian')->insert([
             'no_pembelian'     => $request->kode_pembelian,
-            'tanggal_pembelian'  => $request->tanggal_pembelian,
+            'tanggal_pembelian'=> $request->tanggal_pembelian,
             'no_terima_bahan'  => $no_terima_bahan,
             'kode_supplier'    => $request->kode_supplier,
             'total_harga'      => $request->total_harga,
@@ -449,7 +462,8 @@ $no_terima_bahan = $last
             'jenis_pembelian'  => 'pembelian langsung',
             'metode_bayar'     => $request->metode_bayar, 
             'no_nota'          => $request->no_nota,
-            'uang_muka'        => 0, // Tidak ada uang muka untuk pembelian langsung
+            'uang_muka'        => 0,
+            'bukti_nota'       => $bukti_nota_path, // <-- Tambahkan ini
         ]);
 
         if ($hutang > 0) {
@@ -537,7 +551,18 @@ if ($dibayar_sekarang > 0) {
     ]);
 }
 
-// 5. Hutang Usaha (Kredit)
+// 5. Uang Muka (Kredit)
+if ($uang_muka > 0) {
+    DB::table('t_jurnal_detail')->insert([
+        'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+        'no_jurnal'        => $no_jurnal,
+        'kode_akun'        => $kode_akun_uangmuka,
+        'debit'            => 0,
+        'kredit'           => $uang_muka,
+    ]);
+}
+
+// 6. Hutang Usaha (Kredit)
 if ($sisa_hutang > 0) {
     DB::table('t_jurnal_detail')->insert([
         'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
@@ -547,6 +572,7 @@ if ($sisa_hutang > 0) {
         'kredit'           => $sisa_hutang,
     ]);
 }
+
         return redirect()->route('pembelian.index')->with('success', 'Data pembelian & penerimaan berhasil disimpan.');
     }
 
@@ -588,11 +614,19 @@ public function index(Request $request)
         });
     }
 
-    $pembelian = $query->orderBy('t_pembelian.tanggal_pembelian', 'asc')->get();
+    // Ambil perPage dari request, default 15
+    $perPage = $request->input('per_page', 15);
+
+    // Hitung total dan lastPage hanya jika paginate
+    if ($perPage == 'all') {
+        $pembelian = $query->orderBy('t_pembelian.tanggal_pembelian', 'desc')->get();
+    } else {
+        $pembelian = $query->orderBy('t_pembelian.tanggal_pembelian', 'desc')->paginate($perPage)->withQueryString();
+    }
 
     // Sinkronisasi status: jika utang_status == 'lunas', maka status pembelian juga 'Lunas' dan hutang = 0
     foreach ($pembelian as $p) {
-        if ($p->utang_status === 'Lunas') {
+        if (isset($p->utang_status) && $p->utang_status === 'Lunas') {
             DB::table('t_pembelian')
                 ->where('no_pembelian', $p->no_pembelian)
                 ->update([
@@ -603,6 +637,7 @@ public function index(Request $request)
             $p->hutang = 0;
         }
     }
+
     return view('pembelian.index', compact('pembelian'));
 }
     public function show($no_pembelian)
@@ -709,26 +744,12 @@ public function index(Request $request)
         }
 
         // Jika pembelian langsung, hapus juga data terima bahan, detail, dan kartu persediaan
-        if ($pembelian && $pembelian->jenis_pembelian === 'pembelian langsung' && $no_terima_bahan) {
-            // Ambil semua kode_bahan lama
-            $kode_bahan_lama = DB::table('t_terimab_detail')->where('no_terima_bahan', $no_terima_bahan)->pluck('kode_bahan');
-
-            // Hapus detail & kartu stok lama
-            DB::table('t_terimab_detail')->where('no_terima_bahan', $no_terima_bahan)->delete();
-            DB::table('t_kartupersbahan')->where('no_transaksi', $no_terima_bahan)->where('keterangan', 'Pembelian Langsung')->delete();
-
-            // Hapus header terima bahan
-            DB::table('t_terimabahan')->where('no_terima_bahan', $no_terima_bahan)->delete();
-
-            // Update stok untuk semua bahan terkait
-            foreach ($kode_bahan_lama as $kode_bahan) {
-                $saldo = DB::table('t_kartupersbahan')
-                    ->where('kode_bahan', $kode_bahan)
-                    ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as saldo')
-                    ->value('saldo');
-                DB::table('t_bahan')->where('kode_bahan', $kode_bahan)->update(['stok' => $saldo]);
-            }
-        }
+if ($pembelian && $pembelian->jenis_pembelian === 'pembelian langsung' && $no_terima_bahan) {
+    // Update status terima bahan
+    DB::table('t_terimabahan')
+        ->where('no_terima_bahan', $no_terima_bahan)
+        ->update(['status' => 'Lanjutkan Pembayaran']);
+}
 
         return redirect()->route('pembelian.index')->with('success', 'Data pembelian berhasil dihapus.');
     }
@@ -766,18 +787,19 @@ public function edit($no_pembelian)
         ->where('no_pembelian', $no_pembelian)
         ->value('jatuh_tempo');
 
-    // Hitung subtotal
-    $subtotal = 0;
+    // Hitung total harga dari detail (bukan dari field header)
+    $total_harga = 0;
     foreach ($details as $d) {
-        $subtotal += $d->bahan_masuk * $d->harga_beli;
+        $total_harga += $d->bahan_masuk * $d->harga_beli;
     }
 
-    // Total harga, diskon, ongkir dari pembelian
-    $total_harga = $pembelian->total_harga ?? $subtotal;
+    // Gunakan diskon, ongkir, total_bayar dari header
     $diskon = $pembelian->diskon ?? 0;
     $ongkir = $pembelian->ongkir ?? 0;
-    $total_pembelian = $total_harga - $diskon + $ongkir;
     $total_bayar = $pembelian->total_bayar ?? 0;
+
+    // Hitung total pembelian dan kurang bayar
+    $total_pembelian = $total_harga - $diskon + $ongkir;
     $kurang_bayar = $total_pembelian - $total_bayar;
     if ($kurang_bayar < 0) $kurang_bayar = 0;
 
@@ -860,7 +882,6 @@ public function edit($no_pembelian)
         'bahanKurangProduksi',
         'bahansPrediksiHarian',
         'stokMinList',
-        'subtotal',
         'total_harga',
         'total_pembelian',
         'total_bayar',
@@ -882,9 +903,20 @@ public function update(Request $request, $no_pembelian)
         'jumlah'             => 'sometimes|array',
         'harga'              => 'sometimes|array',
         'tanggal_exp'        => 'sometimes|array',
+        'bukti_nota' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
     ]);
 
     $pembelian = DB::table('t_pembelian')->where('no_pembelian', $no_pembelian)->first();
+
+    // Proses upload file jika ada
+    $bukti_nota_path = $pembelian->bukti_nota;
+    if ($request->hasFile('bukti_nota')) {
+        // Hapus file lama jika ada
+        if ($pembelian->bukti_nota && \Storage::disk('public')->exists($pembelian->bukti_nota)) {
+            \Storage::disk('public')->delete($pembelian->bukti_nota);
+        }
+        $bukti_nota_path = $request->file('bukti_nota')->store('bukti_nota', 'public');
+    }
 
     // --- Update detail bahan jika pembelian langsung ---
     if ($pembelian->jenis_pembelian == 'pembelian langsung' && $request->has('bahan')) {
@@ -976,12 +1008,11 @@ public function update(Request $request, $no_pembelian)
             }
         }
 
-        // Hitung total harga dari detail (atau gunakan field lama)
-        $total_harga = $pembelian->total_harga;
-
-        // Hitung total pembelian (tanpa dikurangi uang muka)
-        $total_pembelian = $total_harga - $request->diskon + $request->ongkir;
-        if ($total_pembelian < 0) $total_pembelian = 0;
+if ($pembelian->jenis_pembelian != 'pembelian langsung') {
+    $total_harga = $pembelian->total_harga;
+}
+$total_pembelian = $total_harga - $request->diskon + $request->ongkir;
+if ($total_pembelian < 0) $total_pembelian = 0;
 
         // Uang muka yang dipakai untuk transaksi ini
         if ($total_pembelian < $sisa_uang_muka) {
@@ -1009,6 +1040,7 @@ public function update(Request $request, $no_pembelian)
             'status'            => $status,
             'no_nota'           => $request->no_nota,
             'uang_muka'         => $uang_muka_dipakai,
+            'bukti_nota' => $bukti_nota_path,
         ]);
 
         // (Opsional) Update t_utang jika perlu, sesuai logika Anda
@@ -1192,7 +1224,11 @@ if ($sisa_hutang > 0) {
         if ($request->jenis_pembelian) {
             $query->where('jenis_pembelian', $request->jenis_pembelian);
         }
-
+if ($request->status_lunas == 'lunas') {
+    $query->where('t_pembelian.hutang', '<=', 0);
+} elseif ($request->status_lunas == 'belum') {
+    $query->where('t_pembelian.hutang', '>', 0);
+}
         $pembelian = $query->get();
 
         $periode = [

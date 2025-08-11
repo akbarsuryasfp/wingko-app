@@ -57,6 +57,16 @@
                                     <input type="text" class="form-control bg-light" value="{{ $pembelian->no_nota }}" readonly>
                                 </div>
                             </div>
+                           @if($pembelian->bukti_nota)
+    <a href="{{ asset('storage/' . $pembelian->bukti_nota) }}" 
+       target="_blank"
+       class="btn btn-sm btn-outline-primary"
+       title="Lihat Bukti Nota">
+       <i class="fas fa-file-alt me-1"></i> Lihat Nota
+    </a>
+@else
+    <span class="badge bg-light text-dark">-</span>
+@endif
                         </div>
                   
                 </div>
@@ -215,11 +225,11 @@
     </div>
     @endif
 
-    @if(isset($jatuh_tempo) && $pembelian->metode_bayar == 'Kredit')
+    @if(isset($jatuh_tempo) && ($pembelian->hutang > 0))
     <div class="row mb-2">
         <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
         <div class="col-sm-8">
-            <input type="text" class="form-control bg-light" value="{{ $jatuh_tempo }}" readonly>
+            <input type="text" class="form-control bg-light text-end" value="{{ $jatuh_tempo }}" readonly>
         </div>
     </div>
     @endif

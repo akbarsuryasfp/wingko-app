@@ -25,7 +25,7 @@ public function index(Request $request)
     $query = DB::table('t_returbeli')
         ->leftJoin('t_supplier', 't_returbeli.kode_supplier', '=', 't_supplier.kode_supplier')
         ->whereBetween('t_returbeli.tanggal_retur_beli', [$tanggal_mulai, $tanggal_selesai])
-        ->orderBy('tanggal_retur_beli', 'asc')
+        ->orderBy('tanggal_retur_beli', 'desc')
         ->select(
             't_returbeli.*',
             't_supplier.nama_supplier'
@@ -35,7 +35,6 @@ public function index(Request $request)
         $query->where('t_returbeli.status', $status);
     }
 
-    // Tambahkan filter search
     if ($search) {
         $query->where(function($q) use ($search) {
             $q->where('t_returbeli.no_retur_beli', 'like', "%$search%")
@@ -43,7 +42,14 @@ public function index(Request $request)
         });
     }
 
-    $returList = $query->get();
+    // Ambil perPage dari request, default 15
+    $perPage = $request->input('per_page', 15);
+
+    if ($perPage == 'all') {
+        $returList = $query->get();
+    } else {
+        $returList = $query->paginate($perPage)->withQueryString();
+    }
 
     // Ambil detail bahan untuk setiap retur
     foreach ($returList as $retur) {
@@ -666,18 +672,23 @@ public function laporan(Request $request)
     return view('returbeli.laporan', compact('returList', 'tanggal_mulai', 'tanggal_selesai'));
 }
 
-
 public function laporanPdf(Request $request)
 {
     $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
     $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
     $search = $request->search;
-
+    $status = $request->status; // Tambahkan ini
+\Log::info('Status filter:', [$status]);
     $query = \DB::table('t_returbeli')
         ->join('t_supplier', 't_returbeli.kode_supplier', '=', 't_supplier.kode_supplier')
         ->whereBetween('t_returbeli.tanggal_retur_beli', [$tanggal_mulai, $tanggal_selesai])
         ->select('t_returbeli.*', 't_supplier.nama_supplier')
         ->orderBy('t_returbeli.tanggal_retur_beli', 'desc');
+
+    // Tambahkan filter status
+    if ($status) {
+        $query->where('t_returbeli.status', $status);
+    }
 
     // Tambahkan filter search
     if ($search) {

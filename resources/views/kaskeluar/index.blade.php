@@ -47,6 +47,14 @@
             value="{{ request('tanggal_akhir', date('Y-m-d')) }}"
             style="width: 140px;" onchange="document.getElementById('filterForm').submit();">
     </div>
+    <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="document.getElementById('filterForm').submit();">
+        <option value="10" {{ request('per_page', 15) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
 
                     <div class="ms-auto d-flex align-items-center gap-2">
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari keterangan atau penerima..." style="width: 250px;" value="{{ request('search') }}">
@@ -74,9 +82,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+  $no = (method_exists($kaskeluar, 'currentPage') ? ($kaskeluar->currentPage() - 1) * $kaskeluar->perPage() + 1 : 1);
+@endphp
                         @forelse ($kaskeluar as $item)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $no++ }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}</td>
                             <td>{{ $item->nomor_bukti }}</td>
                             <td class="text-end">{{ $item->jumlah_rupiah }}</td>
@@ -109,6 +120,11 @@
                     </tbody>
                 </table>
             </div>
+            @if(request('per_page') != 'all')
+            <div class="mt-3 d-flex justify-content-center">
+    {{ $kaskeluar->withQueryString()->links() }}
+</div>
+@endif
 
         </div>
     </div>

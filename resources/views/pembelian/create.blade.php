@@ -7,7 +7,7 @@
     <h5 class="m-0 font-weight-bold">Input Pembelian Bahan</h5>
 </div>
         <div class="card-body">
-            <form action="{{ route('pembelian.store') }}" method="POST">
+            <form action="{{ route('pembelian.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row">
@@ -41,6 +41,13 @@
                                     <label for="no_nota" class="col-sm-4 col-form-label">No Nota</label>
                                     <div class="col-sm-8">
                                         <input type="text" class="form-control" name="no_nota">
+                                    </div>
+                                </div>
+                                <div class="row mb-3 align-items-center">
+                                    <label for="bukti_nota" class="col-sm-4 col-form-label">Upload Bukti Nota</label>
+                                    <div class="col-sm-8">
+                                        <input type="file" class="form-control" name="bukti_nota" id="bukti_nota" accept="image/*,application/pdf">
+                                        <small class="text-muted">File harus kurang dari 2MB</small>
                                     </div>
                                 </div>
                             </div>

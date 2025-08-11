@@ -11,14 +11,14 @@ class KasKeluarController extends Controller
 // In your KasKeluarController.php
 public function index(Request $request)
 {
-    // Ambil filter dari request
-$startDate = $request->input('tanggal_awal', date('Y-m-01'));
-$endDate = $request->input('tanggal_akhir', date('Y-m-d'));
+    $startDate = $request->input('tanggal_awal', date('Y-m-01'));
+    $endDate = $request->input('tanggal_akhir', date('Y-m-d'));
     $filterPenerima = $request->filter_penerima;
     $search = $request->search;
 
-    // Ambil data jurnal umum dengan nomor bukti diawali BKK
-    $queryResults = DB::table('t_jurnal_umum as ju')
+    $perPage = $request->input('per_page', 10);
+
+    $query = DB::table('t_jurnal_umum as ju')
         ->join('t_jurnal_detail as jd', function($join) {
             $join->on('ju.no_jurnal', '=', 'jd.no_jurnal')
                  ->where('jd.kredit', '>', 0)
@@ -41,18 +41,27 @@ $endDate = $request->input('tanggal_akhir', date('Y-m-d'));
             'ju.keterangan',
             'jd.kredit as jumlah'
         ])
-        ->orderBy('ju.tanggal', 'desc')
-        ->get();
+        ->orderBy('ju.tanggal', 'desc');
 
-    // Proses dan filter data
-    $kaskeluar = [];
-    foreach ($queryResults as $row) {
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('ju.keterangan', 'like', "%$search%");
+        });
+    }
+
+    if ($perPage == 'all') {
+        $kaskeluar = $query->get();
+    } else {
+        $kaskeluar = $query->paginate($perPage)->withQueryString();
+    }
+
+    // Proses data setelah paginate/get
+    foreach ($kaskeluar as $row) {
         $row->nomor_bukti = preg_replace('/\.\d+E\+\d+/', '', $row->nomor_bukti);
         $keterangan = trim($row->keterangan);
         $row->keterangan_teks = $keterangan;
         $row->penerima = '-';
 
-        // Ambil penerima dari format keterangan
         if (str_contains(strtolower($keterangan), 'upah lembur')) {
             $row->keterangan_teks = 'Upah Lembur';
             $row->penerima = 'Karyawan';
@@ -71,23 +80,6 @@ $endDate = $request->input('tanggal_akhir', date('Y-m-d'));
         }
 
         $row->jumlah_rupiah = 'Rp ' . number_format($row->jumlah, 0, ',', '.');
-
-        // Filter penerima jika ada
-        if ($filterPenerima && stripos($row->penerima, $filterPenerima) === false) {
-            continue;
-        }
-
-        // Filter search jika ada
-        if ($search) {
-            if (
-                stripos($row->keterangan_teks, $search) === false &&
-                stripos($row->penerima, $search) === false
-            ) {
-                continue;
-            }
-        }
-
-        $kaskeluar[] = $row;
     }
 
     return view('kaskeluar.index', compact(
@@ -127,10 +119,16 @@ public function store(Request $request)
         'penerima'    => 'required|string',
         'no_referensi'=> 'nullable|string',
         'keterangan'  => 'nullable|string',
+        'bukti_nota' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
     ]);
 
     $no_jurnal = 'JU-' . date('YmdHis') . '-' . rand(100,999);
     $keterangan = ($request->no_referensi ?? '') . ' | ' . ($request->keterangan ?? '') . ' | ' . $request->penerima;
+
+    $bukti_nota_path = null;
+    if ($request->hasFile('bukti_nota')) {
+        $bukti_nota_path = $request->file('bukti_nota')->store('bukti_kaskeluar', 'public');
+    }
 
     DB::beginTransaction();
     try {
@@ -160,12 +158,18 @@ public function store(Request $request)
             'kredit'           => $request->jumlah,
         ]);
 
+        // Simpan ke t_buktikaskeluar
+        DB::table('t_buktikaskeluar')->insert([
+            'no_jurnal'         => $no_jurnal,
+            'bukti_nota'        => $bukti_nota_path,
+        ]);
+
         DB::commit();
         return redirect()->route('kaskeluar.index')->with('success', 'Kas keluar berhasil disimpan.');
     } catch (\Exception $e) {
-    DB::rollBack();
-    dd($e->getMessage()); // Tampilkan pesan error detail di browser
-}
+        DB::rollBack();
+        dd($e->getMessage());
+    }
 }
 
 
@@ -227,9 +231,9 @@ public function edit($id)
             'penerima'    => 'required|string',
             'no_referensi'=> 'nullable|string',
             'keterangan'  => 'nullable|string',
+            'bukti_nota'  => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
-        // Gabungkan keterangan: [no_referensi] | [keterangan] | [penerima]
         $keterangan = ($request->no_referensi ?? '') . ' | ' . ($request->keterangan ?? '') . ' | ' . $request->penerima;
 
         // Update t_jurnal_umum
@@ -247,18 +251,27 @@ public function edit($id)
                 'debit'     => $request->jumlah,
             ]);
 
-// Update t_jurnal_detail (kredit kas)
-DB::table('t_jurnal_detail')
-    ->where('no_jurnal', $id)
-    ->whereIn('kode_akun', [
-        JurnalHelper::getKodeAkun('kas_bank'),
-        JurnalHelper::getKodeAkun('kas_kecil')
-    ])
-    ->update([
-        'kode_akun' => JurnalHelper::getKodeAkun($request->kas_digunakan),
-        'kredit'    => $request->jumlah,
-        'debit'     => 0,
-    ]);
+        // Update t_jurnal_detail (kredit kas)
+        DB::table('t_jurnal_detail')
+            ->where('no_jurnal', $id)
+            ->whereIn('kode_akun', [
+                JurnalHelper::getKodeAkun('kas_bank'),
+                JurnalHelper::getKodeAkun('kas_kecil')
+            ])
+            ->update([
+                'kode_akun' => JurnalHelper::getKodeAkun($request->kas_digunakan),
+                'kredit'    => $request->jumlah,
+                'debit'     => 0,
+            ]);
+
+        // Update bukti nota jika ada upload baru
+        if ($request->hasFile('bukti_nota')) {
+            $bukti_nota_path = $request->file('bukti_nota')->store('bukti_kaskeluar', 'public');
+            DB::table('t_buktikaskeluar')->updateOrInsert(
+                ['no_jurnal' => $id],
+                ['bukti_nota' => $bukti_nota_path]
+            );
+        }
 
         return redirect()->route('kaskeluar.index')->with('success', 'Kas keluar berhasil diupdate.');
     }

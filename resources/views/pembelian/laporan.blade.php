@@ -51,15 +51,9 @@
                 <td class="text-end">Rp{{ number_format(is_array($p->total_bayar) ? array_sum($p->total_bayar) : $p->total_bayar, 0, ',', '.') }}</td>
                 <td class="text-end">Rp{{ number_format(is_array($p->hutang) ? array_sum($p->hutang) : $p->hutang, 0, ',', '.') }}</td>
                 <td class="text-center">
-                    @php
-                        $hutang = is_array($p->hutang) ? array_sum($p->hutang) : $p->hutang;
-                    @endphp
-                    @if($hutang > 0)
-                        Belum Lunas
-                    @else
-                        Lunas
-                    @endif
-                </td>
+                    {{ strtolower($p->status) == 'hutang' ? 'Belum Lunas' : 'Lunas' }}
+
+                                   </td>
             </tr>
             @php
                 // Akumulasi total
