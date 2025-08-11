@@ -3,11 +3,11 @@
 @section('content')
 <div class="container">
     <div class="card shadow">
-<div class="card-header d-flex justify-content-end">
-    <button onclick="generatePDF()" class="btn btn-success">
-        <i class="bi bi-printer"></i> Print Halaman
-    </button>
-</div>
+        <div class="card-header d-flex justify-content-end">
+            <a href="{{ route('kartustok.laporan_bahan_pdf') }}" target="_blank" class="btn btn-success">
+                <i class="bi bi-printer"></i> Cetak PDF
+            </a>
+        </div>
         
         <div class="card-body">
             <div id="screen-content">

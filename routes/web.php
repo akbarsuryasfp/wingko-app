@@ -57,7 +57,7 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-Route::middleware(['auth', 'role:gudang,pemilik'])->group(function () {
+Route::middleware(['auth', 'role:gudang,admin'])->group(function () {
     // Route supplier
     Route::resource('supplier', SupplierController::class);
 
@@ -234,7 +234,9 @@ Route::get('/kartustok/api/{kode_bahan}', [KartuStokController::class, 'getKartu
 Route::get('/kartustok/produk', [KartuStokController::class, 'produk'])->name('kartustok.produk');
 Route::get('/kartustok/api-produk/{kode_produk}', [KartuStokController::class, 'getKartuPersProduk']);
 Route::get('/kartustok/laporan-bahan', [KartuStokController::class, 'laporanBahan'])->name('kartustok.laporan_bahan');
+Route::get('/kartustok/laporan-bahan-pdf', [KartuStokController::class, 'laporanBahanPdf'])->name('kartustok.laporan_bahan_pdf');
 Route::get('/kartustok/laporan-produk', [KartuStokController::class, 'laporanProduk'])->name('kartustok.laporan_produk');
+Route::get('/kartustok/laporan-produk-pdf', [KartuStokController::class, 'laporanProdukPdf'])->name('kartustok.laporan_produk_pdf');
 
 // Route kas keluar
 Route::get('/kaskeluar/laporan', [KasKeluarController::class, 'laporan'])->name('kaskeluar.laporan');

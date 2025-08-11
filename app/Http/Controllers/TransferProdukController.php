@@ -11,6 +11,7 @@ public function index(Request $request)
 {
     $start = $request->input('start_date', date('Y-m-01'));
     $end = $request->input('end_date', date('Y-m-d'));
+    $perPage = $request->input('per_page', 10);
 
     $query = DB::table('t_kartupersproduk')
         ->whereBetween('tanggal', [$start, $end])
@@ -38,7 +39,20 @@ public function index(Request $request)
         });
     }
 
-    $transfers = $query->paginate(10)->withQueryString();
+    // Pagination logic
+    if ($perPage == 'all') {
+        $transfers = $query->get();
+        // For blade compatibility, wrap with LengthAwarePaginator
+        $transfers = new \Illuminate\Pagination\LengthAwarePaginator(
+            $transfers,
+            count($transfers),
+            count($transfers) ?: 1,
+            1,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+    } else {
+        $transfers = $query->paginate($perPage)->withQueryString();
+    }
 
     // Ambil daftar lokasi tujuan unik untuk filter
     $listLokasi = DB::table('t_kartupersproduk')

@@ -25,7 +25,7 @@ input[readonly] {
         </div>
         
         <div class="card-body">
-            <form action="{{ route('kaskeluar.store') }}" method="POST">
+            <form action="{{ route('kaskeluar.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 <div class="row">
@@ -54,6 +54,14 @@ input[readonly] {
                                 <input type="text" id="penerima" name="penerima" class="form-control" required>
                             </div>
                         </div>
+
+                        <div class="mb-2 row">
+    <label for="bukti_nota" class="col-sm-4 col-form-label">Upload Bukti Nota</label>
+    <div class="col-sm-8">
+        <input type="file" name="bukti_nota" id="bukti_nota" class="form-control" accept="image/*,application/pdf">
+        <small class="text-muted">File harus kurang dari 2MB (jpg, png, pdf).</small>
+    </div>
+</div>
                     </div>
 
                     <!-- Kolom Kanan -->

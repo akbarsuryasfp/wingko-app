@@ -1,84 +1,88 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">KARTU PERSEDIAAN BAHAN</h4>
-        <a href="{{ route('kartustok.laporan_bahan') }}" class="btn btn-success btn-sm">
-            <i class="bi bi-file-earmark-text"></i> Laporan Persediaan Bahan
-        </a>
-    </div>
+<div class="container-fluid mt-4 px-2">
+    <div class="card shadow" style="max-width:100vw;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">KARTU PERSEDIAAN BAHAN</h4>
+                <a href="{{ route('kartustok.laporan_bahan') }}" class="btn btn-success btn-sm">
+                    <i class="bi bi-file-earmark-text"></i> Laporan Persediaan Bahan
+                </a>
+            </div>
 
-    <form method="GET" class="row g-3 mb-4">
-        <div class="col-md-4">
-            <label for="kode_bahan" class="form-label">Nama Bahan</label>
-            <select id="kode_bahan" name="kode_bahan" class="form-control" onchange="setSatuanOtomatis()">
-                <option value="">-- Pilih Bahan --</option>
-                @foreach($bahanList as $bahan)
-                    <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">{{ $bahan->nama_bahan }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-4">
-            <label for="satuan" class="form-label">Satuan</label>
-            <input type="text" id="satuan" name="satuan" class="form-control" value="{{ $satuan ?? '' }}" readonly>
-        </div>
-<div class="col-md-4">
-    <label for="periode" class="form-label">Periode</label>
-    <input type="month" id="periode" name="periode" class="form-control" value="{{ date('Y-m') }}">
-</div>
-    </form>
+            <form method="GET" class="row g-2 align-items-end mb-4">
+                <div class="col">
+                    <label for="kode_bahan" class="form-label">Nama Bahan</label>
+                    <select id="kode_bahan" name="kode_bahan" class="form-control" onchange="setSatuanOtomatis()">
+                        <option value="">-- Pilih Bahan --</option>
+                        @foreach($bahanList as $bahan)
+                            <option value="{{ $bahan->kode_bahan }}" data-satuan="{{ $bahan->satuan }}">{{ $bahan->nama_bahan }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col">
+                    <label for="satuan" class="form-label">Satuan</label>
+                    <input type="text" id="satuan" name="satuan" class="form-control" value="{{ $satuan ?? '' }}" readonly>
+                </div>
+                <div class="col">
+                    <label for="periode" class="form-label">Periode</label>
+                    <input type="month" id="periode" name="periode" class="form-control" value="{{ date('Y-m') }}">
+                </div>
+                <div class="col">
+                    <label for="rowsPerPage" class="form-label">Show</label>
+                    <select id="rowsPerPage" class="form-select">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+            </form>
 
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <div id="riwayat-title" style="display:none;">
-            <span style="font-size:1.2em;">🔍</span>
-            <b>Riwayat Masuk dan Keluar <span id="nama-bahan-title"></span></b>
-        </div>
-        <div>
-            <label for="rowsPerPage" class="form-label mb-0 me-2">Show</label>
-            <select id="rowsPerPage" class="form-select form-select-sm d-inline-block" style="width:auto;">
-                <option value="10" selected>10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="all">All</option>
-            </select>
-        </div>
-    </div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div id="riwayat-title" style="display:none;">
+                    <span style="font-size:1.2em;">🔍</span>
+                    <b>Riwayat Masuk dan Keluar <span id="nama-bahan-title"></span></b>
+                </div>
+            </div>
 
-    <div class="table-responsive">
-        <table id="tabel-persediaan" class="table table-bordered text-center align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>No</th>
-                    <th>No Transaksi</th>
-                    <th>Keterangan</th>
-                    <th>Tanggal</th>
-                    <th>Harga per kg</th>
-                    <th>Masuk (kg)</th>
-                    <th>Keluar (kg)</th>
-                    <th>Sisa (kg)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
-                </tr>
-            </tbody>
-        </table>
-        <nav>
-            <ul class="pagination justify-content-end" id="pagination"></ul>
-        </nav>
-    </div>
+            <div class="table-responsive">
+                <table id="tabel-persediaan" class="table table-bordered text-center align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No</th>
+                            <th>No Transaksi</th>
+                            <th>Keterangan</th>
+                            <th>Tanggal</th>
+                            <th>Harga per kg</th>
+                            <th>Masuk (kg)</th>
+                            <th>Keluar (kg)</th>
+                            <th>Sisa (kg)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <nav>
+                    <ul class="pagination justify-content-end" id="pagination"></ul>
+                </nav>
+            </div>
 
-    <div id="stok-akhir-box" class="mt-4" style="display:none;">
-        <span style="font-size:1.2em;">📊</span>
-        <b>Stok Akhir <span id="nama-bahan-stok"></span></b>
-        <ul id="stok-akhir-list" class="mt-2"></ul>
-    </div>
-    <div id="stok-akhir-box-produk" class="mt-4" style="display:none;">
-        <span style="font-size:1.2em;">📊</span>
-        <b>Stok Akhir <span id="nama-produk-stok"></span></b>
-        <ul id="stok-akhir-list-produk" class="mt-2"></ul>
+            <div id="stok-akhir-box" class="mt-4" style="display:none;">
+                <span style="font-size:1.2em;">📊</span>
+                <b>Stok Akhir <span id="nama-bahan-stok"></span></b>
+                <ul id="stok-akhir-list" class="mt-2"></ul>
+            </div>
+            <div id="stok-akhir-box-produk" class="mt-4" style="display:none;">
+                <span style="font-size:1.2em;">📊</span>
+                <b>Stok Akhir <span id="nama-produk-stok"></span></b>
+                <ul id="stok-akhir-list-produk" class="mt-2"></ul>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
@@ -92,7 +96,8 @@ function setSatuanOtomatis() {
     var select = document.getElementById('kode_bahan');
     var satuan = select.options[select.selectedIndex].getAttribute('data-satuan') || '';
     document.getElementById('satuan').value = satuan;
-
+    document.getElementById('rowsPerPage').value = '10';
+    rowsPerPage = 10;
     // Ambil nama bahan untuk judul
     var namaBahan = select.options[select.selectedIndex].text || '';
     document.getElementById('nama-bahan-title').innerText = namaBahan;
