@@ -134,6 +134,7 @@
                                         <th width="10%" class="text-center">Satuan</th>
                                         <th width="15%" class="text-center">Jumlah Beli</th>
                                         <th width="15%" class="text-center">Harga/Satuan</th>
+                                        <th width="15%" class="text-center">Tanggal Expired</th>
                                         <th width="15%" class="text-center">Total</th>
                                         <th width="5%" class="text-center">Aksi</th>
                                     </tr>
@@ -364,6 +365,29 @@
     </div>
 </div>
 
+<style>
+    /* Warna tab aktif dan tidak aktif pada modal kebutuhan bahan */
+    #modalGabungan .nav-tabs .nav-link {
+        background: linear-gradient(90deg, #f3f4f6 0%, #e0e7ff 100%);
+        color: #1e293b;
+        border: 1px solid #dbeafe;
+        margin-right: 2px;
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+    }
+    #modalGabungan .nav-tabs .nav-link.active {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+        color: #fff !important;
+        border-color: #2563eb #2563eb #fff #2563eb;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    #modalGabungan .nav-tabs .nav-link:focus,
+    #modalGabungan .nav-tabs .nav-link:hover {
+        background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%);
+        color: #fff;
+    }
+</style>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 let bahanOptions = @json($bahan);
@@ -440,6 +464,37 @@ function tambahBahan() {
     bahanSelect.selectedIndex = 0;
     document.getElementById('jumlah_beli').value = '';
     document.getElementById('harga_beli').value = '';
+
+    updateNoUrut();
+    updateTotalHarga();
+}
+function tambahBahanKeTabel(kode_bahan, nama_bahan, satuan, jumlah_beli) {
+    // Cek duplikasi
+    if ($jq(`#bahan_table tbody tr[data-kode="${kode_bahan}"]`).length > 0) {
+        alert('Bahan sudah ada dalam daftar pembelian');
+        return;
+    }
+
+    var harga = 0; // Default harga, user bisa edit
+    var tbody = document.querySelector('#bahan_table tbody');
+    var rowCount = tbody.rows.length + 1;
+
+    var row = document.createElement('tr');
+    row.setAttribute('data-kode', kode_bahan);
+    row.innerHTML = `
+        <td class="text-center">${rowCount}</td>
+        <td>
+            <input type="hidden" name="bahan[]" value="${kode_bahan}">
+            ${nama_bahan}
+        </td>
+        <td>${satuan}</td>
+        <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah_beli}" min="0" step="0.01"></td>
+        <td><input type="number" name="harga[]" class="form-control harga" value="${harga}" min="0"></td>
+        <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
+        <td class="subtotal">0</td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBahan(this)">X</button></td>
+    `;
+    tbody.appendChild(row);
 
     updateNoUrut();
     updateTotalHarga();

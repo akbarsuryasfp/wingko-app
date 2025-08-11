@@ -1,379 +1,374 @@
 @extends('layouts.app')
 
 @section('content')
-@if(session('error'))
-    <div class="alert alert-danger">
-        {{ session('error') }}
+
+@if(session('warning'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            alert({!! json_encode(session('warning')) !!});
+        });
+    </script>
+@endif
+
+@if(auth()->user() && auth()->user()->role == 'admin' && isset($orderMenunggu) && count($orderMenunggu) > 0)
+    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert" style="font-size:1.1em;">
+        <i class="ri-notification-3-line fs-4 me-2"></i>
+        <div>
+            <strong>{{ count($orderMenunggu) }} Order Beli</strong> perlu disetujui.
+            <a href="{{ route('orderbeli.index', ['status' => 'Menunggu Persetujuan']) }}" class="btn btn-warning btn-sm ms-2">
+                Lihat Order
+            </a>
+        </div>
     </div>
 @endif
-<div class="container">
-    <h4>Selamat Datang</h4>
-    <div class="alert alert-info mt-3">
-        Selamat datang di Sistem Informasi Akuntansi Pratama.<br>
-        Silakan gunakan menu di samping untuk mengelola data.
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2 class="fw-bold mb-1">Dashboard Sistem Informasi Akuntansi Pratama</h2>
+            <p class="text-muted">Ringkasan penjualan & stok hari ini</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="bg-white rounded shadow-sm p-2 d-inline-flex align-items-center gap-2">
+                <i class="ri-calendar-line text-primary"></i>
+                {{ \Carbon\Carbon::now()->isoFormat('dddd, D MMMM Y') }}
+                <span class="ms-3"><i class="ri-time-line text-primary"></i> <span id="jam"></span>:<span id="menit"></span>:<span id="detik"></span></span>
+            </div>
+        </div>
     </div>
-@php
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
-// Ambil stok kadaluarsa per batch (kode_bahan + tanggal_exp)
-$reminder = DB::table('t_kartupersbahan')
-    ->select(
-        't_kartupersbahan.kode_bahan',
-        't_bahan.nama_bahan',
-        't_kartupersbahan.tanggal_exp',
-        DB::raw('SUM(masuk) - SUM(keluar) as stok')
-    )
-    ->join('t_bahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
-    ->whereNotNull('t_kartupersbahan.tanggal_exp')
-    ->groupBy('t_kartupersbahan.kode_bahan', 't_kartupersbahan.tanggal_exp', 't_bahan.nama_bahan')
-    ->havingRaw('stok > 0')
-    ->get();
-@endphp
-@php
-    $kadaluarsa = collect($reminder)->filter(fn($r) => \Carbon\Carbon::parse($r->tanggal_exp)->isPast());
-    $hampir = collect($reminder)->filter(function ($r) {
-        $diff = \Carbon\Carbon::today()->diffInDays(\Carbon\Carbon::parse($r->tanggal_exp), false);
-        return $diff > 0 && $diff <= 6;
-    });
-    $grouped = $kadaluarsa->groupBy('nama_bahan');
-@endphp
+    <!-- Statistik -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-3 shadow-sm border-0" style="background: #eef2ff;">
+                <i class="ri-shopping-cart-2-line fs-2 text-primary mb-2"></i>
+                <div class="fw-bold fs-4 text-primary">{{ $penjualanHariIni->total_transaksi ?? 0 }}</div>
+                <div class="text-muted small">Transaksi Hari Ini</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-3 shadow-sm border-0 penjualan-lokasi-trigger" style="background: #ecfdf5; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#penjualanLokasiModal">
+                <i class="ri-money-dollar-circle-line fs-2 text-success mb-2"></i>
+                <div class="fw-bold fs-4 text-success">Rp {{ number_format($penjualanHariIni->total_penjualan ?? 0, 0, ',', '.') }}</div>
+                <div class="text-muted small">Penjualan Hari Ini</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-3 shadow-sm border-0 stokmin-trigger" style="background: #fffbeb; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#stokMinBahanModal">
+                <i class="ri-alert-line fs-2 text-warning mb-2"></i>
+                <div class="fw-bold fs-4 text-warning">{{ $stokMinBahan->count() }}</div>
+                <div class="text-muted small">Bahan Stok Minimum</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card text-center p-3 shadow-sm border-0 kadaluarsa-trigger" style="background: #fef2f2; cursor:pointer;" data-bs-toggle="modal" data-bs-target="#kadaluarsaModal">
+                <i class="ri-inbox-line fs-2 text-danger mb-2"></i>
+                <div class="fw-bold fs-4 text-danger">{{ $kadaluarsa->count() + $kadaluarsaProduk->count() }}</div>
+                <div class="text-muted small">Kadaluarsa</div>
+            </div>
+        </div>
+    </div>
 
-<div class="row g-3">
+    <!-- Grafik Penjualan Bulan Ini (Bar Chart) -->
+     @if(auth()->user()->role == 'admin' || auth()->user()->role == 'penjualan')
+    <div class="card mb-4 shadow-sm border-0" style="background: #f9fafb;">
+        <div class="card-body">
+            <h5 class="fw-semibold mb-3"><i class="ri-bar-chart-2-line text-primary me-2"></i>Grafik Penjualan Bulan Ini</h5>
+            <canvas id="salesChart" height="80"></canvas>
+        </div>
+    </div>
+    @endif
 
-    <!-- Box Kadaluarsa -->
-    <div class="col-md-6">
-        <div class="card border-danger shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="card-title text-danger">
-                    {{ $kadaluarsa->count() }} Bahan Kadaluarsa
-                </h5>
-                <button class="btn btn-outline-danger btn-sm mt-2" onclick="toggleBox('kadaluarsaTable')">
-                    Lihat Daftar
-                </button>
-                <div id="kadaluarsaTable" class="mt-3 d-none">
-                    <div class="d-flex justify-content-end mb-2">
-<a href="{{ route('penyesuaian.exp', ['tipe' => 'bahan']) }}" class="btn btn-danger btn-sm">
-    Penyesuaian
-</a>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle">
-                            <thead class="table-danger text-center">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Bahan</th>
-                                    <th>Tanggal Exp</th>
-                                    <th>Jumlah Stok Kadaluarsa</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            @php $no = 1; @endphp
-                            @forelse ($grouped as $nama => $items)
-                                @foreach ($items as $i => $item)
-                                    <tr>
-                                        @if ($i == 0)
-                                            <td class="text-center" rowspan="{{ $items->count() }}">{{ $no }}</td>
-                                            <td rowspan="{{ $items->count() }}">{{ $nama }}</td>
-                                            @php $no++; @endphp
-                                        @endif
-                                        <td>{{ \Carbon\Carbon::parse($item->tanggal_exp)->format('d M Y') }}</td>
-                                        <td class="text-center">{{ $item->stok }}</td>
-                                    </tr>
-                                @endforeach
-                            @empty
-                                <tr><td colspan="4" class="text-center text-muted">Tidak ada</td></tr>
-                            @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+  
+    <div class="row g-4 mt-4">
+        <!-- Modul Bahan Hampir Kadaluarsa -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0" style="background: #fffbeb;">
+                <div class="card-header fw-semibold d-flex align-items-center bg-transparent border-0">
+                    <i class="ri-error-warning-line text-warning fs-4 me-2"></i>
+                    Bahan Hampir Kadaluarsa (≤ 3 hari)
+                </div>
+                <div class="row g-2 p-3">
+                    @forelse($hampir as $bahan)
+                        <div class="col-12 col-lg-6">
+                            <div class="card border-0 shadow-sm mb-2" style="background: #fffbe6;">
+                                <div class="card-body d-flex align-items-center gap-2">
+                                    <i class="ri-capsule-fill fs-3 text-warning"></i>
+                                    <div>
+                                        <div class="fw-semibold">{{ $bahan->nama_bahan }}</div>
+                                        <span class="badge bg-warning text-dark">{{ \Carbon\Carbon::parse($bahan->tanggal_exp)->diffForHumans() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12"><span class="text-muted">Tidak ada bahan hampir kadaluarsa.</span></div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+        <!-- Modul Produk Hampir Kadaluarsa -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0" style="background: #fffbeb;">
+                <div class="card-header fw-semibold d-flex align-items-center bg-transparent border-0">
+                    <i class="ri-error-warning-line text-warning fs-4 me-2"></i>
+                    Produk Hampir Kadaluarsa (≤ 3 hari)
+                </div>
+                <div class="row g-2 p-3">
+                    @forelse($hampirProduk as $produk)
+                        <div class="col-12 col-lg-6">
+                            <div class="card border-0 shadow-sm mb-2" style="background: #fffbe6;">
+                                <div class="card-body d-flex align-items-center gap-2">
+                                    <i class="ri-inbox-fill fs-3 text-warning"></i>
+                                    <div>
+                                        <div class="fw-semibold">{{ $produk->nama_produk }}</div>
+                                        <span class="badge bg-warning text-dark">{{ \Carbon\Carbon::parse($produk->tanggal_exp)->diffForHumans() }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="col-12"><span class="text-muted">Tidak ada produk hampir kadaluarsa.</span></div>
+                    @endforelse
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Box Hampir Kadaluarsa -->
-    <div class="col-md-6">
-        <div class="card border-warning shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="card-title text-warning">
-                    {{ $hampir->count() }} Bahan Hampir Kadaluarsa
-                </h5>
-                <button class="btn btn-outline-warning btn-sm mt-2" onclick="toggleBox('hampirTable')">
-                    Lihat Daftar
-                </button>
-                <div id="hampirTable" class="mt-3 d-none">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle">
-                            <thead class="table-warning text-center">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Bahan</th>
-                                    <th>Tanggal Exp</th>
-                                    <th>H-?</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($hampir as $index => $item)
-                                    @php
-                                        $exp = \Carbon\Carbon::parse($item->tanggal_exp);
-                                        $diff = \Carbon\Carbon::today()->diffInDays($exp);
-                                    @endphp
-                                    <tr>
-                                        <td class="text-center">{{ $index + 1 }}</td>
-                                        <td>{{ $item->nama_bahan }}</td>
-                                        <td class="text-center">{{ $exp->format('d M Y') }}</td>
-                                        <td class="text-center">H-{{ $diff }}</td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="text-center text-muted">Tidak ada</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+    
+    <div class="row g-4 mt-4">
+        <!-- Laporan Singkat Stok Bahan -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0" style="background: #e0f2fe;">
+                <div class="card-header fw-semibold d-flex align-items-center bg-transparent border-0">
+                    <i class="ri-capsule-fill text-info fs-4 me-2"></i>
+                    Laporan Stok Bahan
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @forelse($stokBahan as $bahan)
+                            <div class="col-12 col-lg-6">
+                                <div class="card border-0 shadow-sm mb-2" style="background: #f0f9ff;">
+                                    <div class="card-body d-flex align-items-center gap-2">
+                                        <i class="ri-capsule-fill fs-3 text-info"></i>
+                                        <div>
+                                            <div class="fw-semibold">{{ $bahan->nama_bahan }}</div>
+                                            <span class="badge bg-info text-dark">Stok: {{ $bahan->stok }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12"><span class="text-muted">Tidak ada data stok bahan.</span></div>
+                        @endforelse
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-</div>
-
-
-
-@php
-$reminderProduk = DB::table('t_kartupersproduk')
-    ->select(
-        't_kartupersproduk.kode_produk',
-        't_produk.nama_produk',
-        't_kartupersproduk.tanggal_exp',
-        't_kartupersproduk.lokasi',
-        DB::raw('SUM(masuk) - SUM(keluar) as stok')
-    )
-    ->join('t_produk', 't_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
-    ->whereNotNull('t_kartupersproduk.tanggal_exp')
-    ->groupBy('t_kartupersproduk.kode_produk', 't_kartupersproduk.tanggal_exp', 't_produk.nama_produk', 't_kartupersproduk.lokasi')
-    ->havingRaw('stok > 0')
-    ->get();
-
-$kadaluarsaProduk = collect($reminderProduk)
-    ->filter(fn($r) => Carbon::parse($r->tanggal_exp)->isPast() && $r->lokasi === 'Gudang'); // Filter lokasi gudang
-
-$hampirProduk = collect($reminderProduk)
-    ->filter(function ($r) {
-        $diff = Carbon::today()->diffInDays(Carbon::parse($r->tanggal_exp), false);
-        return $diff > 0 && $diff <= 6 && $r->lokasi === 'Gudang'; // Filter lokasi gudang
-    });
-
-$groupedProduk = $kadaluarsaProduk->groupBy('lokasi');
-@endphp
-
-<div class="row g-3 mt-2">
-
-    <!-- Box Kadaluarsa Produk -->
-    <div class="col-md-6">
-        <div class="card border-danger shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="card-title text-danger">
-                    @if ($groupedProduk->isEmpty())
-                    <div>Tidak ada produk kadaluarsa di gudang</div>
-                    @else
-                    @foreach ($groupedProduk as $lokasi => $items)
-                    <div>
-                        <b>{{ $items->sum('stok') }}</b> Produk Kadaluarsa di <b>{{ $lokasi }}</b>
-                    </div>
-                    @endforeach
-                    @endif
-                </h5>
-                <button class="btn btn-outline-danger btn-sm mt-2" onclick="toggleBox('kadaluarsaProdukTable')">
-                    Lihat Daftar
-                </button>
-                <div id="kadaluarsaProdukTable" class="mt-3 d-none">
-                    @if ($groupedProduk->isEmpty())
-                    <div class="text-muted mb-3">Tidak ada produk kadaluarsa di gudang</div>
-                    @else
-                    @foreach ($groupedProduk as $lokasi => $items)
-                    <div class="table-responsive mb-4">
-                                            <div class="d-flex justify-content-end mb-2">
-<a href="{{ route('penyesuaian.exp', ['tipe' => 'produk']) }}" class="btn btn-danger btn-sm">
-    Penyesuaian
-</a>
-                    </div>
-                        <table class="table table-sm table-bordered align-middle">
-                            <thead class="table-danger text-center">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Produk</th>
-                                    <th>Tanggal Exp</th>
-                                    <th>Jumlah Stok Kadaluarsa</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($items as $index => $item)
-                                <tr>
-                                    <td class="text-center">{{ $index + 1 }}</td>
-                                    <td>{{ $item->nama_produk }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_exp)->format('d M Y') }}</td>
-                                    <td class="text-center">{{ $item->stok }}</td>
-                                </tr>
-                                @endforeach
-                                @if ($items->isEmpty())
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Tidak ada</td>
-                                </tr>
-                                @endif
-                            </tbody>
-                        </table>
-                    </div>
-                    @endforeach
-                    @endif
+        <!-- Laporan Singkat Stok Produk -->
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0" style="background: #e0f2fe;">
+                <div class="card-header fw-semibold d-flex align-items-center bg-transparent border-0">
+                    <i class="ri-inbox-fill text-info fs-4 me-2"></i>
+                    Laporan Stok Produk
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Box Hampir Kadaluarsa Produk -->
-    <div class="col-md-6">
-        <div class="card border-warning shadow-sm">
-            <div class="card-body text-center">
-                <h5 class="card-title text-warning">
-                    {{ $hampirProduk->count() }} Produk Hampir Kadaluarsa
-                </h5>
-                <button class="btn btn-outline-warning btn-sm mt-2" onclick="toggleBox('hampirProdukTable')">
-                    Lihat Daftar
-                </button>
-                <div id="hampirProdukTable" class="mt-3 d-none">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle">
-                            <thead class="table-warning text-center">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Produk</th>
-                                    <th>Tanggal Exp</th>
-                                    <th>H-?</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($hampirProduk as $index => $item)
-                                    @php
-                                        $exp = \Carbon\Carbon::parse($item->tanggal_exp);
-                                        $diff = \Carbon\Carbon::today()->diffInDays($exp);
-                                    @endphp
-                                    <tr>
-                                        <td class="text-center">{{ $index + 1 }}</td>
-                                        <td>{{ $item->nama_produk }}</td>
-                                        <td class="text-center">{{ $exp->format('d M Y') }}</td>
-                                        <td class="text-center">H-{{ $diff }}</td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="text-center text-muted">Tidak ada</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @forelse($stokProduk as $produk)
+                            <div class="col-12 col-lg-6">
+                                <div class="card border-0 shadow-sm mb-2" style="background: #f0f9ff;">
+                                    <div class="card-body d-flex align-items-center gap-2">
+                                        <i class="ri-inbox-fill fs-3 text-info"></i>
+                                        <div>
+                                            <div class="fw-semibold">{{ $produk->nama_produk }}</div>
+                                            <span class="badge bg-info text-dark">Stok: {{ $produk->stok }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12"><span class="text-muted">Tidak ada data stok produk.</span></div>
+                        @endforelse
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-@php
-    $bulan = date('m');
-    $tahun = date('Y');
-    // Data summary
-    $penjualanBulanIni = DB::table('t_penjualan')
-        ->select(
-            DB::raw('COUNT(*) as total_transaksi'),
-            DB::raw('SUM(total) as total_penjualan'),
-            DB::raw('AVG(total) as rata_rata')
-        )
-        ->whereMonth('tanggal_jual', $bulan)
-        ->whereYear('tanggal_jual', $tahun)
-        ->first();
-
-    // Data harian untuk grafik
-    $grafikPenjualan = DB::table('t_penjualan')
-        ->select(
-            DB::raw('DAY(tanggal_jual) as hari'),
-            DB::raw('SUM(total) as total')
-        )
-        ->whereMonth('tanggal_jual', $bulan)
-        ->whereYear('tanggal_jual', $tahun)
-        ->groupBy(DB::raw('DAY(tanggal_jual)'))
-        ->orderBy('hari')
-        ->get();
-
-    $labels = $grafikPenjualan->pluck('hari')->map(fn($h) => str_pad($h, 2, '0', STR_PAD_LEFT))->toArray();
-    $dataGrafik = $grafikPenjualan->pluck('total')->toArray();
-@endphp
-
-<div class="row g-3 mt-2">
-    <div class="col-md-6">
-        <div class="card border-primary shadow-sm mb-3">
-            <div class="card-body">
-                <h5 class="card-title text-primary">
-                    Laporan Penjualan Bulan {{ date('F Y') }}
-                </h5>
-                <div class="row text-center mb-3">
-                    <div class="col-4">
-                        <div class="fw-bold fs-4">{{ $penjualanBulanIni->total_transaksi ?? 0 }}</div>
-                        <div class="text-muted">Transaksi</div>
-                    </div>
-                    <div class="col-4">
-                        <div class="fw-bold fs-4">{{ number_format($penjualanBulanIni->total_penjualan ?? 0, 0, ',', '.') }}</div>
-                        <div class="text-muted">Total Penjualan (Rp)</div>
-                    </div>
-                    <div class="col-4">
-                        <div class="fw-bold fs-4">{{ number_format($penjualanBulanIni->rata_rata ?? 0, 0, ',', '.') }}</div>
-                        <div class="text-muted">Rata-rata / Transaksi</div>
-                    </div>
-                </div>
-                <div>
-                    <canvas id="grafikPenjualan" height="120"></canvas>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Chart.js CDN -->
+<!-- Modal Kadaluarsa -->
+<div class="modal fade" id="kadaluarsaModal" tabindex="-1" aria-labelledby="kadaluarsaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="kadaluarsaModalLabel"><i class="ri-inbox-line me-2"></i>Daftar Kadaluarsa</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <!-- Card Bahan Kadaluarsa -->
+          <div class="col-md-6">
+            <div class="card border-danger shadow-sm h-100">
+              <div class="card-header bg-danger text-white fw-semibold d-flex align-items-center">
+                <i class="ri-capsule-fill fs-4 me-2"></i> Bahan Kadaluarsa
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  @forelse($kadaluarsa as $bahan)
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="ri-capsule-fill fs-5 text-danger me-2"></i>
+                      <div>
+                        <div class="fw-semibold">{{ $bahan->nama_bahan }}</div>
+                        <span class="badge bg-danger">Exp: {{ \Carbon\Carbon::parse($bahan->tanggal_exp)->format('d M Y') }}</span>
+                      </div>
+                    </div>
+                  @empty
+                    <span class="text-muted">Tidak ada bahan kadaluarsa.</span>
+                  @endforelse
+                </div>
+                <a href="{{ route('penyesuaian.exp', ['tipe' => 'bahan']) }}" class="btn btn-danger btn-sm">
+                  Penyesuaian
+                </a>
+              </div>
+            </div>
+          </div>
+          <!-- Card Produk Kadaluarsa -->
+          <div class="col-md-6">
+            <div class="card border-danger shadow-sm h-100">
+              <div class="card-header bg-danger text-white fw-semibold d-flex align-items-center">
+                <i class="ri-inbox-fill fs-4 me-2"></i> Produk Kadaluarsa
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  @forelse($kadaluarsaProduk as $produk)
+                    <div class="d-flex align-items-center mb-2">
+                      <i class="ri-inbox-fill fs-5 text-danger me-2"></i>
+                      <div>
+                        <div class="fw-semibold">{{ $produk->nama_produk }}</div>
+                        <span class="badge bg-danger">Exp: {{ \Carbon\Carbon::parse($produk->tanggal_exp)->format('d M Y') }}</span>
+                      </div>
+                    </div>
+                  @empty
+                    <span class="text-muted">Tidak ada produk kadaluarsa.</span>
+                  @endforelse
+                </div>
+                <a href="{{ route('penyesuaian.exp', ['tipe' => 'produk']) }}" class="btn btn-danger btn-sm">
+                  Penyesuaian
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Penjualan Per Lokasi -->
+<div class="modal fade" id="penjualanLokasiModal" tabindex="-1" aria-labelledby="penjualanLokasiModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="penjualanLokasiModalLabel"><i class="ri-map-pin-line me-2"></i>Penjualan Per Lokasi Hari Ini</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          @if(isset($penjualanPerLokasi) && $penjualanPerLokasi->count())
+            @foreach($penjualanPerLokasi as $lokasi)
+              <div class="col-md-6">
+                <div class="card border-info shadow-sm h-100">
+                  <div class="card-header bg-info text-white fw-semibold d-flex align-items-center">
+                    <i class="ri-map-pin-user-line fs-4 me-2"></i> {{ $lokasi->nama_lokasi }}
+                  </div>
+                  <div class="card-body">
+                    <div class="fw-bold fs-5 text-info mb-2">Rp {{ number_format($lokasi->total, 0, ',', '.') }}</div>
+                    <div class="text-muted">Transaksi: {{ $lokasi->jumlah_transaksi }}</div>
+                  </div>
+                </div>
+              </div>
+            @endforeach
+          @else
+            <div class="col-12"><span class="text-muted">Belum ada data penjualan per lokasi hari ini.</span></div>
+          @endif
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Bahan Stok Minimum -->
+<div class="modal fade" id="stokMinBahanModal" tabindex="-1" aria-labelledby="stokMinBahanModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="stokMinBahanModalLabel"><i class="ri-alert-line me-2"></i>Bahan Stok Minimum</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-2">
+          @forelse($stokMinBahan as $bahan)
+            <div class="col-12 col-lg-6">
+              <div class="card border-0 shadow-sm mb-2" style="background: #fffbe6;">
+                <div class="card-body d-flex align-items-center gap-2">
+                  <i class="ri-capsule-fill fs-3 text-warning"></i>
+                  <div>
+                    <div class="fw-semibold">{{ $bahan->nama_bahan }}</div>
+                    <span class="badge bg-warning text-dark">Stok: {{ $bahan->stok }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          @empty
+            <div class="col-12"><span class="text-muted">Stok bahan aman.</span></div>
+          @endforelse
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="{{ route('orderbeli.index') }}" class="btn btn-primary btn-sm">
+          <i class="ri-shopping-bag-3-line me-1"></i>Order Beli
+        </a>
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('grafikPenjualan').getContext('2d');
+    const ctx = document.getElementById('salesChart').getContext('2d');
     new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: {!! json_encode($labels) !!},
             datasets: [{
-                label: 'Penjualan Harian (Rp)',
+                label: 'Penjualan (Rp)',
                 data: {!! json_encode($dataGrafik) !!},
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0,123,255,0.1)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 3
+                backgroundColor: 'rgba(99,102,241,0.7)',
+                borderColor: '#6366f1',
+                borderWidth: 2,
+                borderRadius: 6,
+                maxBarThickness: 28
             }]
         },
         options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
             scales: {
-                x: { title: { display: true, text: 'Hari' } },
-                y: { title: { display: true, text: 'Total Penjualan (Rp)' }, beginAtZero: true }
-            },
-            plugins: {
-                legend: { display: false }
+                x: { ticks: { color: '#6b7280' } },
+                y: { beginAtZero: true, ticks: { color: '#6366f1' } }
             }
         }
     });
 });
-</script>
-
-<!-- Script toggle -->
-<script>
-function toggleBox(id) {
-    const box = document.getElementById(id);
-    box.classList.toggle('d-none');
-}
 </script>
 
 @if(!session('lokasi_aktif'))
@@ -409,4 +404,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endif
+
 @endsection

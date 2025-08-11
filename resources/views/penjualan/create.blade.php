@@ -190,6 +190,7 @@
         </div>
         <input type="hidden" name="detail_json" id="detail_json">
         <input type="hidden" name="jenis_penjualan" value="{{ $jenis_penjualan }}">
+        <input type="hidden" name="lokasi" value="{{ $lokasi_aktif }}">
     </form>
         </div>
     </div>

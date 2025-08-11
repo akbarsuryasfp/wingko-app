@@ -489,7 +489,7 @@ public function storeProduk(Request $request)
     $produkList = DB::table('t_produk')->get()->map(function($produk) {
         $stok_sistem = DB::table('t_kartupersproduk')
             ->where('kode_produk', $produk->kode_produk)
-            ->where('lokasi', 'Gudang') // Filter hanya lokasi Gudang
+            ->where('lokasi', '1') // Filter hanya lokasi Gudang
             ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
             ->value('stok') ?? 0;
         $produk->stok_sistem = $stok_sistem;

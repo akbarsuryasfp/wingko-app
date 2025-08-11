@@ -14,8 +14,8 @@
         <!-- Search Form -->
         <form class="d-none d-md-flex me-3 position-relative" id="sidebarSearchForm" method="GET" action="#" style="max-width:250px;">
             <input class="form-control me-2" type="search" placeholder="Cari..." aria-label="Search" id="sidebarSearchInput" autocomplete="off">
-            <button class="btn btn-outline-success" type="submit">
-                <i class="bi bi-search"></i>
+            <button class="btn btn-outline-light" type="submit">
+                <i class="bi bi-search" style="color:white;"></i>
             </button>
             <!-- Dropdown hasil pencarian -->
             <div id="sidebarSearchDropdown" class="dropdown-menu w-100" style="max-height:220px; overflow-y:auto; position:absolute; top:100%; left:0; z-index:9999; display:none;"></div>
@@ -30,7 +30,7 @@
                     $lokasiAktif = \App\Models\Lokasi::where('kode_lokasi', session('lokasi_aktif'))->first();
                 }
             @endphp
-            <span class="badge bg-primary align-middle" style="font-size:0.95em;">
+            <span class="badge align-middle" style="font-size:0.95em; background: linear-gradient(90deg, #f59e42 0%, #fff1d6ff 100%); color: #1e293b;">
                 <i class="bi bi-geo-alt-fill me-1"></i>
                 {{ $lokasiAktif ? $lokasiAktif->nama_lokasi : 'Lokasi belum terdeteksi' }}
             </span>

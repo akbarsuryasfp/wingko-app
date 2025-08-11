@@ -33,7 +33,7 @@ class JurnalController extends Controller
         }
 
         $jurnals = $query->orderBy('tanggal', 'desc')
-            ->orderBy('no_jurnal')
+            ->orderBy('no_jurnal', 'desc')
             ->get();
 
         return view('jurnal.index', compact('jurnals'));

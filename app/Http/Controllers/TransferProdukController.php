@@ -83,7 +83,16 @@ public function index(Request $request)
 
     public function create()
     {
-        $lokasiAsal = 'Gudang';
+        // Ambil kode lokasi aktif dari session
+        $kodeLokasiAktif = session('lokasi_aktif', 'gudang'); // default ke 'gudang' jika belum ada
+
+        // Ambil nama lokasi asal dari tabel t_lokasi
+        $lokasiRow = DB::table('t_lokasi')->where('kode_lokasi', $kodeLokasiAktif)->first();
+        $lokasiAsal = $lokasiRow ? $lokasiRow->nama_lokasi : $kodeLokasiAktif;
+
+        // Kirim seluruh lokasi (tanpa filter)
+        $listLokasi = DB::table('t_lokasi')->pluck('nama_lokasi', 'kode_lokasi');
+
         $produk = DB::table('t_produk')
             ->leftJoin('t_kartupersproduk', function($q) use ($lokasiAsal) {
                 $q->on('t_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
@@ -120,7 +129,7 @@ public function index(Request $request)
     // Format kode
     $kode_otomatis = 'TRF-' . date('Ymd') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-    return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal'));
+    return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal', 'listLokasi'));
 }
      
     // Simpan transfer produk dengan FIFO
@@ -416,5 +425,29 @@ public function laporanPdf(Request $request)
 
     $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('transferproduk.cetak', compact('transfers'));
     return $pdf->stream('laporan_transfer_produk.pdf');
+}
+public function produkByLokasi(Request $request)
+{
+    $lokasi = $request->input('lokasi');
+    $produk = DB::table('t_produk')
+        ->leftJoin('t_kartupersproduk', function($q) use ($lokasi) {
+            $q->on('t_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
+              ->where('t_kartupersproduk.lokasi', '=', $lokasi);
+        })
+        ->select(
+            't_produk.kode_produk',
+            't_produk.nama_produk',
+            't_produk.satuan',
+            DB::raw('COALESCE(SUM(t_kartupersproduk.masuk - t_kartupersproduk.keluar),0) as stok'),
+            DB::raw('MAX(t_kartupersproduk.tanggal_exp) as tanggal_exp')
+        )
+        ->groupBy(
+            't_produk.kode_produk',
+            't_produk.nama_produk',
+            't_produk.satuan'
+        )
+        ->get();
+
+    return response()->json($produk);
 }
 }

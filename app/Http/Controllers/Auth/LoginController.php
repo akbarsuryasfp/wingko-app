@@ -31,6 +31,9 @@ class LoginController extends Controller
     public function logout(Request $request)
     {
         Auth::logout();
+        $request->session()->forget(['lokasi_aktif', 'latitude', 'longitude']);
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
         return redirect('/login');
     }
 }

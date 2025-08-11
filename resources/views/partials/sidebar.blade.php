@@ -124,7 +124,7 @@
 
 <div id="sidebar" class="p-2">
     <div class="text-center mb-3">
-        <h5 class="text-primary">MENU NAVIGASI</h5>
+        <h5 class="text-white">MENU NAVIGASI</h5>
     </div>
     
     <ul class="nav flex-column">
@@ -153,6 +153,7 @@
         </li>
         
         <!-- Transaksi Menu -->
+         
         <li>
             <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-transaksi', this)">
                 <i class="bi bi-arrow-left-right"></i><span>Transaksi</span>
@@ -240,11 +241,11 @@
         </li>
         
         <!-- Penyesuaian Menu -->
+        @if(auth()->user()->role == 'admin' || auth()->user()->role == 'gudang')
         <li>
             <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penyesuaian', this)">
                 <i class="bi bi-sliders"></i><span>Penyesuaian</span>
             </a>
-            @if(auth()->user()->role == 'admin' || auth()->user()->role == 'gudang')
             <ul id="submenu-penyesuaian" class="nav flex-column ms-3" style="display:none;">
                 <li><a href="/stokopname/bahan" class="nav-link submenu-item"><i class="bi bi-clipboard-check"></i>Stok Opname Bahan</a></li>
                 <li><a href="/stokopname/produk" class="nav-link submenu-item"><i class="bi bi-clipboard-data"></i>Stok Opname Produk</a></li>
@@ -256,43 +257,41 @@
             </ul>
             @endif
             </li>
-            <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-kartustok', this)">
-                        <i class="bi bi-cart"></i><span>Persediaan</span>
-            </a>
-            <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
-                        <li><a href="/kartustok/bahan" class="nav-link submenu-item"><i class="bi bi-box"></i>Kartu Persediaan Bahan</a></li>
-                        <li><a href="/kartustok/produk" class="nav-link submenu-item"><i class="bi bi-cup-straw"></i>Kartu Persediaan Produk</a></li>
-                        <li><a href="/kartuperskonsinyasi" class="nav-link submenu-item"><i class="bi bi-boxes"></i>Kartu Persediaan Produk Konsinyasi Masuk</a></li>
-            </ul>
+            <li>
+                <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-kartustok', this)">
+                    <i class="bi bi-cart"></i><span>Persediaan</span>
+                </a>
+                <ul id="submenu-kartustok" class="nav flex-column ms-3" style="display:none;">
+                    <li><a href="/kartustok/bahan" class="nav-link submenu-item"><i class="bi bi-box"></i>Kartu Persediaan Bahan</a></li>
+                    <li><a href="/kartustok/produk" class="nav-link submenu-item"><i class="bi bi-cup-straw"></i>Kartu Persediaan Produk</a></li>
+                    <li><a href="/kartuperskonsinyasi" class="nav-link submenu-item"><i class="bi bi-boxes"></i>Kartu Persediaan Produk Konsinyasi Masuk</a></li>
+                </ul>
+            </li>
         <!-- Laporan Menu -->
          
+        @if(auth()->user()->role == 'admin' )
         <li>
-            @if(auth()->user()->role == 'admin' )x`
-            <a href="javascript:void(0)" class="nav-link active submenu-header" onclick="toggleSubMenu('submenu-laporan', this)">
+            <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-laporan', this)">
                 <i class="bi bi-file-earmark-text"></i><span>Laporan</span>
             </a>
-            <ul id="submenu-laporan" class="nav flex-column ms-3" style="display:block;">
+            <ul id="submenu-laporan" class="nav flex-column ms-3" style="display:none;">
                 <!-- Persediaan Submenu -->
-                <li>
-                    
-                </li>
-                 
+                <li></li>
                 <!-- Jurnal Umum -->
                 <li>
                     <a href="/jurnal" class="nav-link">
                         <i class="bi bi-journal-bookmark"></i><span>Jurnal Umum</span>
                     </a>
                 </li>
-                
                 <!-- Buku Besar -->
                 <li>
                     <a href="/jurnal/buku_besar" class="nav-link">
                         <i class="bi bi-book"></i><span>Buku Besar</span>
                     </a>
                 </li>
-            @endif
             </ul>
         </li>
+        @endif
     </ul>
 </div>
 
@@ -327,7 +326,45 @@ function highlightCurrentPage() {
 }
 
 // Function to toggle submenus
+window.toggleSubMenu = function(id, header) {
+    var clickedUl = document.getElementById(id);
+    if (!clickedUl) return;
 
+    // Cari parent <li> dari submenu yang diklik
+    var parentLi = clickedUl.parentElement;
+    // Cari parent <ul> dari parent <li>
+    var parentUl = parentLi ? parentLi.parentElement : null;
+    if (!parentUl) return;
+
+    // Tutup semua submenu yang satu level di dalam parent UL,
+    // tapi JANGAN tutup parentUl itu sendiri!
+    parentUl.querySelectorAll(':scope > li > ul[id^="submenu-"]').forEach(function(ul) {
+        if (ul !== clickedUl) {
+            ul.style.display = 'none';
+            // Hapus submenu-active dari header lain
+            var otherHeader = ul.parentElement.querySelector('.submenu-header');
+            if (otherHeader) otherHeader.classList.remove('submenu-active');
+        }
+    });
+
+    // Toggle submenu yang diklik
+    if (clickedUl.style.display === 'none' || clickedUl.style.display === '') {
+        clickedUl.style.display = 'block';
+        if (header) header.classList.add('submenu-active');
+        else {
+            // fallback: cari header di parent
+            var h = parentLi.querySelector('.submenu-header');
+            if (h) h.classList.add('submenu-active');
+        }
+    } else {
+        clickedUl.style.display = 'none';
+        if (header) header.classList.remove('submenu-active');
+        else {
+            var h = parentLi.querySelector('.submenu-header');
+            if (h) h.classList.remove('submenu-active');
+        }
+    }
+};
 
 // Initialize sidebar
 document.addEventListener('DOMContentLoaded', function() {
