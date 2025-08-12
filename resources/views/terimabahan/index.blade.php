@@ -164,9 +164,11 @@
                                             <i class="bi bi-info-circle"></i>
                                         </a>
                                         @if(!$sudahPembelian)
-                                            <a href="{{ route('terimabahan.edit', $item->no_terima_bahan) }}" class="btn btn-warning btn-sm" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
+@if(!$sudahPembelian && auth()->user()->role != 'gudang')
+    <a href="{{ route('terimabahan.edit', $item->no_terima_bahan) }}" class="btn btn-warning btn-sm" title="Edit">
+        <i class="bi bi-pencil"></i>
+    </a>
+@endif
                                             <form action="{{ route('terimabahan.destroy', $item->no_terima_bahan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                                 @csrf
                                                 @method('DELETE')

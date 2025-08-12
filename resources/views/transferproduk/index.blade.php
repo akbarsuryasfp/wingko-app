@@ -127,10 +127,12 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a href="{{ route('transferproduk.edit', $transfer->no_transaksi) }}" 
-                                           class="btn btn-sm btn-warning" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+        @unless(auth()->user()->role == 'gudang')
+        <a href="{{ route('transferproduk.edit', $transfer->no_transaksi) }}" 
+           class="btn btn-sm btn-warning" title="Edit">
+            <i class="bi bi-pencil"></i>
+        </a>
+        @endunless
                                         <form action="{{ route('transferproduk.destroy', $transfer->no_transaksi) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transfer ini?')">
                                             @csrf
                                             @method('DELETE')

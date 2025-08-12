@@ -77,6 +77,8 @@ public function index(Request $request)
         $transfer->details = $details;
     }
 
+    
+
     return view('transferproduk.index', compact('transfers', 'listLokasi'));
 }
 

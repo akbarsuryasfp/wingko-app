@@ -262,11 +262,13 @@
                 </select>
             </div>
             <div class="d-flex gap-2 justify-content-end mt-3">
-                @if(empty($order->status) || $order->status === 'Menunggu Persetujuan')
-                    <button type="submit" name="action" value="setujui" class="btn btn-primary">Setujui Order</button>
-                @elseif($order->status === 'Disetujui')
-                    <button type="submit" name="action" value="update" class="btn btn-success">Update Pembayaran</button>
-                @endif
+@if((empty($order->status) || $order->status === 'Menunggu Persetujuan') && auth()->user()->role == 'admin')
+    <button type="submit" name="action" value="setujui" class="btn btn-sm nav-link current-page" style="border: none; color: #fff; background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); font-weight: 500;">
+        <i class="bi bi-check-circle"></i> Setujui Order
+    </button>
+@elseif($order->status === 'Disetujui')
+    <button type="submit" name="action" value="update" class="btn btn-success">Update Pembayaran</button>
+@endif
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
             </div>
         </form>

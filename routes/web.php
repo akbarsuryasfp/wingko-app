@@ -159,7 +159,7 @@ Route::post('/consignee/{kode_consignee}/setor', [ConsigneeController::class, 's
 
 
 // Route cetak laporan penjualan (HARUS sebelum resource agar tidak tertimpa)
-Route::get('/penjualan/cetak-laporan', [App\Http\Controllers\PenjualanController::class, 'cetakLaporan'])->name('penjualan.cetak_laporan');
+Route::get('/penjualan/cetak-laporan-pdf', [App\Http\Controllers\PenjualanController::class, 'cetakLaporanPdf'])->name('penjualan.cetak_laporan');
 // Route penjualan
 Route::resource('penjualan', PenjualanController::class);
 Route::get('/penjualan/{no_jual}/cetak', [PenjualanController::class, 'cetak'])->name('penjualan.cetak');

@@ -78,6 +78,7 @@
                             <th>Jumlah</th>
                             <th>Penerima</th>
                             <th>Keterangan</th>
+                            <th>Bukti Nota</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
@@ -99,10 +100,17 @@
                                 @endif
                             </td>
                             <td class="text-start">{{ $item->keterangan_teks }}</td>
+<td>
+    @if($item->bukti_nota)
+        <a href="{{ asset('storage/' . $item->bukti_nota) }}" target="_blank">Lihat Nota</a>        <span class="text-muted">-</span>
+    @endif
+</td>
                             <td class="text-nowrap">
-                                <a href="{{ route('kaskeluar.edit', $item->no_jurnal) }}" class="btn btn-sm btn-warning me-1" data-bs-toggle="tooltip" title="Edit Data">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
+    @unless(auth()->user()->role == 'gudang')
+    <a href="{{ route('kaskeluar.edit', $item->no_jurnal) }}" class="btn btn-sm btn-warning me-1" data-bs-toggle="tooltip" title="Edit Data">
+        <i class="bi bi-pencil"></i>
+    </a>
+    @endunless
                                 <form action="{{ route('kaskeluar.destroy', $item->no_jurnal) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                     @csrf
                                     @method('DELETE')

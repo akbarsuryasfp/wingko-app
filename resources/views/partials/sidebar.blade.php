@@ -170,8 +170,9 @@
                         <li><a href="/terimabahan" class="nav-link submenu-item"><i class="bi bi-truck"></i> Penerimaan Bahan</a></li>
                         <li><a href="/pembelian" class="nav-link submenu-item"><i class="bi bi-credit-card"></i> Pembelian</a></li>
                         <li><a href="/returbeli" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i> Retur Pembelian</a></li>
-                        <li><a href="/hutang" class="nav-link submenu-item"><i class="bi bi-receipt"></i> Hutang </a></li>
-                    </ul>
+                        @if(auth()->user()->role == 'admin')
+<li><a href="/hutang" class="nav-link submenu-item"><i class="bi bi-receipt"></i> Hutang </a></li>
+@endif                    </ul>
                 </li>
                 @endif
                 <!-- Produksi Submenu -->
@@ -213,9 +214,8 @@
                     <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="/konsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Masuk</a></li>
                         <li><a href="/jualkonsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-arrow-left-right"></i>Penjualan Produk Konsinyasi Masuk</a></li>
-                        <li><a href="/bayarconsignor" class="nav-link submenu-item"><i class="bi bi-credit-card-2-back"></i>Pembayaran ke Consignor</a></li>
-                        <li><a href="/komisijual" class="nav-link submenu-item"><i class="bi bi-percent"></i>Komisi Penjualan Konsinyasi</a></li>
-                        <li><a href="/returconsignor" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i>Retur ke Consignor</a></li>
+                        <li><a href="/bayarconsignor" class="nav-link submenu-item"><i class="bi bi-credit-card-2-back"></i>Pembayaran ke Consignor (Pemilik Barang)</a></li>
+                        <li><a href="/returconsignor" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i>Retur ke Consignor (Pemilik Barang)</a></li>
                     </ul>
                 </li>
 
@@ -226,8 +226,8 @@
                     </a>
                     <ul id="submenu-konsinyasikeluar" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="/konsinyasikeluar" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Keluar</a></li>
-                        <li><a href="/penerimaankonsinyasi" class="nav-link submenu-item"><i class="bi bi-cash-coin"></i>Penerimaan Hasil Penjualan Produk Konsinyasi</a></li>
-                        <li><a href="/returconsignee" class="nav-link submenu-item"><i class="bi bi-arrow-return-right"></i>Retur dari Consignee</a></li>
+                        <li><a href="/penerimaankonsinyasi" class="nav-link submenu-item"><i class="bi bi-cash-coin"></i>Penerimaan Hasil Penjualan Produk Konsinyasi Keluar (Per Produk)</a></li>
+                        <li><a href="/returconsignee" class="nav-link submenu-item"><i class="bi bi-arrow-return-right"></i>Retur dari Consignee (Mitra)</a></li>
                     </ul>
                 </li>
                 @endif

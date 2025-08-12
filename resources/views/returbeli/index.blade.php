@@ -165,9 +165,11 @@
                                             <a href="{{ route('returbeli.show', $retur->no_retur_beli) }}" class="btn btn-info btn-sm" title="Detail">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ route('returbeli.edit', $retur->no_retur_beli) }}" class="btn btn-warning btn-sm" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
+@unless(auth()->user()->role == 'gudang')
+<a href="{{ route('returbeli.edit', $retur->no_retur_beli) }}" class="btn btn-warning btn-sm" title="Edit">
+    <i class="bi bi-pencil"></i>
+</a>
+@endunless
                                             <form action="{{ route('returbeli.destroy', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
@@ -182,7 +184,8 @@
 @elseif($retur->jenis_pengembalian === 'uang' && $retur->status === 'menunggu_pengembalian')
     <form action="{{ route('returbeli.kasretur', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
         @csrf
-        <button type="submit" class="btn btn-success btn-sm">
+        <button type="submit" class="btn btn-success btn-sm"
+            @if(auth()->user()->role == 'gudang') disabled @endif>
             <i class="bi bi-cash-coin"></i> 
         </button>
     </form>
