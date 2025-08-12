@@ -173,8 +173,9 @@
                         <li><a href="/terimabahan" class="nav-link submenu-item"><i class="bi bi-truck"></i> Penerimaan Bahan</a></li>
                         <li><a href="/pembelian" class="nav-link submenu-item"><i class="bi bi-credit-card"></i> Pembelian</a></li>
                         <li><a href="/returbeli" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i> Retur Pembelian</a></li>
-                        <li><a href="/hutang" class="nav-link submenu-item"><i class="bi bi-receipt"></i> Hutang </a></li>
-                    </ul>
+                        @if(auth()->user()->role == 'admin')
+<li><a href="/hutang" class="nav-link submenu-item"><i class="bi bi-receipt"></i> Hutang </a></li>
+@endif                    </ul>
                 </li>
                 @endif
                 <!-- Produksi Submenu -->
@@ -212,7 +213,7 @@
                     </a>
                     <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="/konsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Masuk</a></li>
-                        <li><a href="/jualkonsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-arrow-left-right"></i>Penjualan Produk Konsinyasi Masuk (Per Produk)</a></li>
+                        <li><a href="/jualkonsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-arrow-left-right"></i>Penjualan Produk Konsinyasi Masuk</a></li>
                         <li><a href="/bayarconsignor" class="nav-link submenu-item"><i class="bi bi-credit-card-2-back"></i>Pembayaran ke Consignor (Pemilik Barang)</a></li>
                         <li><a href="/returconsignor" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i>Retur ke Consignor (Pemilik Barang)</a></li>
                     </ul>

@@ -50,9 +50,15 @@
         <a href="{{ route('pembelian.langsung', ['jenis' => 'langsung']) }}" class="btn btn-sm btn-warning">
             <i class="bi bi-cart-plus"></i> Pembelian Langsung
         </a>
-        <a href="{{ route('pembelian.create', ['jenis' => 'order']) }}" class="btn btn-sm btn-info">
-            <i class="bi bi-clipboard-check"></i> Pembelian Berdasarkan Order
-        </a>
+@if(auth()->user()->role == 'gudang')
+<a href="#" class="btn btn-sm btn-info disabled" tabindex="-1" aria-disabled="true" style="pointer-events: none; opacity: 0.7;">
+    <i class="bi bi-clipboard-check"></i> Pembelian Berdasarkan Order
+</a>
+@else
+<a href="{{ route('pembelian.create', ['jenis' => 'order']) }}" class="btn btn-sm btn-info">
+    <i class="bi bi-clipboard-check"></i> Pembelian Berdasarkan Order
+</a>
+@endif
     </div>
 </div>
 
@@ -166,9 +172,11 @@
                                         <a href="{{ route('pembelian.show', $p->no_pembelian) }}" class="btn btn-info btn-sm" title="Detail">
                                             <i class="bi bi-info-circle"></i>
                                         </a>
-                                        <a href="{{ route('pembelian.edit', $p->no_pembelian) }}" class="btn btn-warning btn-sm" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+@unless(auth()->user()->role == 'gudang')
+<a href="{{ route('pembelian.edit', $p->no_pembelian) }}" class="btn btn-warning btn-sm" title="Edit">
+    <i class="bi bi-pencil"></i>
+</a>
+@endunless
                                         <form action="{{ route('pembelian.destroy', $p->no_pembelian) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                             @csrf
                                             @method('DELETE')

@@ -24,6 +24,7 @@ public function index(Request $request)
                  ->where('jd.kredit', '>', 0)
                  ->where('jd.kode_akun', '=', JurnalHelper::getKodeAkun('kas_bank'));
         })
+        ->leftJoin('t_buktikaskeluar as bkk', 'ju.no_jurnal', '=', 'bkk.no_jurnal') // Tambahkan join ini
         ->where('ju.jenis_jurnal', 'umum')
         ->where('ju.nomor_bukti', 'like', 'BKK%')
         ->whereDate('ju.tanggal', '>=', $startDate)
@@ -39,7 +40,8 @@ public function index(Request $request)
             'ju.tanggal',
             'ju.nomor_bukti',
             'ju.keterangan',
-            'jd.kredit as jumlah'
+            'jd.kredit as jumlah',
+            'bkk.bukti_nota' // Tambahkan ini
         ])
         ->orderBy('ju.tanggal', 'desc');
 

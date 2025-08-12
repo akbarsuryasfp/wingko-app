@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,11 +27,10 @@
                 <th>Total Tagihan</th>
                 <th>Total Bayar</th>
                 <th>Sisa Hutang</th>
-                <th>Status</th>
             </tr>
         </thead>
         <tbody>
-                        @php
+            @php
                 $total_tagihan = 0;
                 $total_bayar = 0;
                 $total_sisa = 0;
@@ -57,21 +55,13 @@
                         <span class="text-danger">Rp{{ number_format($hutang->sisa_utang, 0, ',', '.') }}</span>
                     @endif
                 </td>
-                <td class="text-center">
-                    @if ($hutang->sisa_utang == 0)
-                        Lunas
-                    @else
-                        Belum Lunas
-                    @endif
-                </td>
             </tr>
             @endforeach
-                        <tr>
+            <tr>
                 <th colspan="4" class="text-end">TOTAL</th>
                 <th class="text-end">Rp{{ number_format($total_tagihan, 0, ',', '.') }}</th>
                 <th class="text-end">Rp{{ number_format($total_bayar, 0, ',', '.') }}</th>
                 <th class="text-end">Rp{{ number_format($total_sisa, 0, ',', '.') }}</th>
-                <th></th>
             </tr>
         </tbody>
     </table>

@@ -136,12 +136,28 @@ class PembelianController extends Controller
                     'kode_bahan' => $item->kode_bahan,
                     'nama_bahan' => $item->nama_bahan,
                     'satuan' => $item->satuan,
-                    'jumlah_per_order' => $item->interval ?? 1
+                    'jumlah_per_order' => $item->jumlah_per_order ?? 1
                 ];
             })->toArray();
     
         // --- Stok minimal untuk modal khusus ---
         $stokMinList = $this->getBahanStokMinimal();
+    
+        // Ambil tanggal hari ini
+        $tanggal_hari_ini = date('Y-m-d');
+
+        // Ambil kode bahan yang sudah pernah diorder hari ini
+$bahanSudahOrderHariIni = DB::table('t_pembelian')
+    ->join('t_terimabahan', 't_pembelian.no_terima_bahan', '=', 't_terimabahan.no_terima_bahan')
+    ->join('t_terimab_detail', 't_terimabahan.no_terima_bahan', '=', 't_terimab_detail.no_terima_bahan')
+    ->whereDate('t_pembelian.tanggal_pembelian', $tanggal_hari_ini)
+    ->pluck('t_terimab_detail.kode_bahan')
+    ->toArray();
+
+        // Filter bahan prediksi harian yang belum pernah diorder hari ini
+        $bahansPrediksiHarian = collect($bahansPrediksiHarian)->filter(function($item) use ($bahanSudahOrderHariIni) {
+            return !in_array($item['kode_bahan'], $bahanSudahOrderHariIni);
+        })->values()->all();
     
         return view('pembelian.langsung', compact(
             'kode_pembelian',
