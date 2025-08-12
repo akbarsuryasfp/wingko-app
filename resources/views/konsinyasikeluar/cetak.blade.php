@@ -34,9 +34,7 @@
             <div class="sub" style="margin-bottom:8px;">Tanggal Pengiriman: {{ $header->tanggal_setor }}</div>
             <div class="sub">Kepada Yth: {{ $header->consignee->nama_consignee ?? '-' }}</div>
         </div>
-        <div class="nota-print no-print">
-            <button onclick="window.print()" style="padding:4px 12px;">Print</button>
-        </div>
+    <!-- print button removed for PDF output -->
     </div>
     <div class="nota-info" style="margin-top:8px;">No Surat Pengiriman: {{ $header->no_suratpengiriman ?? $header->no_konsinyasikeluar }}</div>
     <div class="nota-info" style="margin-top:2px;">No Konsinyasi Keluar: {{ $header->no_konsinyasikeluar }}</div>
@@ -68,22 +66,24 @@
         </tbody>
     </table>
 
-    <table class="nota-summary" style="margin-left:0; width: 350px;">
+
+    <table class="nota-summary" style="margin-left:0; width: 100%; max-width: 500px;">
         <tr>
             <td class="fw-bold" style="width:170px;">Total Setor</td>
-            <td>: Rp{{ number_format($header->total_setor, 0, ',', '.') }}</td>
+            <td style="width:10px;">:</td>
+            <td>Rp{{ number_format($header->total_setor, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="fw-bold">Keterangan</td>
+            <td>:</td>
+            <td>{{ $header->keterangan ?? '-' }}</td>
         </tr>
     </table>
 
-    <div class="section-title">Catatan</div>
-    <div style="font-size:13px;">
-        Produk di atas dikirim untuk dititipkan/dijual secara konsinyasi di tempat mitra. Mohon periksa dan konfirmasi penerimaan produk.
-    </div>
-
-    <div class="footer">
-        Hormat kami,<br>
-        <b>Wingko Babat Pratama</b><br>
-        (Yoko Setyo)
+    <div style="margin-top: 32px; font-size: 15px;">
+        <p>
+            Dengan ini, pihak <b>Wingko Babat Pratama</b> telah melakukan pengiriman produk konsinyasi kepada pihak Consignee (Mitra), yaitu <b>{{ $header->consignee->nama_consignee ?? '-' }}</b>, sesuai dengan rincian yang tertera pada surat ini. Seluruh proses pengiriman telah dilakukan secara resmi dan dapat dipertanggungjawabkan.
+        </p>
     </div>
 </div>
 </body>

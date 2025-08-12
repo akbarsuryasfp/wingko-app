@@ -1,6 +1,8 @@
+
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Laporan Retur Penjualan</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 13px; background: #fafafa; }
@@ -10,7 +12,6 @@
         h3 { margin-bottom: 0; }
         .table-title { margin-top: 8px; font-size: 15px; font-weight: 600; }
         tr:nth-child(even) { background: #f6f6f6; }
-        ul { list-style: none; padding: 0; margin: 0; }
     </style>
 </head>
 <body>
@@ -34,6 +35,9 @@
             </tr>
         </thead>
         <tbody>
+            @php
+                $grand_total = 0;
+            @endphp
             @foreach($returjual as $idx => $rj)
                 @php
                     $details = \DB::table('t_returjual_detail')
@@ -47,6 +51,7 @@
                         )
                         ->get();
                     $rowspan = $details->count() ?: 1;
+                    $grand_total += $rj->total_nilai_retur;
                 @endphp
                 @if($details->count())
                     @foreach($details as $didx => $detail)
@@ -82,10 +87,20 @@
                         <td>-</td>
                         <td>-</td>
                         <td>Rp{{ number_format($rj->total_nilai_retur, 0, ',', '.') }}</td>
+                        <td>Rp{{ number_format($rj->total_nilai_retur, 0, ',', '.') }}</td>
                     </tr>
                 @endif
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="11" style="text-align:right;">GRAND TOTAL</th>
+                <th>Rp{{ number_format($grand_total, 0, ',', '.') }}</th>
+            </tr>
+        </tfoot>
     </table>
+    <div class="footer" style="margin-top:30px;text-align:right;font-size:12px;">
+        Dicetak pada: {{ date('d-m-Y H:i') }}
+    </div>
 </body>
 </html>

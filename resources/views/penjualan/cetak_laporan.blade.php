@@ -57,9 +57,9 @@
                 <td>Rp{{ number_format($p->total_harga,0,',','.') }}</td>
                 <td>
                     @if(isset($p->tipe_diskon) && $p->tipe_diskon == 'persen')
-                        {{ $p->diskon }}%
+                        ({{ $p->diskon }}%)
                     @else
-                        Rp{{ number_format($p->diskon,0,',','.') }}
+                        (Rp{{ number_format($p->diskon,0,',','.') }})
                     @endif
                 </td>
                 <td>Rp{{ number_format($p->total_jual,0,',','.') }}</td>
@@ -88,7 +88,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <th colspan="4" class="text-right">TOTAL</th>
+                <th colspan="4" class="text-right">GRAND TOTAL</th>
                 <th>Rp{{ number_format($total_harga,0,',','.') }}</th>
                 <th>Rp{{ number_format($total_diskon,0,',','.') }}</th>
                 <th>Rp{{ number_format($total_jual,0,',','.') }}</th>

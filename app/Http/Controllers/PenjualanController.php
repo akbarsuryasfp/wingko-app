@@ -893,17 +893,53 @@ class PenjualanController extends Controller
         }
 
         // Ambil detail produk dari t_penjualan_detail, join ke produk & produk konsinyasi
-        $details = \DB::table('t_penjualan_detail')
+        $detailsRaw = \DB::table('t_penjualan_detail')
             ->leftJoin('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
             ->leftJoin('t_produk_konsinyasi', 't_penjualan_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
             ->where('t_penjualan_detail.no_jual', $no_jual)
             ->select(
                 't_penjualan_detail.*',
-                \DB::raw('COALESCE(t_produk.nama_produk, t_produk_konsinyasi.nama_produk) as nama_produk'),
-                \DB::raw('COALESCE(t_produk.satuan, t_produk_konsinyasi.satuan) as satuan')
+                \DB::raw('COALESCE(NULLIF(t_produk.nama_produk, ""), NULLIF(t_produk_konsinyasi.nama_produk, "")) as nama_produk_db'),
+                \DB::raw('COALESCE(NULLIF(t_produk.satuan, ""), NULLIF(t_produk_konsinyasi.satuan, "")) as satuan_db')
             )
             ->get();
-        \Log::debug('cetakTagihan: Detail produk', ['details' => $details]);
+
+        // fallback manual jika tetap kosong
+        $details = [];
+        foreach ($detailsRaw as $d) {
+            $nama_produk = $d->nama_produk_db;
+            $satuan = $d->satuan_db;
+            // fallback manual jika tetap kosong
+            if (empty($nama_produk) || $nama_produk == '-' || $nama_produk == null) {
+                $produk = \DB::table('t_produk')->where('kode_produk', $d->kode_produk)->first();
+                if ($produk && !empty($produk->nama_produk)) {
+                    $nama_produk = $produk->nama_produk;
+                } else {
+                    $produk_konsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $d->kode_produk)->first();
+                    $nama_produk = ($produk_konsinyasi && !empty($produk_konsinyasi->nama_produk)) ? $produk_konsinyasi->nama_produk : '-';
+                }
+            }
+            if (empty($satuan) || $satuan == '-' || $satuan == null) {
+                $produk = \DB::table('t_produk')->where('kode_produk', $d->kode_produk)->first();
+                if ($produk && !empty($produk->satuan)) {
+                    $satuan = $produk->satuan;
+                } else {
+                    $produk_konsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $d->kode_produk)->first();
+                    $satuan = ($produk_konsinyasi && !empty($produk_konsinyasi->satuan)) ? $produk_konsinyasi->satuan : '-';
+                }
+            }
+            // Pastikan field yang dikirim ke blade adalah nama_produk dan satuan
+            $details[] = [
+                'kode_produk' => $d->kode_produk,
+                'nama_produk' => $nama_produk,
+                'satuan' => $satuan,
+                'jumlah' => $d->jumlah,
+                'harga_satuan' => $d->harga_satuan,
+                'diskon_produk' => $d->diskon_produk,
+                'subtotal' => $d->subtotal,
+            ];
+        }
+        \Log::debug('cetakTagihan: Detail produk FINAL', ['details' => $details]);
 
         // Render PDF langsung (bukan view HTML)
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('penjualan.cetak_tagihan', compact('penjualan', 'details'));
@@ -915,9 +951,50 @@ class PenjualanController extends Controller
     public function cetakTagihanPdf($no_jual)
     {
         $penjualan = \App\Models\Penjualan::with(['pelanggan'])->where('no_jual', $no_jual)->firstOrFail();
-        $details = \DB::table('t_penjualan_detail')
-            ->where('no_jual', $no_jual)
+        // Ambil detail produk dengan join dan fallback, sama seperti cetakTagihan
+        $detailsRaw = \DB::table('t_penjualan_detail')
+            ->leftJoin('t_produk', 't_penjualan_detail.kode_produk', '=', 't_produk.kode_produk')
+            ->leftJoin('t_produk_konsinyasi', 't_penjualan_detail.kode_produk', '=', 't_produk_konsinyasi.kode_produk')
+            ->where('t_penjualan_detail.no_jual', $no_jual)
+            ->select(
+                't_penjualan_detail.*',
+                \DB::raw('COALESCE(NULLIF(t_produk.nama_produk, ""), NULLIF(t_produk_konsinyasi.nama_produk, "")) as nama_produk_db'),
+                \DB::raw('COALESCE(NULLIF(t_produk.satuan, ""), NULLIF(t_produk_konsinyasi.satuan, "")) as satuan_db')
+            )
             ->get();
+
+        $details = [];
+        foreach ($detailsRaw as $d) {
+            $nama_produk = $d->nama_produk_db;
+            $satuan = $d->satuan_db;
+            if (empty($nama_produk) || $nama_produk == '-' || $nama_produk == null) {
+                $produk = \DB::table('t_produk')->where('kode_produk', $d->kode_produk)->first();
+                if ($produk && !empty($produk->nama_produk)) {
+                    $nama_produk = $produk->nama_produk;
+                } else {
+                    $produk_konsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $d->kode_produk)->first();
+                    $nama_produk = ($produk_konsinyasi && !empty($produk_konsinyasi->nama_produk)) ? $produk_konsinyasi->nama_produk : '-';
+                }
+            }
+            if (empty($satuan) || $satuan == '-' || $satuan == null) {
+                $produk = \DB::table('t_produk')->where('kode_produk', $d->kode_produk)->first();
+                if ($produk && !empty($produk->satuan)) {
+                    $satuan = $produk->satuan;
+                } else {
+                    $produk_konsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $d->kode_produk)->first();
+                    $satuan = ($produk_konsinyasi && !empty($produk_konsinyasi->satuan)) ? $produk_konsinyasi->satuan : '-';
+                }
+            }
+            $details[] = [
+                'kode_produk' => $d->kode_produk,
+                'nama_produk' => $nama_produk,
+                'satuan' => $satuan,
+                'jumlah' => $d->jumlah,
+                'harga_satuan' => $d->harga_satuan,
+                'diskon_produk' => $d->diskon_produk,
+                'subtotal' => $d->subtotal,
+            ];
+        }
         $pdf = Pdf::loadView('penjualan.cetak_tagihan', compact('penjualan', 'details'));
         $pdf->setPaper('a5', 'portrait');
         return $pdf->stream('tagihan-'.$no_jual.'.pdf');

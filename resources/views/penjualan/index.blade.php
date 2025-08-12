@@ -97,9 +97,9 @@
                             <td class="text-center py-1">Rp{{ number_format($p->total_harga,0,',','.') }}</td>
                             <td class="text-center py-1">
                                 @if(isset($p->tipe_diskon) && $p->tipe_diskon == 'persen')
-                                    {{ $p->diskon }}%
+                                    ({{ $p->diskon }}%)
                                 @else
-                                    Rp{{ number_format($p->diskon,0,',','.') }}
+                                    (Rp{{ number_format($p->diskon,0,',','.') }})
                                 @endif
                             </td>
                             <td class="text-center py-1">Rp{{ number_format($p->total_jual,0,',','.') }}</td>

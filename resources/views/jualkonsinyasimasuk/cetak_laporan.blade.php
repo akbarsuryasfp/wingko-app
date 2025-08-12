@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Laporan Penjualan Konsinyasi Masuk</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 13px; background: #fafafa; }
@@ -34,7 +35,11 @@
             </tr>
         </thead>
         <tbody>
-            @php $rowNo = 1; @endphp
+            @php 
+                $rowNo = 1; 
+                $grand_total_jual = 0;
+                $grand_total_komisi = 0;
+            @endphp
             @forelse($penjualanKonsinyasi as $penjualan)
                 @foreach($penjualan->details as $detail)
                     @php
@@ -76,14 +81,29 @@
                         <td>Rp{{ number_format($komisi, 0, ',', '.') }}</td>
                         <td>Rp{{ number_format($subtotal_komisi, 0, ',', '.') }}</td>
                     </tr>
+                    @php
+                        $grand_total_jual += $detail->subtotal ?? 0;
+                        $grand_total_komisi += $subtotal_komisi;
+                    @endphp
                     @endif
                 @endforeach
             @empty
                 <tr>
-                    <td colspan="11" class="text-center py-3">Tidak ada data penjualan konsinyasi.</td>
+                    <td colspan="12" class="text-center py-3">Tidak ada data penjualan konsinyasi.</td>
                 </tr>
             @endforelse
         </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="9" style="text-align:right;">GRAND TOTAL</th>
+                <th>Rp{{ number_format($grand_total_jual, 0, ',', '.') }}</th>
+                <th></th>
+                <th>Rp{{ number_format($grand_total_komisi, 0, ',', '.') }}</th>
+            </tr>
+        </tfoot>
     </table>
+    <div class="footer" style="margin-top:30px;text-align:right;font-size:12px;">
+        Dicetak pada: {{ date('d-m-Y H:i') }}
+    </div>
 </body>
 </html>

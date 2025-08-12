@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\DB;
 
 class KartuPersKonsinyasiController extends Controller
 {
+    // Untuk menghindari error resource route yang memanggil show()
+    public function show($id)
+    {
+        abort(404);
+    }
     // Tampilkan halaman kartu stok produk konsinyasi
     public function produkKonsinyasi(Request $request)
     {

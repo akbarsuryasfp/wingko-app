@@ -233,7 +233,7 @@
                     <td>${item.satuan || ''}</td>
                     <td>${item.jumlah}</td>
                     <td>${formatRupiah(item.harga_satuan)}</td>
-                    <td>${formatRupiah(item.diskon_satuan)}</td>
+                    <td>(Rp${Number(item.diskon_satuan).toLocaleString('id-ID')})</td>
                     <td>${formatRupiah(item.subtotal)}</td>
                     <td>
                         <button type="button" class="btn btn-danger btn-sm" onclick="hapusBaris(${index})" title="Hapus">

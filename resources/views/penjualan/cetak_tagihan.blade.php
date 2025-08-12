@@ -43,6 +43,7 @@
         </tr>
     </table>
 
+
     <table class="nota-table" style="margin-top: 18px;">
         <thead>
             <tr>
@@ -59,23 +60,29 @@
             @php $totalPenjualan = 0; @endphp
             @foreach($details as $i => $detail)
             @php
-                $hargaSatuan = isset($detail->harga_satuan) ? (float)$detail->harga_satuan : 0;
-                $diskonSatuan = isset($detail->diskon_produk) ? (float)$detail->diskon_produk : (isset($detail->diskon_satuan) ? (float)$detail->diskon_satuan : 0);
-                $jumlah = isset($detail->jumlah) ? (float)$detail->jumlah : 0;
+                // Helper untuk akses array/objek
+                function getval($item, $key, $default = '-') {
+                    if (is_array($item) && isset($item[$key])) return $item[$key];
+                    if (is_object($item) && isset($item->$key)) return $item->$key;
+                    return $default;
+                }
+                $hargaSatuan = (float) getval($detail, 'harga_satuan', 0);
+                $diskonSatuan = (float) (getval($detail, 'diskon_produk', getval($detail, 'diskon_satuan', 0)));
+                $jumlah = (float) getval($detail, 'jumlah', 0);
                 $subtotal = ($hargaSatuan - $diskonSatuan) * $jumlah;
                 $totalPenjualan += $subtotal;
             @endphp
             <tr>
                 <td>{{ $i+1 }}</td>
                 <td>
-                    {{ $detail->nama_produk ?? '-' }}
+                    {{ getval($detail, 'nama_produk', '-') }}
                 </td>
                 <td>
-                    {{ $detail->satuan ?? '-' }}
+                    {{ getval($detail, 'satuan', '-') }}
                 </td>
                 <td>{{ $jumlah }}</td>
                 <td>Rp{{ number_format($hargaSatuan, 0, ',', '.') }}</td>
-                <td>Rp{{ number_format($diskonSatuan, 0, ',', '.') }}</td>
+                <td>(Rp{{ number_format($diskonSatuan, 0, ',', '.') }})</td>
                 <td>Rp{{ number_format($subtotal, 0, ',', '.') }}</td>
             </tr>
             @endforeach
@@ -102,9 +109,9 @@
             <td class="fw-bold">Diskon</td>
             <td>:
                 @if(isset($penjualan->tipe_diskon) && $penjualan->tipe_diskon == 'persen')
-                    {{ $penjualan->diskon }}%
+                    ({{ $penjualan->diskon }}%)
                 @else
-                    Rp{{ number_format($penjualan->diskon, 0, ',', '.') }}
+                    (Rp{{ number_format($penjualan->diskon, 0, ',', '.') }})
                 @endif
             </td>
         </tr>

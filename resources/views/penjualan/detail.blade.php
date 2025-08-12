@@ -43,9 +43,9 @@
             <th>Diskon</th>
             <td>
                 @if(isset($penjualan->tipe_diskon) && $penjualan->tipe_diskon == 'persen')
-                    {{ $penjualan->diskon }}%
+                    ({{ $penjualan->diskon }}%)
                 @else
-                    Rp{{ number_format($penjualan->diskon ?? 0, 0, ',', '.') }}
+                    (Rp{{ number_format($penjualan->diskon ?? 0, 0, ',', '.') }})
                 @endif
             </td>
         </tr>
@@ -93,7 +93,7 @@
                 <td class="text-center align-middle">{{ $d->satuan ?? '-' }}</td>
                 <td class="text-center align-middle">{{ $d->jumlah }}</td>
                 <td class="text-center align-middle">Rp{{ number_format($d->harga_satuan,0,',','.') }}</td>
-                <td class="text-center align-middle">{{ isset($d->diskon_satuan) ? 'Rp'.number_format($d->diskon_satuan,0,',','.') : (isset($d->diskon_produk) ? 'Rp'.number_format($d->diskon_produk,0,',','.') : 'Rp0') }}</td>
+                <td class="text-center align-middle">{{ isset($d->diskon_satuan) ? '(Rp'.number_format($d->diskon_satuan,0,',','.') .')' : (isset($d->diskon_produk) ? '(Rp'.number_format($d->diskon_produk,0,',','.') .')' : '(Rp0)') }}</td>
                 <td class="text-center align-middle">Rp{{ number_format($d->subtotal,0,',','.') }}</td>
             </tr>
             @php $grandTotal += $d->subtotal; @endphp
