@@ -18,6 +18,7 @@ class PenerimaanKonsinyasi extends Model
         'metode_pembayaran',
         'total_terima',
         'keterangan',
+        'bukti',
     ];
 
     public function consignee()

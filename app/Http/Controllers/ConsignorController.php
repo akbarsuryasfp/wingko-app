@@ -91,15 +91,10 @@ class ConsignorController extends Controller
             'no_telp' => 'required',
             'bank' => 'required',
             'rekening' => 'required',
-            'nama_produk' => 'required',
-            'jumlah' => 'required|numeric|min:1',
         ]);
 
         // Gabungkan bank dan rekening
         $rekening = $request->bank . ' ' . $request->rekening;
-
-        // Gabungkan nama produk dan jumlah
-        $keterangan = 'Produk: ' . $request->nama_produk . ', Jumlah: ' . $request->jumlah . ' unit';
 
         $consignor = Consignor::findOrFail($kode_consignor);
         $consignor->update([
@@ -107,7 +102,6 @@ class ConsignorController extends Controller
             'alamat' => $request->alamat,
             'no_telp' => $request->no_telp,
             'rekening' => $rekening,
-            'keterangan' => $keterangan,
         ]);
 
         return redirect()->route('consignor.index')->with('success', 'Data consignor berhasil diupdate.');

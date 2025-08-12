@@ -27,12 +27,23 @@
                     </div>
                 </div>
                 <div class="row mb-3">
+                <div class="row mb-3">
+                    <label for="kode_consignor" class="col-sm-4 col-form-label text-start">Nama Consignor</label>
+                    <div class="col-sm-8">
+                        <select class="form-select" id="kode_consignor" name="kode_consignor" required>
+                            <option value="">-- Pilih Consignor --</option>
+                            @foreach($consignors as $c)
+                                <option value="{{ $c->kode_consignor }}" {{ ($produk->kode_consignor == $c->kode_consignor) ? 'selected' : '' }}>{{ $c->nama_consignor }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
                     <label for="keterangan" class="col-sm-4 col-form-label text-start">Keterangan</label>
                     <div class="col-sm-8">
                         <input type="text" class="form-control" id="keterangan" name="keterangan" value="{{ $produk->keterangan }}">
                     </div>
                 </div>
-                <input type="hidden" name="kode_consignor" value="{{ $produk->kode_consignor }}">
                 <div class="d-flex justify-content-between gap-2">
                     <a href="{{ route('consignor.index') }}" class="btn btn-secondary">Back</a>
                     <button type="submit" class="btn btn-success">Update</button>

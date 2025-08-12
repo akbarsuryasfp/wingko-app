@@ -34,6 +34,17 @@
                     <th>Keterangan</th>
                     <td>{{ $header->keterangan ?? '-' }}</td>
                 </tr>
+                <tr>
+                    <th>Bukti Pembayaran</th>
+                    <td>
+                        @if(!empty($header->bukti))
+                            <a href="{{ asset('uploads/' . $header->bukti) }}" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
+                            <span class="text-muted ms-2">({{ $header->bukti }})</span>
+                        @else
+                            <span class="text-danger">Belum ada bukti</span>
+                        @endif
+                    </td>
+                </tr>
             </table>
 
             <h5 class="text-center">DETAIL PRODUK PENERIMAAN KONSINYASI</h5>

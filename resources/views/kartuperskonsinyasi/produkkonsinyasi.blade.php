@@ -6,11 +6,33 @@
 <div class="container mt-5 px-3">
     <div class="card shadow-sm">
         <div class="card-body">
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
                 <h4 class="mb-0">KARTU PERSEDIAAN PRODUK KONSINYASI</h4>
                 <a href="{{ route('kartuperskonsinyasi.cetak_laporan_pdf') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
                     <i class="bi bi-printer"></i> Cetak Laporan
                 </a>
+            </div>
+
+            <div class="row align-items-center mb-3">
+                <div class="col-md-8 col-12 text-md-start text-start mb-2 mb-md-0">
+                    <form method="GET" class="d-flex align-items-center gap-2 flex-wrap w-100 mt-1 justify-content-start">
+                        <span class="fw-semibold">Periode:</span>
+                        <input type="date" name="tanggal_awal" class="form-control form-control-sm w-auto" value="{{ request('tanggal_awal') }}">
+                        <span class="mx-1">s/d</span>
+                        <input type="date" name="tanggal_akhir" class="form-control form-control-sm w-auto" value="{{ request('tanggal_akhir') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-funnel"></i> Terapkan
+                        </button>
+                    </form>
+                </div>
+                <div class="col-md-4 col-12 text-md-end text-start">
+                    <form method="GET" action="{{ route('kartuperskonsinyasi.index') }}" class="d-flex gap-2 justify-content-end flex-wrap">
+                        <input type="text" name="search" id="searchKartuPersKonsinyasi" class="form-control form-control-sm" placeholder="Cari No Transaksi/Nama Produk..." value="{{ request('search') }}" style="max-width: 220px;" autocomplete="off">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i> Cari
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <form method="GET" class="row g-3 mb-4">
@@ -57,14 +79,48 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="8" class="text-center">Tidak ada data persediaan.</td>
-                        </tr>
+                        @php
+                            $totalSisa = 0;
+                            $lastSisaPerTransaksi = [];
+                        @endphp
+                        @if(isset($riwayat) && count($riwayat) > 0)
+                            @foreach($riwayat as $i => $row)
+                                <tr>
+                                    <td>{{ $i+1 }}</td>
+                                    <td>{{ $row->no_transaksi }}</td>
+                                    <td>{{ $row->tanggal }}</td>
+                                    <td>{{ number_format($row->harga_konsinyasi ?? 0, 0, ',', '.') }}</td>
+                                    <td>{{ $row->masuk }}</td>
+                                    <td>{{ $row->keluar }}</td>
+                                    <td>{{ $row->sisa }}</td>
+                                </tr>
+                                @php $lastSisaPerTransaksi[$row->no_transaksi] = $row->sisa; @endphp
+                            @endforeach
+                            @php $totalSisa = array_sum($lastSisaPerTransaksi); @endphp
+                        @else
+                            <tr>
+                                <td colspan="7" class="text-center">Tidak ada data persediaan.</td>
+                            </tr>
+                        @endif
                     </tbody>
                     <tfoot>
-                        <tr id="total-row-produk-konsinyasi" style="display:none;">
+                        <tr>
                             <td colspan="6" class="text-end"><b>Total Sisa (Qty):</b></td>
-                            <td id="total-sisa-produk-konsinyasi"></td>
+                            <td><b>
+                                @php
+                                    $lastSisa = 0;
+                                    if(isset($riwayat) && count($riwayat) > 0) {
+                                        // Ambil sisa dari baris terakhir yang benar-benar tampil (bukan baris kosong)
+                                        $rows = $riwayat->filter(function($row) {
+                                            return !empty($row->no_transaksi);
+                                        })->values();
+                                        if ($rows->count() > 0) {
+                                            $lastSisa = $rows[$rows->count()-1]->sisa;
+                                        }
+                                    }
+                                @endphp
+                                {{ $lastSisa }}
+                            </b></td>
                         </tr>
                     </tfoot>
                 </table>

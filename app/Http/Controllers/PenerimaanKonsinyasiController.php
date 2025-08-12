@@ -90,18 +90,32 @@ class PenerimaanKonsinyasiController extends Controller
         $request->validate([
             'tanggal_terima' => 'required|date',
             'detail_json' => 'required',
+            'bukti' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
-        DB::beginTransaction();
-        try {
-            $header = PenerimaanKonsinyasi::create([
-                'no_penerimaankonsinyasi' => $this->generateNoPenerimaan(),
-                'no_konsinyasikeluar' => $request->no_konsinyasikeluar,
-                'tanggal_terima' => $request->tanggal_terima,
-                'kode_consignee' => $request->kode_consignee,
-                'metode_pembayaran' => $request->metode_pembayaran,
-                'total_terima' => $request->total_terima,
-                'keterangan' => $request->keterangan,
-            ]);
+            DB::beginTransaction();
+            try {
+                $bukti = null;
+                // Debug: log if file is present
+                \Log::info('store: hasFile(bukti): ' . ($request->hasFile('bukti') ? 'yes' : 'no'));
+                if ($request->hasFile('bukti')) {
+                    $file = $request->file('bukti');
+                    \Log::info('store: bukti original name: ' . $file->getClientOriginalName());
+                    $bukti = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    $file->move(public_path('uploads'), $bukti);
+                    \Log::info('store: bukti saved as: ' . $bukti);
+                }
+                $dataToInsert = [
+                    'no_penerimaankonsinyasi' => $request->no_penerimaankonsinyasi,
+                    'no_konsinyasikeluar' => $request->no_konsinyasikeluar,
+                    'tanggal_terima' => $request->tanggal_terima,
+                    'kode_consignee' => $request->kode_consignee,
+                    'metode_pembayaran' => $request->metode_pembayaran,
+                    'total_terima' => $request->total_terima,
+                    'keterangan' => $request->keterangan,
+                    'bukti' => $bukti,
+                ];
+                \Log::info('store: data to insert into penerimaankonsinyasi', $dataToInsert);
+                $header = PenerimaanKonsinyasi::create($dataToInsert);
             $details = json_decode($request->detail_json, true);
             foreach ($details as $idx => $d) {
                 $no_detail = $header->no_penerimaankonsinyasi . '-' . str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
@@ -117,9 +131,12 @@ class PenerimaanKonsinyasiController extends Controller
                 ]);
             }
             DB::commit();
+            \Log::info('store: DB commit success for no_penerimaankonsinyasi: ' . $header->no_penerimaankonsinyasi);
             return redirect()->route('penerimaankonsinyasi.index')->with('success', 'Data berhasil disimpan');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('store: exception: ' . $e->getMessage());
+            \Log::error('store: exception trace: ' . $e->getTraceAsString());
             return back()->withErrors(['msg' => 'Gagal simpan: ' . $e->getMessage()])->withInput();
         }
     }
@@ -147,10 +164,22 @@ class PenerimaanKonsinyasiController extends Controller
             'keterangan' => 'nullable',
             'detail' => 'required|array',
             'total_terima' => 'required|numeric',
+            'bukti' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
         DB::beginTransaction();
         try {
             $header = PenerimaanKonsinyasi::findOrFail($id);
+            // Handle file upload
+            if ($request->hasFile('bukti')) {
+                // Hapus file lama jika ada
+                if ($header->bukti && file_exists(public_path('uploads/' . $header->bukti))) {
+                    @unlink(public_path('uploads/' . $header->bukti));
+                }
+                $file = $request->file('bukti');
+                $bukti = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads'), $bukti);
+                $header->bukti = $bukti;
+            }
             foreach ($request->detail as $d) {
                 $detail = PenerimaanKonsinyasiDetail::where('no_detailpenerimaankonsinyasi', $d['no_detailpenerimaankonsinyasi'])->first();
                 if ($detail) {
@@ -172,6 +201,7 @@ class PenerimaanKonsinyasiController extends Controller
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'keterangan' => $request->keterangan,
                 'total_terima' => $request->total_terima,
+                'bukti' => $header->bukti,
             ]);
             DB::commit();
             return redirect()->route('penerimaankonsinyasi.index')->with('success', 'Data berhasil diupdate');

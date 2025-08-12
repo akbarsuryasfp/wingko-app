@@ -28,11 +28,11 @@ class ProdukKonsinyasiController extends Controller
             'kode_produk' => 'required|unique:t_produk_konsinyasi,kode_produk',
             'nama_produk' => 'required',
             'satuan' => 'required',
-            'harga_konsinyasi' => 'required|numeric|min:0',
             'kode_consignor' => 'required',
+            'keterangan' => 'nullable',
         ]);
 
-        ProdukKonsinyasi::create($request->all());
+        \App\Models\ProdukKonsinyasi::create($validated);
 
         return redirect()->route('consignor.index')->with('success', 'Produk konsinyasi berhasil ditambahkan.');
     }
@@ -56,8 +56,9 @@ class ProdukKonsinyasiController extends Controller
     // Tampilkan form edit
     public function edit($id)
     {
-        $produk = \App\Models\ProdukKonsinyasi::findOrFail($id);
-        return view('consignor.edit_produk', compact('produk'));
+    $produk = \App\Models\ProdukKonsinyasi::findOrFail($id);
+    $consignors = \App\Models\Consignor::all();
+    return view('consignor.edit_produk', compact('produk', 'consignors'));
     }
 
     // Proses update
@@ -69,13 +70,18 @@ class ProdukKonsinyasiController extends Controller
             'kode_produk' => 'required|string|max:50',
             'nama_produk' => 'required|string|max:100',
             'satuan' => 'required|string|max:30',
+            'kode_consignor' => 'required',
             'keterangan' => 'nullable|string|max:255',
         ]);
+
+        // Hapus semua data lama pada t_kartuperskonsinyasi untuk kode_produk ini
+        \DB::table('t_kartuperskonsinyasi')->where('kode_produk', $produk->kode_produk)->delete();
 
         $produk->update([
             'kode_produk' => $request->kode_produk,
             'nama_produk' => $request->nama_produk,
             'satuan' => $request->satuan,
+            'kode_consignor' => $request->kode_consignor,
             'keterangan' => $request->keterangan,
         ]);
 

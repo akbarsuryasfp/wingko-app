@@ -14,7 +14,7 @@
                     </ul>
                 </div>
             @endif
-            <form action="{{ route('penerimaankonsinyasi.update', $header->no_penerimaankonsinyasi) }}" method="POST">
+            <form action="{{ route('penerimaankonsinyasi.update', $header->no_penerimaankonsinyasi) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
@@ -50,6 +50,13 @@
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
                     <input type="text" name="keterangan" class="form-control" value="{{ $header->keterangan }}">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Upload Bukti Pembayaran</label>
+                    <input type="file" name="bukti" class="form-control" accept="image/*,application/pdf">
+                    @if(!empty($header->bukti))
+                        <a href="{{ asset('uploads/' . $header->bukti) }}" target="_blank" class="btn btn-sm btn-primary ms-2">Lihat Bukti Lama</a>
+                    @endif
                 </div>
             </div>
             <!-- Kolom Kanan: Tidak ada input produk manual, hanya info produk di tabel -->

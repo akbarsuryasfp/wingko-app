@@ -118,7 +118,7 @@
                 <li><a href="/supplier" class="nav-link submenu-item"><i class="bi bi-truck"></i>Data Supplier</a></li>
                 <li><a href="/karyawan" class="nav-link submenu-item"><i class="bi bi-people"></i>Data Karyawan</a></li>
                 <li><a href="/pelanggan" class="nav-link submenu-item"><i class="bi bi-person"></i>Data Pelanggan</a></li>
-                <li><a href="/consignor" class="nav-link submenu-item"><i class="bi bi-person-badge"></i>Data Consignorn (Pemilik Barang)</a></li>
+                <li><a href="/consignor" class="nav-link submenu-item"><i class="bi bi-person-badge"></i>Data Consignor (Pemilik Barang)</a></li>
                 <li><a href="/consignee" class="nav-link submenu-item"><i class="bi bi-person-bounding-box"></i>Data Consignee (Mitra)</a></li>
             </ul>
         </li>

@@ -14,7 +14,7 @@
                     </ul>
                 </div>
             @endif
-            <form action="{{ route('penerimaankonsinyasi.store') }}" method="POST">
+            <form action="{{ route('penerimaankonsinyasi.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <!-- Kolom Kiri: Data Penerimaan -->
@@ -59,6 +59,10 @@
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
                     <input type="text" name="keterangan" id="keterangan" class="form-control" value="{{ old('keterangan') }}">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Upload Bukti Pembayaran</label>
+                    <input type="file" name="bukti" id="bukti" class="form-control" accept="image/*,application/pdf">
                 </div>
                 <input type="hidden" name="kode_consignor" id="kode_consignor">
             </div>

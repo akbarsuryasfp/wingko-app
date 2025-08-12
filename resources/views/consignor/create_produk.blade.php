@@ -36,14 +36,6 @@
                     </div>
                 </div>
                 <div class="row mb-3">
-                    <label for="harga_konsinyasi" class="col-sm-4 col-form-label text-start">Harga Titip</label>
-                    <div class="col-sm-8">
-                        <input type="number" class="form-control" id="harga_konsinyasi" name="harga_konsinyasi" value="{{ old('harga_konsinyasi') }}" min="0" required>
-                        @error('harga_konsinyasi')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
                 <div class="row mb-3">
                     <label for="kode_consignor" class="col-sm-4 col-form-label text-start">Nama Consignor</label>
                     <div class="col-sm-8">

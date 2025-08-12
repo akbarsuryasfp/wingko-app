@@ -55,9 +55,10 @@
                         <th class="text-center align-middle">No Bayar Consignor</th>
                         <th class="text-center align-middle">Kode Produk</th>
                         <th class="text-center align-middle">Tanggal Bayar</th>
-                        <th class="text-center align-middle">Nama Consignor (Pemilik Barang)</th>
+                        <th class="text-center align-middle" style="min-width: 120px; max-width: 180px; width: 150px;">Nama Consignor (Pemilik Barang)</th>
                         <th class="text-center align-middle">Jumlah Terjual & Nama Produk</th>
                         <th class="text-center align-middle">Total Bayar</th>
+                        <th class="text-center align-middle">Bukti Pembayaran</th>
                         <th class="text-center align-middle">Aksi</th>
                     </tr>
                 </thead>
@@ -88,6 +89,13 @@
                                 @endforeach
                             </td>
                             <td class="text-center align-middle">Rp{{ number_format($row->total_bayar,0,',','.') }}</td>
+                            <td class="text-center align-middle">
+                                @if(!empty($row->bukti))
+                                    <a href="{{ asset('uploads/bukti_bayarconsignor/' . $row->bukti) }}" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
+                                @else
+                                    <span class="text-danger">-</span>
+                                @endif
+                            </td>
                             <td class="text-center align-middle">
                                 <a href="{{ route('bayarconsignor.show', $row->no_bayarconsignor) }}" class="btn btn-info btn-sm me-1" title="Detail" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
                                     <i class="bi bi-eye"></i>
