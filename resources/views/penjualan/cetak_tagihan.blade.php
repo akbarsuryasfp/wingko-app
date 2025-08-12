@@ -58,19 +58,25 @@
         </thead>
         <tbody>
             @php $totalPenjualan = 0; @endphp
-            @foreach($details as $i => $detail)
-            @php
-                // Helper untuk akses array/objek
-                function getval($item, $key, $default = '-') {
-                    if (is_array($item) && isset($item[$key])) return $item[$key];
-                    if (is_object($item) && isset($item->$key)) return $item->$key;
-                    return $default;
-                }
-                $hargaSatuan = (float) getval($detail, 'harga_satuan', 0);
-                $diskonSatuan = (float) (getval($detail, 'diskon_produk', getval($detail, 'diskon_satuan', 0)));
-                $jumlah = (float) getval($detail, 'jumlah', 0);
-                $subtotal = ($hargaSatuan - $diskonSatuan) * $jumlah;
-                $totalPenjualan += $subtotal;
+                @php
+                    $totalPenjualan = 0;
+                @endphp
+                @php
+                    if (!function_exists('getval')) {
+                        function getval($item, $key, $default = '-') {
+                            if (is_array($item) && isset($item[$key])) return $item[$key];
+                            if (is_object($item) && isset($item->$key)) return $item->$key;
+                            return $default;
+                        }
+                    }
+                @endphp
+                @foreach($details as $i => $detail)
+                @php
+                    $hargaSatuan = (float) getval($detail, 'harga_satuan', 0);
+                    $diskonSatuan = (float) (getval($detail, 'diskon_produk', getval($detail, 'diskon_satuan', 0)));
+                    $jumlah = (float) getval($detail, 'jumlah', 0);
+                    $subtotal = ($hargaSatuan - $diskonSatuan) * $jumlah;
+                    $totalPenjualan += $subtotal;
             @endphp
             <tr>
                 <td>{{ $i+1 }}</td>

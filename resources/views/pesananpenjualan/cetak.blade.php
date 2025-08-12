@@ -36,9 +36,6 @@
             <div class="sub">Tanggal Pesanan: {{ $pesanan->tanggal_pesanan ? date('d-m-Y', strtotime($pesanan->tanggal_pesanan)) : '-' }}</div>
             <div class="sub">Nama Pelanggan: {{ $pesanan->nama_pelanggan ?? '-' }}</div>
         </div>
-        <div class="nota-print no-print">
-            <button onclick="window.print()" style="padding:4px 12px;">Print</button>
-        </div>
     </div>
     <div class="nota-info" style="margin-top:6px;">Nomor Pesanan: {{ $pesanan->no_pesanan }}</div>
 

@@ -25,7 +25,7 @@
                         <tr>
                             <th>Nomor BKM</th>
                             <td>
-                                <input type="text" name="no_bkm" class="form-control" value="{{ $no_bkm }}" readonly>
+                                <input type="text" name="no_bkm" class="form-control" value="{{ $no_bkm }}" readonly style="background:#e9ecef;pointer-events:none;">
                             </td>
                         </tr>
                         <tr>
@@ -37,13 +37,13 @@
                         <tr>
                             <th>Nama Pelanggan</th>
                             <td>
-                                <input type="text" class="form-control" value="{{ $pelanggan ? $pelanggan->nama_pelanggan : '-' }}" readonly>
+                                <input type="text" class="form-control" value="{{ $pelanggan ? $pelanggan->nama_pelanggan : '-' }}" readonly style="background:#e9ecef;pointer-events:none;">
                             </td>
                         </tr>
                         <tr>
                             <th>No Piutang</th>
                             <td>
-                                <input type="text" class="form-control" value="{{ $piutang->no_piutang }}" readonly>
+                                <input type="text" class="form-control" value="{{ $piutang->no_piutang }}" readonly style="background:#e9ecef;pointer-events:none;">
                             </td>
                         </tr>
                         <tr>
@@ -69,7 +69,7 @@
                             <td>
                                 <div class="input-group">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="text" class="form-control" value="{{ number_format($piutang->sisa_piutang,0,',','.') }}" readonly>
+                                    <input type="text" class="form-control" value="{{ number_format($piutang->sisa_piutang,0,',','.') }}" readonly style="background:#e9ecef;pointer-events:none;">
                                 </div>
                             </td>
                         </tr>

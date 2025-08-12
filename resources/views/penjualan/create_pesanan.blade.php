@@ -149,7 +149,7 @@
                     <div class="col-sm-8">
                         <div class="input-group">
                             <span class="input-group-text">Rp</span>
-                            <input type="number" id="total_bayar" name="total_bayar" class="form-control" min="0" oninput="hitungTotalLain()">
+                            <input type="text" id="total_bayar" name="total_bayar" class="form-control" autocomplete="off">
                         </div>
                     </div>
                 </div>

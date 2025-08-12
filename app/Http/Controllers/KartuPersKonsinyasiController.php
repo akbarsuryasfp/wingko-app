@@ -17,8 +17,45 @@ class KartuPersKonsinyasiController extends Controller
         $produkKonsinyasiList = DB::table('t_produk_konsinyasi')
             ->select('kode_produk', 'nama_produk', 'satuan')
             ->get();
+
         $satuan = '';
-        return view('kartuperskonsinyasi.produkkonsinyasi', compact('produkKonsinyasiList', 'satuan'));
+
+        // Ambil filter dari request
+        $tanggal_awal = $request->input('tanggal_awal');
+        $tanggal_akhir = $request->input('tanggal_akhir');
+        $kode_produk = $request->input('kode_produk_konsinyasi');
+        $lokasi = $request->input('lokasi_konsinyasi');
+
+        // Query data kartu persediaan konsinyasi
+        $query = DB::table('t_kartuperskonsinyasi');
+        if ($tanggal_awal) {
+            $query->whereDate('tanggal', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->whereDate('tanggal', '<=', $tanggal_akhir);
+        }
+        if ($kode_produk) {
+            $query->where('kode_produk', $kode_produk);
+            // Set satuan otomatis jika produk dipilih
+            $produk = $produkKonsinyasiList->where('kode_produk', $kode_produk)->first();
+            $satuan = $produk ? $produk->satuan : '';
+        }
+        if ($lokasi) {
+            $query->where('lokasi', $lokasi);
+        }
+        // Filter search
+        $search = $request->input('search');
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_transaksi', 'like', "%$search%")
+                  ->orWhere('kode_produk', 'like', "%$search%")
+                  ->orWhere('keterangan', 'like', "%$search%")
+                ;
+            });
+        }
+        $riwayat = $query->orderBy('tanggal')->orderBy('id')->get();
+
+        return view('kartuperskonsinyasi.produkkonsinyasi', compact('produkKonsinyasiList', 'satuan', 'riwayat'));
     }
     
     // API: Data riwayat masuk/keluar produk konsinyasi

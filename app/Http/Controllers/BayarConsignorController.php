@@ -86,7 +86,16 @@ class BayarConsignorController extends Controller
             'metode_pembayaran' => 'required',
             'keterangan' => 'nullable',
             'kode_consignor' => 'required',
+            'bukti_pembayaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
+
+        // Proses upload file bukti pembayaran
+        $bukti = null;
+        if ($request->hasFile('bukti_pembayaran')) {
+            $file = $request->file('bukti_pembayaran');
+            $bukti = 'bukti_' . $request->no_bayarconsignor . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/bukti_bayarconsignor'), $bukti);
+        }
 
         // Ambil produk konsinyasi untuk consignor terpilih
         $produk = DB::table('t_produk_konsinyasi')
@@ -110,6 +119,7 @@ class BayarConsignorController extends Controller
             'total_bayar' => $total_bayar,
             'keterangan' => $request->keterangan,
             'kode_consignor' => $request->kode_consignor,
+            'bukti' => $bukti,
         ]);
 
         // Simpan detail produk ke t_pembayaranconsignor_detail

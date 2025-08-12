@@ -6,7 +6,7 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <h2 class="mb-4">INPUT PEMBAYARAN CONSIGNOR (PEMILIK BARANG)</h2>
-            <form method="POST" action="{{ route('bayarconsignor.store') }}">
+            <form method="POST" action="{{ route('bayarconsignor.store') }}" enctype="multipart/form-data">
         @csrf
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <div style="flex: 1;">
@@ -38,6 +38,10 @@
                 <div class="mb-3 d-flex align-items-center">
                     <label class="me-2" style="width: 180px;">Keterangan</label>
                     <input type="text" name="keterangan" id="keterangan" class="form-control">
+                </div>
+                <div class="mb-3 d-flex align-items-center">
+                    <label class="me-2" style="width: 180px;">Upload Bukti Pembayaran</label>
+                    <input type="file" name="bukti_pembayaran" id="bukti_pembayaran" class="form-control" accept="image/*,application/pdf">
                 </div>
             </div>
         </div>

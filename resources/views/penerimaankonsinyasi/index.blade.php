@@ -55,16 +55,17 @@
             <table class="table table-bordered mb-0">
                 <thead class="thead-light">
                     <tr>
-                        <th class="text-center align-middle text-nowrap" style="width: 5%; min-width: 50px;">No</th>
-                        <th class="text-center align-middle text-nowrap" style="width: 18%; min-width: 180px;">No Penerimaan Konsinyasi</th>
-                        <th class="text-center align-middle text-nowrap" style="width: 18%; min-width: 180px;">No Konsinyasi Keluar</th>
-                        <th class="text-center align-middle text-nowrap" style="width: 13%; min-width: 130px;">Tanggal Terima</th>
-                        <th class="text-center align-middle text-nowrap" style="width: 8%; min-width: 70px;">
-                            <div class="w-100 text-center">Nama Consignee<br>(Mitra)</div>
+                        <th class="text-center align-middle text-nowrap">No</th>
+                        <th class="text-center align-middle text-nowrap" style="width:1%;white-space:nowrap;">
+                            <div class="w-100 text-center">No Penerimaan<br>Konsinyasi</div>
                         </th>
-                        <th class="text-center align-middle text-nowrap" style="width: 18%; min-width: 180px;">Jumlah Terjual & Nama Produk</th>
-                        <th class="text-center align-middle text-nowrap" style="width: 13%; min-width: 130px;">Total Terima</th>
-                        <th class="text-center align-middle text-nowrap" style="width: 10%; min-width: 120px;">Aksi</th>
+                        <th class="text-center align-middle text-nowrap">No Konsinyasi Keluar</th>
+                        <th class="text-center align-middle text-nowrap">Tanggal Terima</th>
+                        <th class="text-center align-middle text-nowrap"><div class="w-100 text-center">Nama Consignee<br>(Mitra)</div></th>
+                        <th class="text-center align-middle text-nowrap">Jumlah Terjual & Nama Produk</th>
+                        <th class="text-center align-middle text-nowrap">Total Terima</th>
+                        <th class="text-center align-middle text-nowrap" style="width:1%;white-space:nowrap;">Bukti Pembayaran</th>
+                        <th class="text-center align-middle text-nowrap">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -126,7 +127,13 @@
                                 @endif
                             </td>
                             <td class="text-center align-middle">Rp{{ number_format($item->total_terima, 0, ',', '.') }}</td>
-                            
+                            <td class="text-center align-middle">
+                                @if(!empty($item->bukti))
+                                    <a href="{{ asset('uploads/' . $item->bukti) }}" target="_blank" class="btn btn-sm btn-primary">Lihat Bukti</a>
+                                @else
+                                    <span class="text-danger">-</span>
+                                @endif
+                            </td>
                             <td class="text-center align-middle">
     <div class="d-flex justify-content-center gap-1" style="min-width: 180px;">
     <a href="{{ route('penerimaankonsinyasi.show', $item->no_penerimaankonsinyasi) }}" class="btn btn-info btn-sm btn-icon-square" title="Detail">
@@ -164,7 +171,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center">Data tidak ditemukan.</td>
+                            <td colspan="10" class="text-center">Data tidak ditemukan.</td>
                         </tr>
                     @endforelse
                 </tbody>
