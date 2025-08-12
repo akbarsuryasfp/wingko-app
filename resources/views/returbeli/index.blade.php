@@ -44,15 +44,11 @@
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
                     <div class="d-flex justify-content-md-end justify-content-center gap-2 flex-wrap">
-                        <a href="{{ route('returbeli.laporan.pdf', [
-                            'tanggal_mulai' => $tanggal_mulai,
-                            'tanggal_selesai' => $tanggal_selesai,
-                            'search' => request('search')
-                        ]) }}"
-                        class="btn btn-sm btn-success"
-                        target="_blank">
-                            <i class="bi bi-file-earmark-pdf"></i> Cetak Laporan
-                        </a>
+<a href="{{ url('returbeli/laporan/pdf') }}?tanggal_mulai={{ request('tanggal_mulai') }}&tanggal_selesai={{ request('tanggal_selesai') }}&status={{ request('status') }}&search={{ request('search') }}"
+   class="btn btn-sm btn-success"
+   target="_blank">
+    <i class="bi bi-file-earmark-pdf"></i> Cetak Laporan
+</a>
                         <a href="{{ route('returbeli.create') }}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle"></i> Tambah Retur Pembelian
                         </a>
@@ -82,6 +78,14 @@
                             <option value="menunggu_pengembalian" {{ request('status') == 'menunggu_pengembalian' ? 'selected' : '' }}>Menunggu Pengembalian</option>
                             <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
                         </select>
+                            <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="this.form.submit()">
+        <option value="10" {{ request('per_page', 15) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
                     </form>
                 </div>
                 <div class="col-md-4 col-12 text-md-end text-center">
@@ -120,9 +124,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+    $no = (method_exists($returList, 'currentPage') ? ($returList->currentPage() - 1) * $returList->perPage() + 1 : 1);
+@endphp
                         @forelse ($returList as $retur)
                             <tr>
-                                <td class="align-middle">{{ $loop->iteration }}</td>
+                                <td class="align-middle">{{ $no++ }}</td>
                                 <td class="align-middle">{{ $retur->no_retur_beli }}</td>
                                 <td class="align-middle">{{ $retur->no_pembelian }}</td>
                                 <td class="align-middle">{{ $retur->tanggal_retur_beli }}</td>
@@ -158,9 +165,11 @@
                                             <a href="{{ route('returbeli.show', $retur->no_retur_beli) }}" class="btn btn-info btn-sm" title="Detail">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ route('returbeli.edit', $retur->no_retur_beli) }}" class="btn btn-warning btn-sm" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
+@unless(auth()->user()->role == 'gudang')
+<a href="{{ route('returbeli.edit', $retur->no_retur_beli) }}" class="btn btn-warning btn-sm" title="Edit">
+    <i class="bi bi-pencil"></i>
+</a>
+@endunless
                                             <form action="{{ route('returbeli.destroy', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
@@ -175,7 +184,8 @@
 @elseif($retur->jenis_pengembalian === 'uang' && $retur->status === 'menunggu_pengembalian')
     <form action="{{ route('returbeli.kasretur', $retur->no_retur_beli) }}" method="POST" style="display:inline;">
         @csrf
-        <button type="submit" class="btn btn-success btn-sm">
+        <button type="submit" class="btn btn-success btn-sm"
+            @if(auth()->user()->role == 'gudang') disabled @endif>
             <i class="bi bi-cash-coin"></i> 
         </button>
     </form>
@@ -192,6 +202,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if(request('per_page') != 'all')
+<div class="mt-3 d-flex justify-content-center">
+    {{ $returList->withQueryString()->links() }}
+</div>
+@endif
         </div>
     </div>
 </div>

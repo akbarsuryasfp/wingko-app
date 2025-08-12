@@ -68,6 +68,14 @@
                         <button type="submit" class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-funnel"></i> Filter
                         </button>
+                        <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="this.form.submit()">
+        <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
                     </form>
                 </div>
                 <div class="col-md-4 col-12 text-md-end text-center">
@@ -107,11 +115,7 @@
                         @php $no = 1; @endphp
                         @forelse($transfers as $transfer)
                             <tr>
-<<<<<<< Updated upstream
-                                <td>{{ $no++ }}</td>
-=======
-                                <td>{{ $loop->iteration + ($transfers->currentPage() - 1) * $transfers->perPage() }}</td>
->>>>>>> Stashed changes
+                                <td>{{ ($transfers->currentPage() - 1) * $transfers->perPage() + $loop->iteration }}</td>
                                 <td>{{ $transfer->no_transaksi }}</td>
                                 <td>{{ date('d-m-Y', strtotime($transfer->tanggal)) }}</td>
                                 <td>{{ $transfer->lokasi_asal }}</td>
@@ -123,10 +127,12 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a href="{{ route('transferproduk.edit', $transfer->no_transaksi) }}" 
-                                           class="btn btn-sm btn-warning" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+        @unless(auth()->user()->role == 'gudang')
+        <a href="{{ route('transferproduk.edit', $transfer->no_transaksi) }}" 
+           class="btn btn-sm btn-warning" title="Edit">
+            <i class="bi bi-pencil"></i>
+        </a>
+        @endunless
                                         <form action="{{ route('transferproduk.destroy', $transfer->no_transaksi) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transfer ini?')">
                                             @csrf
                                             @method('DELETE')
@@ -146,12 +152,12 @@
                 </table>
             </div>
 
-            <div class="mt-3">
-                {{ $transfers->appends([
-                    'start_date' => request('start_date'),
-                    'end_date' => request('end_date')
-                ])->links() }}
-            </div>
+            {{-- Pagination --}}
+@if(request('per_page') != 'all')
+<div class="mt-3 d-flex justify-content-center">
+    {{ $transfers->appends(request()->except('page'))->links() }}
+</div>
+@endif
         </div>
     </div>
 </div>

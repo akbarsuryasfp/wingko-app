@@ -3,6 +3,7 @@
 <head>
     <title>Laporan Retur Pembelian</title>
     <style>
+            @page { size: A4 landscape; }
         body { font-family: Arial, sans-serif; font-size: 12px; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #333; padding: 4px 8px; }
@@ -24,6 +25,7 @@
                 <th width="18%">Nama Supplier</th>
                 <th width="5%">Jenis Pengembalian</th>
                 <th width="30%">Keterangan</th>
+                <th width="30%">Status</th>
             </tr>
         </thead>
         <tbody>
@@ -42,6 +44,9 @@
                         <td>
                             <b>{{ $detail->nama_bahan }}</b> ({{ $detail->jumlah_retur }}) {{ $detail->alasan }}
                         </td>
+<td rowspan="{{ $retur->details->count() }}">
+    {{ ucwords(str_replace('_', ' ', $retur->status)) }}
+</td>
                     </tr>
                 @endforeach
             @empty

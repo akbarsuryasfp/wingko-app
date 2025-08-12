@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('content')
@@ -37,24 +36,29 @@
                 <div class="row mb-2 align-items-center">
                     <label class="col-sm-2 col-form-label">Lokasi Asal</label>
                     <div class="col-sm-4">
-                        <select name="lokasi_asal" class="form-select" id="lokasi-asal" required>
-                            <option value="Gudang" {{ old('lokasi_asal', $lokasiAsal) == 'Gudang' ? 'selected' : '' }}>Gudang</option>
-                            <option value="Toko 1" {{ old('lokasi_asal', $lokasiAsal) == 'Toko 1' ? 'selected' : '' }}>Toko 1</option>
-                            <option value="Toko 2" {{ old('lokasi_asal', $lokasiAsal) == 'Toko 2' ? 'selected' : '' }}>Toko 2</option>
+                        <select name="lokasi_asal" id="lokasi_asal" class="form-control"
+                            @if(!auth()->user() || !auth()->user()->hasRole('admin')) disabled @endif required>
+                            @foreach($listLokasi as $kode => $nama)
+                                <option value="{{ $nama }}" {{ $nama == $lokasiAsal ? 'selected' : '' }}>
+                                    {{ $nama }}
+                                </option>
+                            @endforeach
                         </select>
+                        @if(!auth()->user() || !auth()->user()->hasRole('admin'))
+                            <input type="hidden" name="lokasi_asal" value="{{ $lokasiAsal }}">
+                        @endif
                     </div>
                 </div>
                 <div class="row mb-2 align-items-center">
                     <label class="col-sm-2 col-form-label">Lokasi Tujuan</label>
                     <div class="col-sm-4">
-                        <select name="lokasi_tujuan" class="form-select" id="lokasi-tujuan" required>
+                        <select name="lokasi_tujuan" id="lokasi_tujuan" class="form-control" required>
                             <option value="">-- Pilih Lokasi Tujuan --</option>
-                            @if(old('lokasi_asal', $lokasiAsal) == 'Gudang')
-                                <option value="Toko 1">Toko 1</option>
-                                <option value="Toko 2">Toko 2</option>
-                            @else
-                                <option value="Gudang">Gudang</option>
-                            @endif
+                            @foreach($listLokasi as $kode => $nama)
+                                @if($nama != $lokasiAsal)
+                                    <option value="{{ $nama }}">{{ $nama }}</option>
+                                @endif
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -124,101 +128,111 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const produkList = document.getElementById('produk-list');
-    const lokasiAsalSelect = document.getElementById('lokasi-asal');
-    const lokasiTujuanSelect = document.getElementById('lokasi-tujuan');
+    const lokasiAsalSelect = document.getElementById('lokasi_asal');
+    const lokasiTujuanSelect = document.getElementById('lokasi_tujuan');
+    const allLokasi = @json($listLokasi->values()->all());
 
-    // Handle origin location change
-    lokasiAsalSelect.addEventListener('change', function() {
-        // Update destination options based on origin
-        const origin = this.value;
-        let destinationOptions = '<option value="">-- Pilih Lokasi Tujuan --</option>';
-        if (origin === 'Gudang') {
-            destinationOptions += '<option value="Toko 1">Toko 1</option>';
-            destinationOptions += '<option value="Toko 2">Toko 2</option>';
-        } else {
-            destinationOptions += '<option value="Gudang">Gudang</option>';
-        }
-        lokasiTujuanSelect.innerHTML = destinationOptions;
-    });
-
-    // Tambah produk
-    document.getElementById('tambah-produk').addEventListener('click', function () {
-        const rowCount = produkList.querySelectorAll('tr').length + 1;
-        const produkOptions = `@foreach ($produk as $item)
-            <option value="{{ $item->kode_produk }}" data-satuan="{{ $item->satuan }}" data-exp="{{ $item->tanggal_exp }}">
-                {{ $item->nama_produk }} ({{ $item->stok }} {{ $item->satuan }})
-            </option>
-        @endforeach`;
-
-        const newRow = document.createElement('tr');
-        newRow.classList.add('produk-item');
-        newRow.innerHTML = `
-            <td class="text-center">${rowCount}</td>
-            <td>
-                <select name="produk_id[]" class="form-select produk-select" required>
-                    <option value="">-- Pilih Produk --</option>
-                    ${produkOptions}
-                </select>
-            </td>
-            <td class="text-center">
-                <input type="number" name="jumlah[]" class="form-control text-center" min="1" required>
-            </td>
-            <td class="text-center">
-                <input type="text" name="satuan[]" class="form-control bg-light text-center" readonly>
-            </td>
-            <td class="text-center">
-                <input type="date" name="tanggal_exp[]" class="form-control text-center" readonly>
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-danger btn-sm remove-produk" title="Hapus">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </td>
-        `;
-        produkList.appendChild(newRow);
-
-        // Event satuan otomatis
-        newRow.querySelector('.produk-select').addEventListener('change', function() {
-            const satuan = this.options[this.selectedIndex].getAttribute('data-satuan') || '';
-            const exp = this.options[this.selectedIndex].getAttribute('data-exp') || '';
-            newRow.querySelector('input[name="satuan[]"]').value = satuan;
-            newRow.querySelector('input[name="tanggal_exp[]"]').value = exp;
-        });
-
-        // Event hapus baris
-        newRow.querySelector('.remove-produk').addEventListener('click', function() {
-            newRow.remove();
-            // Update nomor urut
-            produkList.querySelectorAll('tr').forEach((tr, i) => {
-                tr.querySelector('td').innerText = i + 1;
-            });
-        });
-    });
-
-    // Event satuan otomatis untuk baris pertama
-    produkList.querySelectorAll('.produk-select').forEach(function(select) {
-        select.addEventListener('change', function() {
-            const satuan = this.options[this.selectedIndex].getAttribute('data-satuan') || '';
-            const exp = this.options[this.selectedIndex].getAttribute('data-exp') || '';
-            this.closest('tr').querySelector('input[name="satuan[]"]').value = satuan;
-            this.closest('tr').querySelector('input[name="tanggal_exp[]"]').value = exp;
-        });
-    });
-
-    // Event hapus baris untuk baris pertama
-    produkList.querySelectorAll('.remove-produk').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            const items = produkList.querySelectorAll('.produk-item');
-            if (items.length > 1) {
-                btn.closest('tr').remove();
-                produkList.querySelectorAll('tr').forEach((tr, i) => {
-                    tr.querySelector('td').innerText = i + 1;
-                });
-            } else {
-                alert('Minimal satu produk harus ada.');
+    function updateLokasiTujuan() {
+        const asal = lokasiAsalSelect.value;
+        lokasiTujuanSelect.innerHTML = '<option value="">-- Pilih Lokasi Tujuan --</option>';
+        allLokasi.forEach(function(nama) {
+            if(nama !== asal) {
+                lokasiTujuanSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
             }
         });
+    }
+
+    // Update produk list sesuai lokasi asal
+    function updateProdukList() {
+        const lokasi = lokasiAsalSelect.value;
+        fetch("{{ url('transferproduk/produk-by-lokasi') }}?lokasi=" + encodeURIComponent(lokasi))
+            .then(res => res.json())
+            .then(data => {
+                // Untuk setiap baris produk, update option produk
+                document.querySelectorAll('#produk-list .produk-item').forEach(function(row, idx) {
+                    const select = row.querySelector('.produk-select');
+                    const satuanInput = row.querySelector('input[name="satuan[]"]');
+                    const expInput = row.querySelector('input[name="tanggal_exp[]"]');
+                    const selected = select.value;
+
+                    // Build ulang option produk
+                    let html = '<option value="">-- Pilih Produk --</option>';
+                    data.forEach(function(item) {
+                        html += `<option value="${item.kode_produk}" data-satuan="${item.satuan}" data-exp="${item.tanggal_exp || ''}" data-stok="${item.stok}"`
+                            + (item.kode_produk == selected ? ' selected' : '')
+                            + `>${item.nama_produk} (${item.stok} ${item.satuan})</option>`;
+                    });
+                    select.innerHTML = html;
+
+                    // Reset satuan & exp jika produk tidak ditemukan
+                    const found = data.find(d => d.kode_produk == selected);
+                    satuanInput.value = found ? found.satuan : '';
+                    expInput.value = found && found.tanggal_exp ? found.tanggal_exp : '';
+                });
+            });
+    }
+
+    // Saat produk dipilih, update satuan & exp
+    function produkSelectChange(e) {
+        const opt = e.target.selectedOptions[0];
+        const row = e.target.closest('tr');
+        row.querySelector('input[name="satuan[]"]').value = opt.dataset.satuan || '';
+        row.querySelector('input[name="tanggal_exp[]"]').value = opt.dataset.exp || '';
+    }
+
+    // Event binding
+    @if(auth()->user() && auth()->user()->hasRole('admin'))
+        lokasiAsalSelect.addEventListener('change', function() {
+            updateLokasiTujuan();
+            updateProdukList();
+        });
+    @endif
+
+    // Inisialisasi awal
+    updateLokasiTujuan();
+    updateProdukList();
+
+    // Event produk select change
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('produk-select')) {
+            produkSelectChange(e);
+        }
+    });
+
+    // Tambah produk: clone baris, lalu update produk list
+    document.getElementById('tambah-produk').addEventListener('click', function() {
+        const tbody = document.getElementById('produk-list');
+        const row = tbody.querySelector('.produk-item');
+        const clone = row.cloneNode(true);
+
+        // Reset value input
+        clone.querySelectorAll('input, select').forEach(function(input) {
+            if (input.tagName === 'SELECT') input.selectedIndex = 0;
+            else input.value = '';
+        });
+        tbody.appendChild(clone);
+
+        // Update nomor urut
+        tbody.querySelectorAll('.produk-item').forEach(function(tr, i) {
+            tr.querySelector('td').textContent = i + 1;
+        });
+
+        updateProdukList();
+    });
+
+    // Hapus produk
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-produk')) {
+            const row = e.target.closest('tr');
+            const tbody = document.getElementById('produk-list');
+            if (tbody.rows.length > 1) {
+                row.remove();
+                // Update nomor urut
+                tbody.querySelectorAll('.produk-item').forEach(function(tr, i) {
+                    tr.querySelector('td').textContent = i + 1;
+                });
+            }
+        }
     });
 });
 </script>

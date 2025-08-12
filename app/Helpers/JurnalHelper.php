@@ -47,9 +47,8 @@ class JurnalHelper
         return AkunHelper::getIdAkun(self::$akunMap[$key] ?? '');
     }
 
-    public static function catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead)
+    public static function catatJurnalHpp($no_detail, $total_hpp, $total_bahan, $total_tk, $total_overhead, $tanggal)
     {
-        $tanggal = now()->toDateString();
         $keterangan = 'Produksi selesai, HPP: ' . $no_detail;
 
         // 1. Buat jurnal umum

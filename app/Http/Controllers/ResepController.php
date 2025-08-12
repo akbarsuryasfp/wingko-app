@@ -18,40 +18,47 @@ class ResepController extends Controller
     }
 
     public function create()
-{
-    $produk = Produk::all();
-    $bahan = Bahan::all();
-    return view('resep.create', compact('produk', 'bahan'));
-}
+    {
+        $produk = Produk::all();
+        $bahan = Bahan::all();
 
-public function store(Request $request)
-{
-    $request->validate([
-        'kode_resep' => 'required|unique:t_resep,kode_resep',
-        'kode_produk' => 'required|exists:t_produk,kode_produk',
-        'bahan.*.kode_bahan' => 'required|exists:t_bahan,kode_bahan',
-        'bahan.*.satuan' => 'required|string',
-        'bahan.*.jumlah_kebutuhan' => 'required|numeric|min:0',
-    ]);
+        // Ambil kode terakhir dari t_resep
+        $lastKode = \DB::table('t_resep')->orderBy('kode_resep', 'desc')->value('kode_resep');
+        // Format kode baru, misal: RSP001, RSP002, dst
+        $nextNumber = $lastKode ? intval(substr($lastKode, 3)) + 1 : 1;
+        $kode_resep = 'RSP' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-    DB::transaction(function () use ($request) {
-        Resep::create([
-            'kode_resep' => $request->kode_resep,
-            'kode_produk' => $request->kode_produk,
-            'keterangan' => $request->keterangan,
+        return view('resep.create', compact('produk', 'bahan', 'kode_resep'));
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'kode_resep' => 'required|unique:t_resep,kode_resep',
+            'kode_produk' => 'required|exists:t_produk,kode_produk',
+            'bahan.*.kode_bahan' => 'required|exists:t_bahan,kode_bahan',
+            'bahan.*.satuan' => 'required|string',
+            'bahan.*.jumlah_kebutuhan' => 'required|numeric|min:0',
         ]);
 
-        foreach ($request->bahan as $i => $row) {
-            ResepDetail::create([
-                'kode_resep_detail' => $request->kode_resep . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT),
+        DB::transaction(function () use ($request) {
+            Resep::create([
                 'kode_resep' => $request->kode_resep,
-                'kode_bahan' => $row['kode_bahan'],
-                'jumlah_kebutuhan' => $row['jumlah_kebutuhan'],
-                'satuan' => $row['satuan'],
+                'kode_produk' => $request->kode_produk,
+                'keterangan' => $request->keterangan,
             ]);
-        }
-    });
 
-    return redirect()->route('resep.index')->with('success', 'Resep berhasil disimpan!');
-}
+            foreach ($request->bahan as $i => $row) {
+                ResepDetail::create([
+                    'kode_resep_detail' => $request->kode_resep . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT),
+                    'kode_resep' => $request->kode_resep,
+                    'kode_bahan' => $row['kode_bahan'],
+                    'jumlah_kebutuhan' => $row['jumlah_kebutuhan'],
+                    'satuan' => $row['satuan'],
+                ]);
+            }
+        });
+
+        return redirect()->route('resep.index')->with('success', 'Resep berhasil disimpan!');
+    }
 }

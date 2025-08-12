@@ -11,6 +11,7 @@ public function index(Request $request)
 {
     $start = $request->input('start_date', date('Y-m-01'));
     $end = $request->input('end_date', date('Y-m-d'));
+    $perPage = $request->input('per_page', 10);
 
     $query = DB::table('t_kartupersproduk')
         ->whereBetween('tanggal', [$start, $end])
@@ -38,7 +39,20 @@ public function index(Request $request)
         });
     }
 
-    $transfers = $query->paginate(10)->withQueryString();
+    // Pagination logic
+    if ($perPage == 'all') {
+        $transfers = $query->get();
+        // For blade compatibility, wrap with LengthAwarePaginator
+        $transfers = new \Illuminate\Pagination\LengthAwarePaginator(
+            $transfers,
+            count($transfers),
+            count($transfers) ?: 1,
+            1,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+    } else {
+        $transfers = $query->paginate($perPage)->withQueryString();
+    }
 
     // Ambil daftar lokasi tujuan unik untuk filter
     $listLokasi = DB::table('t_kartupersproduk')
@@ -63,19 +77,24 @@ public function index(Request $request)
         $transfer->details = $details;
     }
 
-<<<<<<< Updated upstream
+    
+
     return view('transferproduk.index', compact('transfers', 'listLokasi'));
 }
-=======
-        return view('transferproduk.index', compact('transfers'));
-    }
->>>>>>> Stashed changes
 
-    // Tampilkan form create
-    // Tampilkan form create
+
     public function create()
     {
-        $lokasiAsal = 'Gudang';
+        // Ambil kode lokasi aktif dari session
+        $kodeLokasiAktif = session('lokasi_aktif', 'gudang'); // default ke 'gudang' jika belum ada
+
+        // Ambil nama lokasi asal dari tabel t_lokasi
+        $lokasiRow = DB::table('t_lokasi')->where('kode_lokasi', $kodeLokasiAktif)->first();
+        $lokasiAsal = $lokasiRow ? $lokasiRow->nama_lokasi : $kodeLokasiAktif;
+
+        // Kirim seluruh lokasi (tanpa filter)
+        $listLokasi = DB::table('t_lokasi')->pluck('nama_lokasi', 'kode_lokasi');
+
         $produk = DB::table('t_produk')
             ->leftJoin('t_kartupersproduk', function($q) use ($lokasiAsal) {
                 $q->on('t_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
@@ -112,7 +131,7 @@ public function index(Request $request)
     // Format kode
     $kode_otomatis = 'TRF-' . date('Ymd') . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-    return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal'));
+    return view('transferproduk.create', compact('produk', 'kode_otomatis', 'lokasiAsal', 'listLokasi'));
 }
      
     // Simpan transfer produk dengan FIFO
@@ -408,5 +427,29 @@ public function laporanPdf(Request $request)
 
     $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('transferproduk.cetak', compact('transfers'));
     return $pdf->stream('laporan_transfer_produk.pdf');
+}
+public function produkByLokasi(Request $request)
+{
+    $lokasi = $request->input('lokasi');
+    $produk = DB::table('t_produk')
+        ->leftJoin('t_kartupersproduk', function($q) use ($lokasi) {
+            $q->on('t_produk.kode_produk', '=', 't_kartupersproduk.kode_produk')
+              ->where('t_kartupersproduk.lokasi', '=', $lokasi);
+        })
+        ->select(
+            't_produk.kode_produk',
+            't_produk.nama_produk',
+            't_produk.satuan',
+            DB::raw('COALESCE(SUM(t_kartupersproduk.masuk - t_kartupersproduk.keluar),0) as stok'),
+            DB::raw('MAX(t_kartupersproduk.tanggal_exp) as tanggal_exp')
+        )
+        ->groupBy(
+            't_produk.kode_produk',
+            't_produk.nama_produk',
+            't_produk.satuan'
+        )
+        ->get();
+
+    return response()->json($produk);
 }
 }

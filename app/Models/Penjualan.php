@@ -25,6 +25,7 @@ class Penjualan extends Model
         'piutang',
         'status_pembayaran',
         'keterangan',
+        'lokasi',
     ];
 
     public function pelanggan()

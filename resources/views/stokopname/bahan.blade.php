@@ -133,6 +133,28 @@
     </form>
 </div>
 
+<style>
+    /* Warna tab aktif dan tidak aktif */
+    .nav-tabs .nav-link {
+        background: linear-gradient(90deg, #f3f4f6 0%, #e0e7ff 100%);
+        color: #1e293b;
+        border: 1px solid #dbeafe;
+        margin-right: 2px;
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+    }
+    .nav-tabs .nav-link.active {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+        color: #fff !important;
+        border-color: #2563eb #2563eb #fff #2563eb;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    .nav-tabs .nav-link:focus, .nav-tabs .nav-link:hover {
+        background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%);
+        color: #fff;
+    }
+</style>
+
 <script>
 document.addEventListener('input', function(e) {
     if (e.target && e.target.classList.contains('stok-fisik-input')) {

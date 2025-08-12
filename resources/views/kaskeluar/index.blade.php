@@ -47,6 +47,14 @@
             value="{{ request('tanggal_akhir', date('Y-m-d')) }}"
             style="width: 140px;" onchange="document.getElementById('filterForm').submit();">
     </div>
+    <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="document.getElementById('filterForm').submit();">
+        <option value="10" {{ request('per_page', 15) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
 
                     <div class="ms-auto d-flex align-items-center gap-2">
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari keterangan atau penerima..." style="width: 250px;" value="{{ request('search') }}">
@@ -70,13 +78,17 @@
                             <th>Jumlah</th>
                             <th>Penerima</th>
                             <th>Keterangan</th>
+                            <th>Bukti Nota</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+  $no = (method_exists($kaskeluar, 'currentPage') ? ($kaskeluar->currentPage() - 1) * $kaskeluar->perPage() + 1 : 1);
+@endphp
                         @forelse ($kaskeluar as $item)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $no++ }}</td>
                             <td>{{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}</td>
                             <td>{{ $item->nomor_bukti }}</td>
                             <td class="text-end">{{ $item->jumlah_rupiah }}</td>
@@ -88,10 +100,17 @@
                                 @endif
                             </td>
                             <td class="text-start">{{ $item->keterangan_teks }}</td>
+<td>
+    @if($item->bukti_nota)
+        <a href="{{ asset('storage/' . $item->bukti_nota) }}" target="_blank">Lihat Nota</a>        <span class="text-muted">-</span>
+    @endif
+</td>
                             <td class="text-nowrap">
-                                <a href="{{ route('kaskeluar.edit', $item->no_jurnal) }}" class="btn btn-sm btn-warning me-1" data-bs-toggle="tooltip" title="Edit Data">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
+    @unless(auth()->user()->role == 'gudang')
+    <a href="{{ route('kaskeluar.edit', $item->no_jurnal) }}" class="btn btn-sm btn-warning me-1" data-bs-toggle="tooltip" title="Edit Data">
+        <i class="bi bi-pencil"></i>
+    </a>
+    @endunless
                                 <form action="{{ route('kaskeluar.destroy', $item->no_jurnal) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                     @csrf
                                     @method('DELETE')
@@ -109,6 +128,11 @@
                     </tbody>
                 </table>
             </div>
+            @if(request('per_page') != 'all')
+            <div class="mt-3 d-flex justify-content-center">
+    {{ $kaskeluar->withQueryString()->links() }}
+</div>
+@endif
 
         </div>
     </div>

@@ -35,6 +35,14 @@
     </div>
     <div class="col-md-6 col-12 text-md-end text-center">
         <form method="GET" action="{{ route('hutang.index') }}" class="d-inline-flex gap-2 flex-wrap justify-content-end w-100">
+            <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="this.form.submit()">
+        <option value="10" {{ request('per_page', 15) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
 <a href="{{ route('hutang.laporan', request()->all()) }}" class="btn btn-sm btn-success" target="_blank">
     <i class="bi bi-file-earmark-pdf"></i> Cetak Laporan
 </a>
@@ -73,9 +81,12 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+    $no = (method_exists($hutangs, 'currentPage') ? ($hutangs->currentPage() - 1) * $hutangs->perPage() + 1 : 1);
+@endphp
                         @forelse ($hutangs as $hutang)
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ $no++ }}</td>
                                 <td>{{ $hutang->no_utang }}</td>
                                 <td>{{ $hutang->no_pembelian }}</td>
                                 <td class="text-start">
@@ -119,6 +130,11 @@
                         @endforelse
                     </tbody>
                 </table>
+                @if(request('per_page') != 'all')
+<div class="mt-3 d-flex justify-content-center">
+    {{ $hutangs->withQueryString()->links() }}
+</div>
+@endif
             </div>
         </div>
     </div>

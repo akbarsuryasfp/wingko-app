@@ -7,7 +7,7 @@
             <h5 class="m-0 font-weight-bold">Edit Pembelian Bahan</h5>
         </div>
         <div class="card-body">
-            <form action="{{ route('pembelian.update', $pembelian->no_pembelian) }}" method="POST">
+            <form action="{{ route('pembelian.update', $pembelian->no_pembelian) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -38,12 +38,14 @@
                     </div>
                     <!-- Kolom Kanan -->
                     <div class="col-md-6">
-                        <div class="form-group row mb-2">
-                            <label class="col-sm-4 col-form-label font-weight-bold">Kode Terima Bahan</label>
-                            <div class="col-sm-8">
-                                <input type="text" class="form-control bg-light" value="{{ $pembelian->no_terima_bahan }}" readonly>
-                            </div>
-                        </div>
+@if($pembelian->jenis_pembelian != 'pembelian langsung')
+<div class="form-group row mb-2">
+    <label class="col-sm-4 col-form-label">Kode Terima Bahan</label>
+    <div class="col-sm-8">
+        <input type="text" class="form-control" value="{{ $pembelian->no_terima_bahan }}" readonly>
+    </div>
+</div>
+@endif
                         <div class="form-group row mb-2">
                             <label class="col-sm-4 col-form-label font-weight-bold">Nama Supplier</label>
                             <div class="col-sm-8">
@@ -56,6 +58,25 @@
                                 <input type="text" class="form-control" name="no_nota" value="{{ $pembelian->no_nota }}">
                             </div>
                         </div>
+                                <div class="form-group row mb-2">
+            <label class="col-sm-4 col-form-label font-weight-bold">Bukti Nota</label>
+<div class="col-sm-8">
+    <div class="row align-items-center g-2 mb-1">
+        @if($pembelian->bukti_nota)
+            <div class="col-auto">
+                <a href="{{ asset('storage/' . $pembelian->bukti_nota) }}" 
+                   target="_blank" 
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-file-alt me-1"></i> Lihat Nota Lama
+                </a>
+            </div>
+        @endif
+        <div class="col">
+            <input type="file" class="form-control form-control-sm" name="bukti_nota" accept="image/*,application/pdf" placeholder="File maksimal 2MB">
+        </div>
+        <small class="text-muted">File harus kurang dari 2MB. Kosongkan jika tidak ingin mengubah bukti nota.</small>
+    </div>
+</div>
                     </div>
                 </div>
 
@@ -177,12 +198,14 @@
                 <input type="number" class="form-control" id="hutang" name="hutang" value="{{ $kurang_bayar ?? 0 }}" readonly>
             </div>
         </div>
-        <div class="row mb-2 align-items-center" id="row_jatuh_tempo" style="{{ $pembelian->metode_bayar == 'Hutang' ? '' : 'display: none;' }}">
-            <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
-            <div class="col-sm-8">
-                <input type="date" class="form-control" name="jatuh_tempo" value="{{ $jatuh_tempo ?? '' }}">
-            </div>
-        </div>
+<div class="row mb-2 align-items-center" id="row_jatuh_tempo">
+    <label class="col-sm-4 col-form-label">Jatuh Tempo</label>
+    <div class="col-sm-8">
+        <input type="date" class="form-control" name="jatuh_tempo"
+            value="{{ old('jatuh_tempo', $jatuh_tempo ?? $pembelian->jatuh_tempo ?? '') }}">
+    </div>
+</div>
+
 
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ route('pembelian.index') }}" class="btn btn-secondary">
@@ -337,65 +360,75 @@
             </div>
         </div>
     </div>
-</div>
 @endif
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 var $j = jQuery.noConflict();
 $j(document).ready(function() {
-    // Inisialisasi variabel
+    // Data master bahan dari backend
     let bahanOptions = @json($bahan);
 
-    // Tambah bahan baru ke tabel
+    // === EVENT: Tambah bahan baru ===
     $j('#tambah_bahan').click(function () {
         let selectHtml = '<select name="bahan[]" class="form-control">';
         bahanOptions.forEach(b => {
-            selectHtml += `<option value="${b.kode_bahan}">${b.nama_bahan} (${b.satuan})</option>`;
+            selectHtml += `<option value="${b.kode_bahan}" data-harga="${b.harga_beli ?? 0}" data-satuan="${b.satuan}">${b.nama_bahan} (${b.satuan})</option>`;
         });
         selectHtml += '</select>';
+
+        let hargaDefault = bahanOptions[0].harga_beli ?? 0;
+        let satuanDefault = bahanOptions[0].satuan ?? '';
 
         $j('#bahan_table tbody').append(`
             <tr>
                 <td>${selectHtml}</td>
                 <td>
-                    <select name="satuan[]" class="form-control" readonly>
-                        <option value="${bahanOptions[0].satuan}">${bahanOptions[0].satuan}</option>
-                    </select>
+                    <input type="text" name="satuan[]" class="form-control satuan" value="${satuanDefault}" readonly>
                 </td>
                 <td><input type="number" name="jumlah[]" class="form-control jumlah" value="1" min="1" required></td>
-                <td><input type="number" name="harga[]" class="form-control harga" value="0" min="0" required></td>
+                <td><input type="number" name="harga[]" class="form-control harga" value="${hargaDefault}" min="0" required></td>
                 <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
-                <td class="subtotal">0</td>
+                <td class="subtotal">${hargaDefault * 1}</td>
                 <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
             </tr>
         `);
-    });
-
-    // Update satuan ketika bahan dipilih
-    $j(document).on('change', 'select[name="bahan[]"]', function() {
-        let kodeBahan = $j(this).val();
-        let selectedBahan = bahanOptions.find(b => b.kode_bahan == kodeBahan);
-        $j(this).closest('tr').find('select[name="satuan[]"]').val(selectedBahan.satuan).text(selectedBahan.satuan);
-    });
-
-    // Update subtotal ketika jumlah atau harga diubah
-    $j(document).on('input', '.jumlah, .harga', function () {
         updateSubtotal();
     });
 
-    // Hapus baris bahan
+    // === EVENT: Hapus baris bahan ===
     $j(document).on('click', '.remove', function () {
         $j(this).closest('tr').remove();
         updateSubtotal();
     });
 
-    // Fungsi untuk menghitung subtotal and total
+    // === EVENT: Pilih bahan di baris baru, update harga & satuan ===
+    $j(document).on('change', 'select[name="bahan[]"]', function() {
+        let kodeBahan = $j(this).val();
+        let selectedBahan = bahanOptions.find(b => b.kode_bahan == kodeBahan);
+        let harga = selectedBahan ? selectedBahan.harga_beli : 0;
+        let satuan = selectedBahan ? selectedBahan.satuan : '';
+        $j(this).closest('tr').find('input.harga').val(harga);
+        $j(this).closest('tr').find('input.satuan').val(satuan); // update satuan
+        updateSubtotal();
+    });
+
+    // === EVENT: Ubah jumlah/harga, update subtotal & total ===
+    $j(document).on('input', '.jumlah, .harga', function () {
+        updateSubtotal();
+    });
+
+    // === EVENT: Ubah diskon/ongkir/total bayar, update total pembelian & hutang ===
+    $j('#diskon, #ongkir, #total_bayar').on('input', function() {
+        hitungTotal();
+    });
+
+    // === FUNGSI: Update subtotal per baris & total harga ===
     function updateSubtotal() {
         let total = 0;
         $j('#bahan_table tbody tr').each(function () {
-            let jumlah = parseInt($j(this).find('.jumlah').val()) || 0;
-            let harga = parseInt($j(this).find('.harga').val()) || 0;
+            let jumlah = parseFloat($j(this).find('.jumlah').val()) || 0;
+            let harga = parseFloat($j(this).find('.harga').val()) || 0;
             let subtotal = jumlah * harga;
             $j(this).find('.subtotal').text(subtotal);
             total += subtotal;
@@ -404,43 +437,28 @@ $j(document).ready(function() {
         hitungTotal();
     }
 
-    // Fungsi untuk menghitung total pembelian
+    // === FUNGSI: Hitung total pembelian & hutang ===
     function hitungTotal() {
-        let totalHarga = parseInt($j('#total_harga').val()) || 0;
-        let diskon = parseInt($j('#diskon').val()) || 0;
-        let ongkir = parseInt($j('#ongkir').val()) || 0;
+        let totalHarga = parseFloat($j('#total_harga').val()) || 0;
+        let diskon = parseFloat($j('#diskon').val()) || 0;
+        let ongkir = parseFloat($j('#ongkir').val()) || 0;
         let totalPembelian = totalHarga - diskon + ongkir;
-        let totalBayar = parseInt($j('#total_bayar').val()) || 0;
+        let totalBayar = parseFloat($j('#total_bayar').val()) || 0;
         let hutang = totalPembelian - totalBayar;
 
         $j('#total_pembelian').val(totalPembelian);
         $j('#hutang').val(hutang > 0 ? hutang : 0);
-
-        // Toggle tampilan jatuh tempo
-        if ($j('select[name="metode_bayar"]').val() == 'Hutang' && hutang > 0) {
-            $j('#row_jatuh_tempo').show();
-        } else {
-            $j('#row_jatuh_tempo').hide();
-        }
     }
 
-    // Toggle jatuh tempo berdasarkan metode bayar
-    $j('select[name="metode_bayar"]').change(function() {
-        hitungTotal();
+    // === INISIALISASI: Set subtotal per baris sesuai database (TIDAK update total harga/pembelian) ===
+    $j('#bahan_table tbody tr').each(function () {
+        let jumlah = parseFloat($j(this).find('.jumlah').val()) || 0;
+        let harga = parseFloat($j(this).find('.harga').val()) || 0;
+        let subtotal = jumlah * harga;
+        $j(this).find('.subtotal').text(subtotal);
     });
-
-    // Inisialisasi pertama kali
-    // Jangan timpa value jika sudah ada dari backend
-    if (!$j('#total_harga').val() || $j('#total_harga').val() == '0') {
-        updateSubtotal();
-    }
-    if (!$j('#total_pembelian').val() || $j('#total_pembelian').val() == '0') {
-        hitungTotal();
-    }
-
-    $j('#total_bayar, #diskon, #ongkir').on('input', function() {
-        hitungTotal();
-    });
+    // Jangan panggil updateSubtotal() atau hitungTotal() di sini!
 });
 </script>
+
 @endsection

@@ -76,6 +76,14 @@
                         <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
                         <option value="belum" {{ request('status') == 'belum' ? 'selected' : '' }}>Lanjutkan Pembayaran</option>
                     </select>
+                     <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="this.form.submit()">
+        <option value="10" {{ request('per_page', 15) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
                 </form>
             </div>
             <div class="col-md-4 col-12 text-md-end text-center">
@@ -113,7 +121,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php $no = 1; @endphp
+                        @php $no = (method_exists($terimabahan, 'currentPage') ? ($terimabahan->currentPage() - 1) * $terimabahan->perPage() + 1 : 1);
+                         @endphp
                         @forelse($terimabahan as $item)
                             @if($item)
                             <tr>
@@ -155,9 +164,11 @@
                                             <i class="bi bi-info-circle"></i>
                                         </a>
                                         @if(!$sudahPembelian)
-                                            <a href="{{ route('terimabahan.edit', $item->no_terima_bahan) }}" class="btn btn-warning btn-sm" title="Edit">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
+@if(!$sudahPembelian && auth()->user()->role != 'gudang')
+    <a href="{{ route('terimabahan.edit', $item->no_terima_bahan) }}" class="btn btn-warning btn-sm" title="Edit">
+        <i class="bi bi-pencil"></i>
+    </a>
+@endif
                                             <form action="{{ route('terimabahan.destroy', $item->no_terima_bahan) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                                 @csrf
                                                 @method('DELETE')
@@ -181,6 +192,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if(request('per_page') != 'all')
+            <div class="mt-3 d-flex justify-content-center">
+    {{ $terimabahan->withQueryString()->links() }}
+</div>
+@endif
         </div>
     </div>
 </div>

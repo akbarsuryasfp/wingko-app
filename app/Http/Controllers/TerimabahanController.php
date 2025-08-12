@@ -11,59 +11,48 @@ class TerimaBahanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = \DB::table('t_terimabahan')
-            ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
-            ->select(
-                't_terimabahan.*',
-                't_supplier.nama_supplier'
-            );
+        $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
+        $search = $request->search;
+        $status = $request->status;
 
-        // Filter search
-        if ($request->filled('search')) {
-            $search = $request->search;
+        $query = DB::table('t_terimabahan')
+            ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
+            ->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
+
+        if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('t_terimabahan.no_terima_bahan', 'like', "%$search%")
                   ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
             });
         }
 
-        // Filter tanggal
-    $tanggal_mulai = $request->tanggal_mulai ?? now()->startOfMonth()->format('Y-m-d');
-    $tanggal_selesai = $request->tanggal_selesai ?? now()->endOfMonth()->format('Y-m-d');
-    $search = $request->search;
-    $status = $request->status;
+        if ($status == 'selesai') {
+            $query->whereExists(function($q) {
+                $q->select(DB::raw(1))
+                  ->from('t_pembelian')
+                  ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+            });
+        } elseif ($status == 'belum') {
+            $query->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                  ->from('t_pembelian')
+                  ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
+            });
+        }
 
-    $query = DB::table('t_terimabahan')
-        ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
-        ->whereBetween('t_terimabahan.tanggal_terima', [$tanggal_mulai, $tanggal_selesai]);
+        // Ambil perPage dari request, default 15
+        $perPage = $request->input('per_page', 15);
 
-    if ($search) {
-        $query->where(function($q) use ($search) {
-            $q->where('t_terimabahan.no_terima_bahan', 'like', "%$search%")
-              ->orWhere('t_supplier.nama_supplier', 'like', "%$search%");
-        });
-    }
-
-    // Filter status
-    if ($status == 'selesai') {
-        $query->whereExists(function($q) {
-            $q->select(DB::raw(1))
-              ->from('t_pembelian')
-              ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
-        });
-    } elseif ($status == 'belum') {
-        $query->whereNotExists(function($q) {
-            $q->select(DB::raw(1))
-              ->from('t_pembelian')
-              ->whereRaw('t_pembelian.no_terima_bahan = t_terimabahan.no_terima_bahan');
-        });
-    }
-
-    $terimabahan = $query->orderBy('t_terimabahan.tanggal_terima', 'asc')->get();
+        if ($perPage == 'all') {
+            $terimabahan = $query->orderBy('t_terimabahan.tanggal_terima', 'desc')->get();
+        } else {
+            $terimabahan = $query->orderBy('t_terimabahan.tanggal_terima', 'desc')->paginate($perPage)->withQueryString();
+        }
 
         // Ambil detail bahan untuk setiap terima bahan (jika perlu)
         foreach ($terimabahan as $item) {
-            $item->details = \DB::table('t_terimab_detail')
+            $item->details = DB::table('t_terimab_detail')
                 ->leftJoin('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
                 ->select('t_terimab_detail.*', 't_bahan.nama_bahan')
                 ->where('no_terima_bahan', $item->no_terima_bahan)
@@ -293,19 +282,19 @@ public function getSisaOrder($no_order_beli)
 }
 
     public function edit($id)
-{
-    // Ambil data utama penerimaan bahan + join supplier supaya ada properti supplier
-    $terimaBahan = DB::table('t_terimabahan')
-        ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
-        ->where('no_terima_bahan', $id)
-        ->select('t_terimabahan.*', 't_supplier.nama_supplier', 't_supplier.kode_supplier as supplier_kode_supplier')
-        ->first();
+    {
+        // Ambil data utama penerimaan bahan + join supplier supaya ada properti supplier
+        $terimaBahan = DB::table('t_terimabahan')
+            ->leftJoin('t_supplier', 't_terimabahan.kode_supplier', '=', 't_supplier.kode_supplier')
+            ->where('no_terima_bahan', $id)
+            ->select('t_terimabahan.*', 't_supplier.nama_supplier', 't_supplier.kode_supplier as supplier_kode_supplier')
+            ->first();
 
-    if (!$terimaBahan) {
-        abort(404, "Data terima bahan tidak ditemukan.");
-    }
+        if (!$terimaBahan) {
+            abort(404, "Data terima bahan tidak ditemukan.");
+        }
 
-    // Ambil detail bahan
+        // Ambil detail bahan
 $details = DB::table('t_terimab_detail')
     ->join('t_bahan', 't_terimab_detail.kode_bahan', '=', 't_bahan.kode_bahan')
     ->leftJoin('t_order_detail', function($join) use ($terimaBahan) {

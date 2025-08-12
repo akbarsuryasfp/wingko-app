@@ -26,7 +26,7 @@
         </div>
         
         <div class="card-body">
-            <form action="{{ route('kaskeluar.update', $kas->no_jurnal) }}" method="POST">
+            <form action="{{ route('kaskeluar.update', $kas->no_jurnal) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -54,6 +54,23 @@
                             <label for="penerima" class="col-sm-4 col-form-label">Penerima</label>
                             <div class="col-sm-8">
                                 <input type="text" id="penerima" name="penerima" class="form-control" value="{{ $kas->penerima }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Bukti Nota -->
+                        <div class="mb-2 row">
+                            <label for="bukti_nota" class="col-sm-4 col-form-label">Upload Bukti Nota</label>
+                            <div class="col-sm-8">
+                                @php
+                                    $bukti = DB::table('t_buktikaskeluar')->where('no_jurnal', $kas->no_jurnal)->first();
+                                @endphp
+                                @if($bukti && $bukti->bukti_nota)
+                                    <a href="{{ asset('storage/' . $bukti->bukti_nota) }}" target="_blank" class="btn btn-outline-primary btn-sm mb-1">
+                                        Lihat Bukti Nota Lama
+                                    </a>
+                                @endif
+                                <input type="file" name="bukti_nota" id="bukti_nota" class="form-control" accept="image/*,application/pdf">
+                                <small class="text-muted">File harus kurang dari 2MB (jpg, png, pdf). Kosongkan jika tidak ingin mengubah bukti nota.</small>
                             </div>
                         </div>
                     </div>
@@ -94,7 +111,7 @@
         <div class="input-group">
             <span class="input-group-text">Rp</span>
             <input type="text" id="jumlah" name="jumlah" class="form-control" 
-                   value="{{ number_format($kas->jumlah, 0, ',', '.') }}" required>
+                   value="{{ $kas->jumlah }}" required>
         </div>
     </div>
 </div>
@@ -129,4 +146,14 @@
         </div>
     </div>
 </div>
+
+<script>
+document.querySelector('form').addEventListener('submit', function(e) {
+    var jumlahInput = document.getElementById('jumlah');
+    if (jumlahInput) {
+        // Hapus semua karakter selain angka
+        jumlahInput.value = jumlahInput.value.replace(/[^0-9]/g, '');
+    }
+});
+</script>
 @endsection

@@ -7,6 +7,7 @@ use App\Models\Consignee;
 use App\Models\Produk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\JurnalHelper;
 
 class PenerimaanKonsinyasiController extends Controller
 {
@@ -117,6 +118,7 @@ class PenerimaanKonsinyasiController extends Controller
                 \Log::info('store: data to insert into penerimaankonsinyasi', $dataToInsert);
                 $header = PenerimaanKonsinyasi::create($dataToInsert);
             $details = json_decode($request->detail_json, true);
+            $total_hpp = 0;
             foreach ($details as $idx => $d) {
                 $no_detail = $header->no_penerimaankonsinyasi . '-' . str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
                 PenerimaanKonsinyasiDetail::create([
@@ -129,7 +131,76 @@ class PenerimaanKonsinyasiController extends Controller
                     'harga_satuan' => $d['harga_satuan'],
                     'subtotal' => $d['subtotal'],
                 ]);
+                // Hitung HPP dari kartu persediaan (FIFO)
+                $qtyTerjual = $d['jumlah_terjual'];
+                $kode_produk = $d['kode_produk'];
+                $kode_lokasi = '1'; // kode lokasi Gudang
+                $kartuKeluar = DB::table('t_kartupersproduk')
+                    ->where('kode_produk', $kode_produk)
+                    ->where('lokasi', $kode_lokasi)
+                    ->where('keluar', '>', 0)
+                    ->where('no_transaksi', $request->no_konsinyasikeluar)
+                    ->get();
+                foreach ($kartuKeluar as $k) {
+                    $total_hpp += ($k->keluar * $k->hpp);
+                }
             }
+
+            // --- Penjurnalan Penjualan Konsinyasi Keluar ---
+            $no_jurnal = JurnalHelper::generateNoJurnal();
+            $tanggal = $request->tanggal_terima;
+            $nomor_bukti = $header->no_penerimaankonsinyasi;
+            $keterangan = 'Penjualan konsinyasi keluar ' . $header->no_penerimaankonsinyasi;
+
+            $jurnal = \App\Models\JurnalUmum::create([
+                'no_jurnal' => $no_jurnal,
+                'tanggal' => $tanggal,
+                'keterangan' => $keterangan,
+                'nomor_bukti' => $nomor_bukti,
+            ]);
+
+            // Debit Kas/Bank/Piutang
+            $kode_akun_kas = JurnalHelper::getKodeAkun('kas_bank');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_kas,
+                'debit' => $request->total_terima,
+                'kredit' => 0,
+                'keterangan' => 'Penerimaan penjualan konsinyasi keluar'
+            ]);
+            // Kredit Penjualan
+            $kode_akun_penjualan = JurnalHelper::getKodeAkun('penjualan');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_penjualan,
+                'debit' => 0,
+                'kredit' => $request->total_terima,
+                'keterangan' => 'Penjualan konsinyasi keluar'
+            ]);
+            // Debit HPP
+            $kode_akun_hpp = JurnalHelper::getKodeAkun('hpp');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_hpp,
+                'debit' => $total_hpp,
+                'kredit' => 0,
+                'keterangan' => 'Harga pokok penjualan konsinyasi keluar'
+            ]);
+            // Kredit Persediaan Barang Dagang
+            $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_jadi');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_persediaan,
+                'debit' => 0,
+                'kredit' => $total_hpp,
+                'keterangan' => 'Persediaan keluar penjualan konsinyasi'
+            ]);
+            // --- End Penjurnalan ---
+
             DB::commit();
             \Log::info('store: DB commit success for no_penerimaankonsinyasi: ' . $header->no_penerimaankonsinyasi);
             return redirect()->route('penerimaankonsinyasi.index')->with('success', 'Data berhasil disimpan');
@@ -186,7 +257,6 @@ class PenerimaanKonsinyasiController extends Controller
                     $jumlah_setor = isset($d['jumlah_setor']) ? (int)$d['jumlah_setor'] : $detail->jumlah_setor;
                     $harga_satuan = isset($d['harga_satuan']) ? (int)$d['harga_satuan'] : $detail->harga_satuan;
                     $jumlah_terjual = max(0, min((int)$d['jumlah_terjual'], $jumlah_setor));
-                    // Ambil subtotal dari form jika ada, jika tidak hitung ulang
                     $subtotal = isset($d['subtotal']) ? (int)$d['subtotal'] : ($jumlah_terjual * $harga_satuan);
                     $detail->update([
                         'jumlah_terjual' => $jumlah_terjual,
@@ -203,6 +273,83 @@ class PenerimaanKonsinyasiController extends Controller
                 'total_terima' => $request->total_terima,
                 'bukti' => $header->bukti,
             ]);
+
+            // --- Hapus jurnal lama ---
+            $jurnalLama = \App\Models\JurnalUmum::where('nomor_bukti', $header->no_penerimaankonsinyasi)->first();
+            if ($jurnalLama) {
+                \App\Models\JurnalDetail::where('no_jurnal', $jurnalLama->no_jurnal)->delete();
+                $jurnalLama->delete();
+            }
+
+            // --- Hitung ulang total HPP ---
+            $details = PenerimaanKonsinyasiDetail::where('no_penerimaankonsinyasi', $header->no_penerimaankonsinyasi)->get();
+            $total_hpp = 0;
+            foreach ($details as $d) {
+                $qtyTerjual = $d->jumlah_terjual;
+                $kode_produk = $d->kode_produk;
+                $kode_lokasi = '1';
+                $kartuKeluar = DB::table('t_kartupersproduk')
+                    ->where('kode_produk', $kode_produk)
+                    ->where('lokasi', $kode_lokasi)
+                    ->where('keluar', '>', 0)
+                    ->where('no_transaksi', $header->no_konsinyasikeluar)
+                    ->get();
+                foreach ($kartuKeluar as $k) {
+                    $total_hpp += ($k->keluar * $k->hpp);
+                }
+            }
+
+            // --- Buat ulang jurnal ---
+            $no_jurnal = JurnalHelper::generateNoJurnal();
+            $tanggal = $header->tanggal_terima;
+            $nomor_bukti = $header->no_penerimaankonsinyasi;
+            $keterangan = 'Penjualan konsinyasi keluar ' . $header->no_penerimaankonsinyasi;
+
+            $jurnal = \App\Models\JurnalUmum::create([
+                'no_jurnal' => $no_jurnal,
+                'tanggal' => $tanggal,
+                'keterangan' => $keterangan,
+                'nomor_bukti' => $nomor_bukti,
+            ]);
+
+            $kode_akun_kas = JurnalHelper::getKodeAkun('kas_bank');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_kas,
+                'debit' => $header->total_terima,
+                'kredit' => 0,
+                'keterangan' => 'Penerimaan penjualan konsinyasi keluar'
+            ]);
+            $kode_akun_penjualan = JurnalHelper::getKodeAkun('penjualan');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_penjualan,
+                'debit' => 0,
+                'kredit' => $header->total_terima,
+                'keterangan' => 'Penjualan konsinyasi keluar'
+            ]);
+            $kode_akun_hpp = JurnalHelper::getKodeAkun('hpp');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_hpp,
+                'debit' => $total_hpp,
+                'kredit' => 0,
+                'keterangan' => 'Harga pokok penjualan konsinyasi keluar'
+            ]);
+            $kode_akun_persediaan = JurnalHelper::getKodeAkun('persediaan_jadi');
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $kode_akun_persediaan,
+                'debit' => 0,
+                'kredit' => $total_hpp,
+                'keterangan' => 'Persediaan keluar penjualan konsinyasi'
+            ]);
+            // --- End jurnal ulang ---
+
             DB::commit();
             return redirect()->route('penerimaankonsinyasi.index')->with('success', 'Data berhasil diupdate');
         } catch (\Exception $e) {
@@ -218,6 +365,12 @@ class PenerimaanKonsinyasiController extends Controller
             $header = PenerimaanKonsinyasi::findOrFail($id);
             // Hapus detail penerimaan konsinyasi
             PenerimaanKonsinyasiDetail::where('no_penerimaankonsinyasi', $header->no_penerimaankonsinyasi)->delete();
+
+             $jurnalLama = \App\Models\JurnalUmum::where('nomor_bukti', $header->no_penerimaankonsinyasi)->first();
+            if ($jurnalLama) {
+                \App\Models\JurnalDetail::where('no_jurnal', $jurnalLama->no_jurnal)->delete();
+                $jurnalLama->delete();
+            }
 
             // Cari dan hapus retur consignee yang terhubung, hanya yang input dari create_returterima (alasan semua detailnya 'Tidak Terjual')
             $returConsignees = \App\Models\ReturConsignee::where('no_konsinyasikeluar', $header->no_konsinyasikeluar)->get();

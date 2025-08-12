@@ -164,6 +164,71 @@ class KonsinyasiKeluarController extends Controller
                     'harga_setor' => $prod['harga_setor'],
                     'subtotal' => $prod['jumlah_setor'] * $prod['harga_setor']
                 ]);
+
+                // --- Tambahan: Catat keluar di kartu stok produk (FIFO) ---
+                $kode_produk = $prod['kode_produk'];
+                $qtyKeluar = $prod['jumlah_setor'];
+                $tanggal_setor = $request->tanggal_setor;
+                $no_konsinyasikeluar = $request->kode_setor;
+                $kode_lokasi = '1'; // Ganti dengan kode lokasi Gudang Anda jika berbeda
+
+                // FIFO: Ambil batch masuk tertua, split insert jika perlu
+                $qtySisa = $qtyKeluar;
+                $batches = DB::table('t_kartupersproduk')
+                    ->where('kode_produk', $kode_produk)
+                    ->where('lokasi', $kode_lokasi)
+                    ->where('masuk', '>', 0)
+                    ->orderBy('tanggal', 'asc')
+                    ->orderBy('id', 'asc')
+                    ->get();
+
+                foreach ($batches as $batch) {
+                    // Hitung sisa batch: masuk - keluar untuk batch ini
+                    $keluarBatch = DB::table('t_kartupersproduk')
+                        ->where('kode_produk', $kode_produk)
+                        ->where('lokasi', $kode_lokasi)
+                        ->where('tanggal', '>=', $batch->tanggal)
+                        ->where('id', '>=', $batch->id)
+                        ->where('masuk', 0)
+                        ->sum('keluar');
+                    $sisaBatch = $batch->masuk - $keluarBatch;
+                    if ($sisaBatch <= 0) continue;
+                    $ambil = min($qtySisa, $sisaBatch);
+                    $hppBatch = property_exists($batch, 'hpp') ? $batch->hpp : (isset($batch->hpp) ? $batch->hpp : 0);
+                    $satuan = property_exists($batch, 'satuan') ? $batch->satuan : (isset($batch->satuan) ? $batch->satuan : null);
+                    $tanggal_exp = property_exists($batch, 'tanggal_exp') ? $batch->tanggal_exp : (isset($batch->tanggal_exp) ? $batch->tanggal_exp : null);
+
+                    DB::table('t_kartupersproduk')->insert([
+                        'tanggal' => $tanggal_setor,
+                        'kode_produk' => $kode_produk,
+                        'masuk' => 0,
+                        'keluar' => $ambil,
+                        'hpp' => $hppBatch,
+                        'lokasi' => $kode_lokasi, // Simpan kode lokasi
+                        'keterangan' => 'Konsinyasi keluar',
+                        'no_transaksi' => $no_konsinyasikeluar,
+                        'satuan' => $satuan,
+                        'tanggal_exp' => $tanggal_exp
+                    ]);
+                    $qtySisa -= $ambil;
+                    if ($qtySisa <= 0) break;
+                }
+                if ($qtySisa > 0) {
+                    // Jika stok batch tidak cukup, tetap insert keluar dengan hpp 0 (atau bisa error)
+                    DB::table('t_kartupersproduk')->insert([
+                        'tanggal' => $tanggal_setor,
+                        'kode_produk' => $kode_produk,
+                        'masuk' => 0,
+                        'keluar' => $qtySisa,
+                        'hpp' => 0,
+                        'lokasi' => $kode_lokasi,
+                        'keterangan' => 'Konsinyasi keluar (stok minus)',
+                        'no_transaksi' => $no_konsinyasikeluar,
+                        'satuan' => $prod['satuan'],
+                        'tanggal_exp' => null
+                    ]);
+                }
+                // --- End Tambahan ---
             }
             DB::commit();
             return redirect()->route('konsinyasikeluar.index')->with('success', 'Data berhasil disimpan');

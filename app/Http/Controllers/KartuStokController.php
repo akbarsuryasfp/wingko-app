@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Kartustok;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class KartuStokController extends Controller
 {
@@ -59,7 +60,12 @@ class KartuStokController extends Controller
     {
         $produkList = \DB::table('t_produk')->get();
         $kode_produk = $request->kode_produk;
-        $lokasi = $request->lokasi;
+
+        // Ambil lokasi dari tabel t_lokasi
+        $lokasiList = \DB::table('t_lokasi')->pluck('nama_lokasi', 'kode_lokasi');
+        $lokasiAktif = session('lokasi_aktif', $lokasiList->first());
+
+        $lokasi = $request->lokasi ?? $lokasiAktif;
 
         $riwayat = [];
         $satuan = '';
@@ -72,15 +78,21 @@ class KartuStokController extends Controller
                 $riwayatQuery->where('lokasi', $lokasi);
             }
 
+            // JOIN ke t_lokasi untuk ambil nama_lokasi
             $riwayat = $riwayatQuery
+                ->leftJoin('t_lokasi', 't_kartupersproduk.lokasi', '=', 't_lokasi.kode_lokasi')
+                ->select(
+                    't_kartupersproduk.*',
+                    't_lokasi.nama_lokasi'
+                )
                 ->orderBy('tanggal', 'asc')
-                ->orderBy('id', 'asc')
+                ->orderBy('t_kartupersproduk.id', 'asc')
                 ->get();
 
             $satuan = DB::table('t_produk')->where('kode_produk', $kode_produk)->value('satuan');
         }
 
-        return view('kartustok.produk', compact('produkList', 'riwayat', 'satuan'));
+        return view('kartustok.produk', compact('produkList', 'riwayat', 'satuan', 'lokasiList', 'lokasiAktif'));
     }
 
     // GABUNGAN: getKartuPersProduk, tambahkan 'satuan' ke select
@@ -88,22 +100,24 @@ class KartuStokController extends Controller
     {
         $lokasi = $request->get('lokasi');
         $query = DB::table('t_kartupersproduk')
+            ->leftJoin('t_lokasi', 't_kartupersproduk.lokasi', '=', 't_lokasi.kode_lokasi')
             ->select(
-                'no_transaksi',
-                'tanggal',
-                'masuk',
-                'keluar',
-                'hpp',
-                'satuan', // pastikan field satuan tetap ada
-                'keterangan',
-                'tanggal_exp',
-                'lokasi'
+                't_kartupersproduk.no_transaksi',
+                't_kartupersproduk.tanggal',
+                't_kartupersproduk.masuk',
+                't_kartupersproduk.keluar',
+                't_kartupersproduk.hpp',
+                't_kartupersproduk.satuan',
+                't_kartupersproduk.keterangan',
+                't_kartupersproduk.tanggal_exp',
+                't_kartupersproduk.lokasi',
+                't_lokasi.nama_lokasi'
             )
-            ->where('kode_produk', $kode_produk);
+            ->where('t_kartupersproduk.kode_produk', $kode_produk);
         if ($lokasi) {
-            $query->where('lokasi', $lokasi);
+            $query->where('t_kartupersproduk.lokasi', $lokasi);
         }
-        $data = $query->orderBy('tanggal')->get();
+        $data = $query->orderBy('t_kartupersproduk.tanggal')->get();
 
         return response()->json($data);
     }
@@ -161,16 +175,8 @@ class KartuStokController extends Controller
     }
 
 
-    public function getStokAkhirProduk($kode_produk)
-    {
-        $stok = \DB::table('t_kartupersproduk')
-            ->where('kode_produk', $kode_produk)
-            ->selectRaw('SUM(masuk) - SUM(keluar) as stok')
-            ->value('stok');
-        return response()->json(['stok' => $stok ?? 0]);
-    }
-  
-    public function laporanBahanPdf()
+
+    public function laporanBahanPdf(Request $request)
     {
         $bahanList = \DB::table('t_bahan')->select('kode_bahan','nama_bahan','satuan','stokmin')->get();
         $tanggal = date('Y-m-d');
@@ -185,29 +191,40 @@ class KartuStokController extends Controller
             $bahan->stok_akhir = $stokAkhirList->where('kode_bahan', $bahan->kode_bahan)->values();
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_bahan_pdf', compact('bahanList', 'tanggal'))
+        return Pdf::loadView('kartustok.laporan_bahan_pdf', compact('bahanList'))
+            ->setPaper('a4', 'landscape')
+            ->download('Laporan_Stok_Bahan_Baku.pdf');
+ 
+    }
+    public function laporanProdukPdf()
+    {
+        $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();
+        $tanggal = date('Y-m-d');
+
+        $stokAkhirList = \DB::table('t_kartupersproduk')
+            ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+            ->groupBy('kode_produk', 'lokasi', 'hpp')
+            ->havingRaw('stok > 0')
+            ->get();
+
+        foreach ($produkList as $produk) {
+            $produk->stok_akhir = $stokAkhirList->where('kode_produk', $produk->kode_produk)->values();
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_produk_pdf', compact('produkList', 'tanggal'))
             ->setPaper('a4', 'landscape');
 
-        return $pdf->stream('Laporan_Stok_Bahan_Baku.pdf');
-    }
-public function laporanProdukPdf()
-{
-    $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();
-    $tanggal = date('Y-m-d');
-
-    $stokAkhirList = \DB::table('t_kartupersproduk')
-        ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
-        ->groupBy('kode_produk', 'lokasi', 'hpp')
-        ->havingRaw('stok > 0')
-        ->get();
-
-    foreach ($produkList as $produk) {
-        $produk->stok_akhir = $stokAkhirList->where('kode_produk', $produk->kode_produk)->values();
+        return $pdf->stream('Laporan_Stok_Akhir_Produk.pdf');
     }
 
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_produk_pdf', compact('produkList', 'tanggal'))
-        ->setPaper('a4', 'landscape');
-
-    return $pdf->stream('Laporan_Stok_Akhir_Produk.pdf');
-}
+    public function getStokAkhirProduk($kode_produk)
+    {
+        $stok = \DB::table('t_kartupersproduk')
+            ->where('kode_produk', $kode_produk)
+            ->selectRaw('SUM(masuk) - SUM(keluar) as stok')
+            ->value('stok');
+        return response()->json(['stok' => $stok ?? 0]);
+    }
+  
+    
 }
