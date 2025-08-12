@@ -13,32 +13,56 @@ use Carbon\Carbon;
 
 class OrderBeliController extends Controller
 {
-public function index()
+
+public function index(Request $request)
 {
-    $orders = \App\Models\OrderBeli::with('supplier')
-        ->when(request('search'), function($query) {
-            $query->where('no_order_beli', 'like', '%'.request('search').'%')
-                  ->orWhereHas('supplier', function($q) {
-                      $q->where('nama_supplier', 'like', '%'.request('search').'%');
+    // Set default periode jika belum ada di request
+    if (!$request->filled('tanggal_mulai') || !$request->filled('tanggal_selesai')) {
+        $now = \Carbon\Carbon::now();
+        $tanggal_mulai = $now->copy()->startOfMonth()->format('Y-m-d');
+        $tanggal_selesai = $now->copy()->endOfMonth()->format('Y-m-d');
+        // Redirect dengan parameter default
+        return redirect()->route('orderbeli.index', array_merge(
+            $request->all(),
+            [
+                'tanggal_mulai' => $tanggal_mulai,
+                'tanggal_selesai' => $tanggal_selesai
+            ]
+        ));
+    }
+
+    // Siapkan query builder, JANGAN get() dulu!
+    $query = \App\Models\OrderBeli::with('supplier')
+        ->when($request->search, function($query) use ($request) {
+            $query->where('no_order_beli', 'like', '%'.$request->search.'%')
+                  ->orWhereHas('supplier', function($q) use ($request) {
+                      $q->where('nama_supplier', 'like', '%'.$request->search.'%');
                   });
         })
-        ->when(request('tanggal_mulai') && request('tanggal_selesai'), function($query) {
+        ->when($request->tanggal_mulai && $request->tanggal_selesai, function($query) use ($request) {
             $query->whereBetween('tanggal_order', [
-                request('tanggal_mulai'),
-                request('tanggal_selesai')
+                $request->tanggal_mulai,
+                $request->tanggal_selesai
             ]);
         })
-        ->when(request('status'), function($query) {
-            if (request('status') === 'Menunggu Persetujuan') {
+        ->when($request->status, function($query) use ($request) {
+            if ($request->status === 'Menunggu Persetujuan') {
                 $query->whereNull('status');
             } else {
-                $query->where('status', request('status'));
+                $query->where('status', $request->status);
             }
-        })
-        ->orderBy('no_order_beli', 'asc')
-        ->get();
+        });
 
-    // Rest of your existing code for processing orders...
+    // Ambil perPage dari request, default 15
+    $perPage = $request->input('per_page', 15);
+
+    if ($perPage == 'all') {
+        $orders = $query->orderBy('tanggal_order', 'desc')->get();
+    } else {
+        $orders = $query->orderBy('tanggal_order', 'desc')->paginate($perPage)->withQueryString();
+    }
+
+    // Proses detail dan status setelah paginate
     foreach ($orders as $order) {
         $order->details = \DB::table('t_order_detail')
             ->join('t_bahan', 't_order_detail.kode_bahan', '=', 't_bahan.kode_bahan')

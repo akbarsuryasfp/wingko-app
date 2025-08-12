@@ -55,7 +55,13 @@ public function index(Request $request)
             });
         }
 
-        $hutangs = $query->get();
+        $perPage = $request->input('per_page', 15);
+
+        if ($perPage == 'all') {
+            $hutangs = $query->orderBy('t_utang.no_utang', 'desc')->get();
+        } else {
+            $hutangs = $query->orderBy('t_utang.no_utang', 'desc')->paginate($perPage)->withQueryString();
+        }
     } catch (\Exception $e) {
         dd($e->getMessage());
     }

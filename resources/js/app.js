@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var sidebar = document.getElementById('sidebar');
     var sidebarToggle = document.getElementById('sidebarToggle');
     var rootLayout = document.getElementById('root-layout');
+    var sidebarOverlay = document.querySelector('.sidebar-overlay');
 
     // Ambil state dari localStorage (untuk desktop)
     var sidebarState = localStorage.getItem('sidebarState') || 'expanded';
@@ -40,8 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 sidebar.classList.toggle('active');
-                var overlay = document.querySelector('.sidebar-overlay');
-                if (overlay) overlay.classList.toggle('active');
+                if (sidebarOverlay) sidebarOverlay.classList.toggle('active');
             }
         };
     }
@@ -54,13 +54,56 @@ document.addEventListener('DOMContentLoaded', function() {
         sidebar.classList.toggle('active');
     };
 
-    var overlay = document.querySelector('.sidebar-overlay');
-    if (overlay) {
-        overlay.onclick = function() {
+    if (sidebarOverlay) {
+        sidebarOverlay.onclick = function() {
             sidebar.classList.remove('active');
-            overlay.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
         };
     }
+
+    // Tutup sidebar mobile saat klik link di dalam sidebar, kecuali submenu-header
+    document.querySelectorAll('#sidebar .nav-link').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            // Jika klik submenu-header, jangan tutup sidebar
+            if (link.classList.contains('submenu-header')) {
+                return;
+            }
+            if (window.innerWidth <= 576) {
+                sidebar.classList.remove('active');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            }
+        });
+    });
+
+    // Pastikan toggleSubMenu tetap bisa dipanggil di mobile
+    window.toggleSubMenu = function(id) {
+        var clickedUl = document.getElementById(id);
+        if (!clickedUl) return;
+
+        // Cari parent <li> dari submenu yang diklik
+        var parentLi = clickedUl.parentElement;
+        // Cari parent <ul> dari parent <li>
+        var parentUl = parentLi ? parentLi.parentElement : null;
+        if (!parentUl) return;
+
+        // Tutup semua submenu yang satu level di dalam parent UL,
+        // tapi JANGAN tutup parentUl itu sendiri!
+        parentUl.querySelectorAll(':scope > li > ul[id^="submenu-"]').forEach(function(ul) {
+            if (ul !== clickedUl) ul.style.display = 'none';
+        });
+
+        // Toggle submenu yang diklik
+        if (clickedUl.style.display === 'none' || clickedUl.style.display === '') {
+            clickedUl.style.display = 'block';
+        } else {
+            clickedUl.style.display = 'none';
+        }
+        // Tambahkan/tanggalkan class submenu-active pada header
+        var header = parentUl.querySelector('.submenu-header[onclick*="' + id + '"]');
+        if (header) {
+            header.classList.toggle('submenu-active', clickedUl.style.display === 'block');
+        }
+    };
 
        document.querySelectorAll('.btn-toggle-detail').forEach(function(btn) {
         btn.addEventListener('click', function() {

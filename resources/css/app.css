@@ -7,11 +7,13 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    overflow: hidden; /* Cegah scroll global */
 }
 
 #root-layout {
@@ -25,6 +27,7 @@ html, body {
     width: 100vw;
     min-width: 0;
     min-height: 0;
+    overflow: hidden; /* Cegah scroll pada root layout */
 }
 
 #topbar-fixed {
@@ -37,9 +40,12 @@ z-index: 300;
     grid-area: sidebar;
     background: #f8f9fa;
     overflow-y: auto;
+    overflow-x: hidden;
     transition: width 0.2s;
     z-index: 100;
     top: 64px;
+    height: 100%;
+    max-height: 100vh;
 }
 
 #sidebar.collapsed {
@@ -57,9 +63,12 @@ z-index: 300;
 .main-content {
     grid-area: main;
     overflow-y: auto;
+    overflow-x: hidden;
     background: #fff;
     padding: 24px;
     min-width: 0;
+    height: calc(100vh - 56px);
+    max-height: calc(100vh - 56px);
 }
 
 /* Responsive navbar brand font */
@@ -67,6 +76,14 @@ z-index: 300;
     font-size: 1.2rem;
 }
 @media (max-width: 576px) {
+    .main-content table {
+        width: 100%;
+        min-width: 600px;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
     .navbar-brand {
         font-size: 1rem;
     }
@@ -113,6 +130,7 @@ z-index: 300;
         width: 100vw;
         min-width: 0;
         min-height: 0;
+        overflow: hidden;
     }
     #topbar-fixed {
         grid-area: topbar;
@@ -130,12 +148,13 @@ z-index: 300;
         height: calc(100vh - 56px);
         background: #f8f9fa;
         box-shadow: 2px 0 8px rgba(0,0,0,0.08);
-        z-index: 200;
+        z-index: 201;
         transform: translateX(-100%);
         transition: transform 0.2s;
         display: block !important;
         overflow-y: auto;
         overflow-x: hidden;
+        max-height: calc(100vh - 56px);
     }
     #sidebar.active {
         transform: translateX(0);
@@ -156,8 +175,12 @@ z-index: 300;
     }
     .main-content {
         grid-area: main;
-        padding: 12px;
+        padding: 18px 10px 18px 10px;
         margin-top: 0;
         min-width: 0;
+        height: 100%;
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 }

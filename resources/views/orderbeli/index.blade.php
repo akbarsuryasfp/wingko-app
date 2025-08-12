@@ -33,11 +33,11 @@
             {{-- Header --}}
             <div class="row align-items-center mb-2">
                 <div class="col-md-6 col-12 text-md-start text-center">
-                    <h4 class="mb-0 fw-semibold">Daftar Permintaan Pembelian</h4>
+                    <h4 class="mb-0 fw-semibold">Daftar Order Pembelian</h4>
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
                     <a href="{{ route('orderbeli.create') }}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-circle"></i> Tambah Permintaan Pembelian
+                        <i class="bi bi-plus-circle"></i> Tambah Order Pembelian
                     </a>
                 </div>
             </div>
@@ -70,6 +70,14 @@
             <option value="Diterima Sebagian" {{ request('status') == 'Diterima Sebagian' ? 'selected' : '' }}>Diterima Sebagian</option>
             <option value="Diterima Sepenuhnya" {{ request('status') == 'Diterima Sepenuhnya' ? 'selected' : '' }}>Diterima Sepenuhnya</option>
         </select>
+        <select name="per_page" class="form-select form-select-sm" style="width: 110px;" onchange="this.form.submit()">
+        <option value="10" {{ request('per_page', 15) == 10 ? 'selected' : '' }}>10 / page</option>
+        <option value="20" {{ request('per_page') == 20 ? 'selected' : '' }}>20 / page</option>
+        <option value="30" {{ request('per_page') == 30 ? 'selected' : '' }}>30 / page</option>
+        <option value="40" {{ request('per_page') == 40 ? 'selected' : '' }}>40 / page</option>
+        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / page</option>
+        <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+    </select>
     </form>
 </div>
                 <div class="col-md-4 col-12 text-md-end text-center">
@@ -110,12 +118,15 @@
     </tr>
                     </thead>
                     <tbody>
-                        @forelse($orders as $order)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $order->no_order_beli }}</td>
-                            <td>{{ $order->tanggal_order }}</td>
-                            <td class="text-start">{{ $order->supplier->nama_supplier ?? '-' }}</td>
+    @php
+        $no = (method_exists($orders, 'currentPage') ? ($orders->currentPage() - 1) * $orders->perPage() + 1 : 1);
+    @endphp
+    @forelse($orders as $order)
+    <tr>
+        <td>{{ $no++ }}</td>
+        <td>{{ $order->no_order_beli }}</td>
+        <td>{{ $order->tanggal_order }}</td>
+        <td class="text-start">{{ $order->supplier->nama_supplier ?? '-' }}</td>
 <td class="text-center align-middle">
             <div class="d-inline-flex align-items-center justify-content-center">
                 <span>Rp</span>
@@ -174,11 +185,17 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center">Data tidak tersedia.</td>
+                            <td colspan="10" class="text-center">Data tidak tersedia.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
+</div>
+@if(request('per_page') != 'all')
+<div class="mt-3 d-flex justify-content-center">
+    {{ $orders->withQueryString()->links() }}
+</div>
+@endif
             </div>
         </div>
     </div>

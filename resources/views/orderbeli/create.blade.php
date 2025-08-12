@@ -11,7 +11,7 @@ input[readonly] {
                     </style>
 
 <div class="card-header bg-transparent border-0 text-center py-3">
-    <h4 class="mb-0">Tambah Permintaan Pembelian</h4>
+    <h4 class="mb-0">Tambah Order Pembelian</h4>
 </div>
         
         <div class="card-body">
@@ -206,6 +206,27 @@ input[readonly] {
     .form-control, .form-select {
         font-size: 1rem;
     }
+
+    /* Warna tab aktif dan tidak aktif pada modal kebutuhan bahan */
+    #prediksiModal .nav-tabs .nav-link {
+        background: linear-gradient(90deg, #f3f4f6 0%, #e0e7ff 100%);
+        color: #1e293b;
+        border: 1px solid #dbeafe;
+        margin-right: 2px;
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+    }
+    #prediksiModal .nav-tabs .nav-link.active {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+        color: #fff !important;
+        border-color: #2563eb #2563eb #fff #2563eb;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    #prediksiModal .nav-tabs .nav-link:focus,
+    #prediksiModal .nav-tabs .nav-link:hover {
+        background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%);
+        color: #fff;
+    }
 </style>
 
 <!-- Modal Kekurangan Bahan -->
@@ -230,7 +251,7 @@ input[readonly] {
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="prediksiModalLabel">Prediksi Kebutuhan Bahan</h5>
+        <h5 class="modal-title" id="prediksiModalLabel">Kebutuhan Bahan</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">

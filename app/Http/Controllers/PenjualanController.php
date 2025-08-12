@@ -119,8 +119,10 @@ class PenjualanController extends Controller
         // Gabungkan
         $produk = $produkSendiri->concat($produkKonsinyasi);
         $jenis_penjualan = $request->get('jenis_penjualan', 'langsung');
+        $lokasi_aktif = $request->lokasi ?? session('lokasi_aktif') ?? 'Gudang'; // fallback Gudang jika tidak ada
+        $nama_lokasi = DB::table('t_lokasi')->where('kode_lokasi', (int)$lokasi_aktif)->value('nama_lokasi');
 
-        return view('penjualan.create', compact('no_jual', 'pelanggan', 'produk', 'jenis_penjualan'));
+        return view('penjualan.create', compact('no_jual', 'pelanggan', 'produk', 'jenis_penjualan', 'lokasi_aktif'));
     }
 
     public function store(Request $request)
@@ -131,6 +133,13 @@ class PenjualanController extends Controller
 
         // Mapping agar field 'total' selalu ada
         $input = $request->all();
+
+        // Gunakan lokasi dari session jika tidak ada di request
+        if (empty($input['lokasi'])) {
+            $input['lokasi'] = session('lokasi_aktif');
+            $request->merge(['lokasi' => $input['lokasi']]);
+        }
+
         \Log::debug('PenjualanController@store - input sebelum mapping', $input);
         // Bersihkan format Rp dan titik pada field total_harga, diskon, total_jual, total_bayar, kembalian, piutang
         foreach (['total_harga', 'diskon', 'total_jual', 'total_bayar', 'kembalian', 'piutang', 'total'] as $field) {
@@ -197,11 +206,14 @@ class PenjualanController extends Controller
                     'piutang' => $request->piutang ?? 0,
                     'status_pembayaran' => $request->status_pembayaran,
                     'keterangan' => $request->keterangan,
+                    'lokasi' => $request->lokasi, // pastikan field ini ikut di-insert
                 ]);
 
                 \Log::debug('PenjualanController@store - setelah insert t_penjualan', ['no_jual' => $request->no_jual]);
                 $details = json_decode($request->detail_json, true);
-                \Log::debug('PenjualanController@store - detail_json', $details);
+                $lokasi_aktif = $request->lokasi ?? session('lokasi_aktif') ?? 'Gudang'; // fallback Gudang jika tidak ada
+                $nama_lokasi = DB::table('t_lokasi')->where('kode_lokasi', (int)$lokasi_aktif)->value('nama_lokasi');
+
                 foreach ($details as $i => $detail) {
                     // Deteksi jenis produk (sendiri/konsinyasi) jika belum ada di detail
                     $jenis = isset($detail['jenis']) ? $detail['jenis'] : null;
@@ -230,7 +242,6 @@ class PenjualanController extends Controller
 
                     \Log::debug('PenjualanController@store - setelah insert t_penjualan_detail', ['no_jual' => $request->no_jual, 'detail' => $detail]);
                     if ($jenis === 'sendiri') {
-                        
                         // FIFO HPP: Ambil batch masuk tertua, split insert jika perlu
                         $qtyKeluar = $detail['jumlah'];
                         $kode_produk = $detail['kode_produk'];
@@ -240,7 +251,7 @@ class PenjualanController extends Controller
                         // Ambil batch masuk (stok masuk, sisa > 0), urutkan dari paling awal
                         $batches = DB::table('t_kartupersproduk')
                             ->where('kode_produk', $kode_produk)
-                            ->where('lokasi', 'Gudang')
+                            ->where('lokasi', $lokasi_aktif) // gunakan lokasi aktif
                             ->where('masuk', '>', 0)
                             ->orderBy('tanggal', 'asc')
                             ->orderBy('id', 'asc')
@@ -250,7 +261,7 @@ class PenjualanController extends Controller
                             // Hitung sisa batch: masuk - keluar untuk batch ini
                             $keluarBatch = DB::table('t_kartupersproduk')
                                 ->where('kode_produk', $kode_produk)
-                                ->where('lokasi', 'Gudang')
+                                ->where('lokasi', $lokasi_aktif)
                                 ->where('tanggal', '>=', $batch->tanggal)
                                 ->where('id', '>=', $batch->id)
                                 ->where('masuk', 0)
@@ -258,17 +269,21 @@ class PenjualanController extends Controller
                             $sisaBatch = $batch->masuk - $keluarBatch;
                             if ($sisaBatch <= 0) continue;
                             $ambil = min($qtySisa, $sisaBatch);
-                            // Pastikan field hpp ada pada batch, jika tidak ada fallback ke 0
                             $hppBatch = property_exists($batch, 'hpp') ? $batch->hpp : (isset($batch->hpp) ? $batch->hpp : 0);
+                            // Ambil satuan dan tanggal_exp dari batch
+                            $satuan = property_exists($batch, 'satuan') ? $batch->satuan : (isset($batch->satuan) ? $batch->satuan : null);
+                            $tanggal_exp = property_exists($batch, 'tanggal_exp') ? $batch->tanggal_exp : (isset($batch->tanggal_exp) ? $batch->tanggal_exp : null);
                             DB::table('t_kartupersproduk')->insert([
                                 'tanggal' => $tanggal_jual,
                                 'kode_produk' => $kode_produk,
                                 'masuk' => 0,
                                 'keluar' => $ambil,
                                 'hpp' => $hppBatch,
-                                'lokasi' => 'Gudang',
-                                'keterangan' => 'Penjualan',
-                                'no_transaksi' => $no_jual
+                                'lokasi' => $lokasi_aktif, // simpan lokasi aktif
+                                'keterangan' => 'Penjualan di ' . ($nama_lokasi ?? $lokasi_aktif),
+                                'no_transaksi' => $no_jual,
+                                'satuan' => $satuan,
+                                'tanggal_exp' => $tanggal_exp
                             ]);
                             $logDetail[] = ['batch_id' => $batch->id, 'keluar' => $ambil, 'hpp' => $hppBatch];
                             $qtySisa -= $ambil;
@@ -282,8 +297,8 @@ class PenjualanController extends Controller
                                 'masuk' => 0,
                                 'keluar' => $qtySisa,
                                 'hpp' => 0,
-                                'lokasi' => 'Gudang',
-                                'keterangan' => 'Penjualan (stok minus)',
+                                'lokasi' => $lokasi_aktif, // simpan lokasi aktif
+                                'keterangan' => 'Penjualan (stok minus) di ' . ($nama_lokasi ?? $lokasi_aktif),
                                 'no_transaksi' => $no_jual
                             ]);
                             $logDetail[] = ['batch_id' => null, 'keluar' => $qtySisa, 'hpp' => 0];
@@ -369,6 +384,139 @@ class PenjualanController extends Controller
                     ]);
                     \Log::debug('PenjualanController@store - setelah insert t_piutang', ['no_jual' => $request->no_jual]);
                 }
+                // Penjurnalan Penjualan
+                $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
+                $tanggal = $request->tanggal_jual;
+                $nomor_bukti = $request->no_jual;
+                $keterangan = 'Penjualan ' . $request->no_jual;
+
+                // Hapus jurnal lama jika ada (antisipasi double entry)
+                $jurnalLama = \App\Models\JurnalUmum::where('nomor_bukti', $nomor_bukti)->first();
+                if ($jurnalLama) {
+                    \App\Models\JurnalDetail::where('no_jurnal', $jurnalLama->no_jurnal)->delete();
+                    $jurnalLama->delete();
+                }
+
+                $jurnal = \App\Models\JurnalUmum::create([
+                    'no_jurnal' => $no_jurnal,
+                    'tanggal' => $tanggal,
+                    'keterangan' => $keterangan,
+                    'nomor_bukti' => $nomor_bukti,
+                ]);
+
+                // Jurnal utama penjualan (khusus barang sendiri)
+                $total_jual_sendiri = 0;
+                $total_bayar_sendiri = 0;
+                $total_piutang_sendiri = 0;
+                $details = json_decode($request->detail_json, true);
+                foreach ($details as $detail) {
+                    $isProdukSendiri = \DB::table('t_produk')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isProdukSendiri) {
+                        $subtotal = isset($detail['subtotal']) ? $detail['subtotal'] : 0;
+                        $total_jual_sendiri += $subtotal;
+                        $total_bayar_sendiri += $request->total_bayar ?? 0; // jika ingin split, sesuaikan
+                        $total_piutang_sendiri += $request->piutang ?? 0;   // jika ingin split, sesuaikan
+                    }
+                }
+                $kode_akun_kas = \App\Helpers\JurnalHelper::getKodeAkun('kas_bank');
+                $kode_akun_piutang = \App\Helpers\JurnalHelper::getKodeAkun('piutang_usaha');
+                $kode_akun_penjualan = \App\Helpers\JurnalHelper::getKodeAkun('penjualan');
+
+                if ($total_bayar_sendiri > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_kas,
+                        'debit' => $total_bayar_sendiri,
+                        'kredit' => 0,
+                    ]);
+                }
+                if ($total_piutang_sendiri > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_piutang,
+                        'debit' => $total_piutang_sendiri,
+                        'kredit' => 0,
+                    ]);
+                }
+                if ($total_jual_sendiri > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_penjualan,
+                        'debit' => 0,
+                        'kredit' => $total_jual_sendiri,
+                    ]);
+                }
+
+                // Jurnal HPP & Persediaan Barang Jadi (khusus barang sendiri)
+                $kode_akun_hpp = \App\Helpers\JurnalHelper::getKodeAkun('hpp');
+                $kode_akun_persediaan = \App\Helpers\JurnalHelper::getKodeAkun('persediaan_jadi');
+                $total_hpp = 0;
+                foreach ($details as $detail) {
+                    $isProdukSendiri = \DB::table('t_produk')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isProdukSendiri) {
+                        // Ambil total HPP dari kartu persediaan produk keluar untuk transaksi ini
+                        $hppKeluar = \DB::table('t_kartupersproduk')
+                            ->where('no_transaksi', $request->no_jual)
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->where('keluar', '>', 0)
+                            ->sum(\DB::raw('hpp * keluar'));
+                        $total_hpp += $hppKeluar;
+                    }
+                }
+                if ($total_hpp > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_hpp,
+                        'debit' => $total_hpp,
+                        'kredit' => 0,
+                    ]);
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_persediaan,
+                        'debit' => 0,
+                        'kredit' => $total_hpp,
+                    ]);
+                }
+
+                // Jurnal Penjualan Barang Konsinyasi (hanya komisi)
+                $kode_akun_komisi_konsinyasi = \App\Helpers\JurnalHelper::getKodeAkun('pendapatan_lain');
+                foreach ($details as $detail) {
+                    $isKonsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isKonsinyasi) {
+                        $komisi_per_unit = DB::table('t_konsinyasimasuk_detail')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->orderByDesc('no_detailkonsinyasimasuk')
+                            ->value('komisi');
+                        $komisi_per_unit = $komisi_per_unit ?? 0;
+                        $jumlah_terjual = $detail['jumlah'] ?? 0;
+                        $komisi_total = $komisi_per_unit * $jumlah_terjual;
+
+                        if ($komisi_total > 0) {
+                            // Debit Kas/Bank (jumlah komisi yang diterima)
+                            \App\Models\JurnalDetail::create([
+                                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                                'no_jurnal' => $no_jurnal,
+                                'kode_akun' => $kode_akun_kas,
+                                'debit' => $komisi_total,
+                                'kredit' => 0,
+                            ]);
+                            // Kredit Pendapatan Komisi Konsinyasi
+                            \App\Models\JurnalDetail::create([
+                                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                                'no_jurnal' => $no_jurnal,
+                                'kode_akun' => $kode_akun_komisi_konsinyasi,
+                                'debit' => 0,
+                                'kredit' => $komisi_total,
+                            ]);
+                        }
+                    }
+                }
+
                 \Log::debug('PenjualanController@store - END TRANSACTION', ['no_jual' => $request->no_jual]);
             });
 
@@ -463,6 +611,60 @@ class PenjualanController extends Controller
 
         try {
             DB::transaction(function () use ($request, $no_jual, $status_pembayaran, $jenis_penjualan) {
+                // Hapus jurnal lama
+                $jurnalLama = \App\Models\JurnalUmum::where('nomor_bukti', $no_jual)->first();
+                if ($jurnalLama) {
+                    \App\Models\JurnalDetail::where('no_jurnal', $jurnalLama->no_jurnal)->delete();
+                    $jurnalLama->delete();
+                }
+
+                // Buat ulang jurnal
+                $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
+                $tanggal = $request->tanggal_jual;
+                $nomor_bukti = $no_jual;
+                $keterangan = 'Penjualan ' . $no_jual;
+
+                $jurnal = \App\Models\JurnalUmum::create([
+                    'no_jurnal' => $no_jurnal,
+                    'tanggal' => $tanggal,
+                    'keterangan' => $keterangan,
+                    'nomor_bukti' => $nomor_bukti,
+                ]);
+
+                $total_jual = $request->total_jual ?? 0;
+                $total_bayar = $request->total_bayar ?? 0;
+                $piutang = $request->piutang ?? 0;
+                $kode_akun_kas = \App\Helpers\JurnalHelper::getKodeAkun('kas_bank');
+                $kode_akun_piutang = \App\Helpers\JurnalHelper::getKodeAkun('piutang_usaha');
+                $kode_akun_penjualan = \App\Helpers\JurnalHelper::getKodeAkun('penjualan');
+
+                if ($total_bayar > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_kas,
+                        'debit' => $total_bayar,
+                        'kredit' => 0,
+                    ]);
+                }
+                if ($piutang > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_piutang,
+                        'debit' => $piutang,
+                        'kredit' => 0,
+                    ]);
+                }
+                if ($total_jual > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_penjualan,
+                        'debit' => 0,
+                        'kredit' => $total_jual,
+                    ]);
+                }
                 \Log::info('PenjualanController@update - sebelum update t_penjualan', [
                     'no_jual' => $no_jual,
                     'data' => [
@@ -500,6 +702,7 @@ class PenjualanController extends Controller
                 foreach ($details as $i => $detail) {
                     // Logic sama persis dengan edit.blade: jumlah bisa diedit, diskon_satuan tidak boleh lebih besar dari harga_satuan
                     $harga_satuan = isset($detail['harga_satuan']) ? (int)$detail['harga_satuan'] : 0;
+                    $diskon_satuan = isset($detail['diskon_satuan']) ? (int)$detail['diskon_satuan'] : 0;
                     $diskon_satuan = isset($detail['diskon_satuan']) ? (int)$detail['diskon_satuan'] : 0;
                     $jumlah = isset($detail['jumlah']) ? (int)$detail['jumlah'] : 0;
                     if ($diskon_satuan > $harga_satuan) $diskon_satuan = $harga_satuan;
@@ -570,6 +773,21 @@ class PenjualanController extends Controller
                     } else {
                         $nextNumber = 1;
                     }
+                    do {
+                        $no_piutang = 'PI' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+                        $exists = DB::table('t_piutang')->where('no_piutang', $no_piutang)->exists();
+                        $nextNumber++;
+                    } while ($exists);
+                    DB::table('t_piutang')->insert([
+                        'no_piutang' => $no_piutang,
+                        'no_jual' => $request->no_jual,
+                        'kode_pelanggan' => $request->kode_pelanggan,
+                        'total_tagihan' => $request->total,
+                        'total_bayar' => $request->total_bayar ?? 0,
+                        'sisa_piutang' => $request->piutang ?? ($request->total ?? 0),
+                        'status_piutang' => ($request->piutang ?? 0) > 0 ? 'belum lunas' : 'lunas',
+                        'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo ?? null,
+                    ]);
                 }
             });
             \Log::info('PenjualanController@update - sukses', ['no_jual' => $no_jual]);
@@ -581,20 +799,29 @@ class PenjualanController extends Controller
     }
 
     public function destroy($no_jual)
-    {
-        DB::transaction(function () use ($no_jual) {
-            // Hapus piutang terkait sebelum menghapus penjualan
-            DB::table('t_piutang')->where('no_jual', $no_jual)->delete();
+{
+    DB::transaction(function () use ($no_jual) {
+        // Hapus jurnal
+        $jurnalLama = \App\Models\JurnalUmum::where('nomor_bukti', $no_jual)->first();
+        if ($jurnalLama) {
+            \App\Models\JurnalDetail::where('no_jurnal', $jurnalLama->no_jurnal)->delete();
+            $jurnalLama->delete();
+        }
+        // Hapus piutang terkait sebelum menghapus penjualan
+        DB::table('t_piutang')->where('no_jual', $no_jual)->delete();
 
-            // Hapus semua transaksi keluar konsinyasi yang terkait penjualan ini
-            DB::table('t_kartuperskonsinyasi')->where('no_transaksi', $no_jual)->delete();
+        // Hapus semua transaksi keluar konsinyasi yang terkait penjualan ini
+        DB::table('t_kartuperskonsinyasi')->where('no_transaksi', $no_jual)->delete();
 
-            DB::table('t_penjualan_detail')->where('no_jual', $no_jual)->delete();
-            DB::table('t_penjualan')->where('no_jual', $no_jual)->delete();
-        });
+        // Hapus semua transaksi keluar produk sendiri yang terkait penjualan ini
+        DB::table('t_kartupersproduk')->where('no_transaksi', $no_jual)->delete();
 
-        return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil dihapus!');
-    }
+        DB::table('t_penjualan_detail')->where('no_jual', $no_jual)->delete();
+        DB::table('t_penjualan')->where('no_jual', $no_jual)->delete();
+    });
+
+    return redirect()->route('penjualan.index')->with('success', 'Penjualan berhasil dihapus!');
+}
 
     public function show($no_jual)
     {
