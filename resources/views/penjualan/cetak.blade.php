@@ -59,7 +59,7 @@
                 <td>{{ $detail->satuan ?? '-' }}</td>
                 <td>{{ $detail->jumlah }}</td>
                 <td>Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}</td>
-                <td>Rp{{ number_format($detail->diskon_produk ?? $detail->diskon_satuan ?? 0, 0, ',', '.') }}</td>
+                <td>(Rp{{ number_format($detail->diskon_produk ?? $detail->diskon_satuan ?? 0, 0, ',', '.') }})</td>
                 <td>Rp{{ number_format($detail->subtotal, 0, ',', '.') }}</td>
             </tr>
             @endforeach
@@ -75,9 +75,9 @@
             <td class="fw-bold">Diskon</td>
             <td>:
                 @if(isset($penjualan->tipe_diskon) && $penjualan->tipe_diskon == 'persen')
-                    {{ $penjualan->diskon }}%
+                    ({{ $penjualan->diskon }}%)
                 @else
-                    Rp{{ number_format($penjualan->diskon, 0, ',', '.') }}
+                    (Rp{{ number_format($penjualan->diskon, 0, ',', '.') }})
                 @endif
             </td>
         </tr>

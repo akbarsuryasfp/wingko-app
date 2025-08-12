@@ -6,7 +6,12 @@
 <div class="container mt-5 px-3">
     <div class="card shadow-sm">
         <div class="card-body">
-            <h4 class="mb-4">KARTU PERSEDIAAN PRODUK KONSINYASI</h4>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">KARTU PERSEDIAAN PRODUK KONSINYASI</h4>
+                <a href="{{ route('kartuperskonsinyasi.cetak_laporan_pdf') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                    <i class="bi bi-printer"></i> Cetak Laporan
+                </a>
+            </div>
 
             <form method="GET" class="row g-3 mb-4">
                 <div class="col-md-4">

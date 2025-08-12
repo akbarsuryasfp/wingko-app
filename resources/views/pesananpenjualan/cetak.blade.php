@@ -64,7 +64,7 @@
                     <td>{{ isset($d->satuan) && $d->satuan !== '' ? $d->satuan : '-' }}</td>
                     <td>{{ $d->jumlah }}</td>
                     <td>Rp{{ number_format($d->harga_satuan, 0, ',', '.') }}</td>
-                    <td>Rp{{ number_format($d->diskon_produk ?? $d->diskon_satuan ?? 0, 0, ',', '.') }}</td>
+                    <td>(Rp{{ number_format($d->diskon_produk ?? $d->diskon_satuan ?? 0, 0, ',', '.') }})</td>
                     <td>Rp{{ number_format($d->subtotal, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
@@ -78,7 +78,7 @@
         </tr>
         <tr>
             <td class="fw-bold">Uang Muka (DP)</td>
-            <td>: Rp{{ number_format($pesanan->uang_muka ?? 0, 0, ',', '.') }}</td>
+            <td>: (Rp{{ number_format($pesanan->uang_muka ?? 0, 0, ',', '.') }})</td>
         </tr>
         <tr>
             <td class="fw-bold">Sisa Tagihan</td>

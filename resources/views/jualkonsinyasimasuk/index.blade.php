@@ -8,7 +8,7 @@
                     <h4 class="mb-0 fw-semibold">Daftar Penjualan Konsinyasi (Per Produk)</h4>
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0">
-                    <a href="{{ route('jualkonsinyasimasuk.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success btn-icon-square d-inline-flex align-items-center gap-2" style="width: 140px; justify-content: center;">
+                    <a href="{{ route('jualkonsinyasimasuk.cetak_laporan_pdf') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success btn-icon-square d-inline-flex align-items-center gap-2" style="width: 140px; justify-content: center;">
                         <i class="bi bi-printer"></i> Cetak Laporan
                     </a>
                 </div>

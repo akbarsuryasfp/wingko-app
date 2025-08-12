@@ -64,6 +64,7 @@
     box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.2);
   }
 
+
   .dark-mode .nav-link.current-page {
     background-color: rgba(16, 185, 129, 0.2);
   }
@@ -137,6 +138,7 @@
                 @if(auth()->user()->role == 'admin' || auth()->user()->role == 'gudang')
                 <li><a href="/bahan" class="nav-link submenu-item"><i class="bi bi-box"></i>Data Bahan</a></li>
                 <li><a href="/supplier" class="nav-link submenu-item"><i class="bi bi-truck"></i>Data Supplier</a></li>
+
                 <li><a href="/produk" class="nav-link submenu-item"><i class="bi bi-cup-straw"></i>Data Produk</a></li>
                 @endif
                 @if(auth()->user()->role == 'admin' || auth()->user()->role == 'produksi')
@@ -153,7 +155,7 @@
         </li>
         
         <!-- Transaksi Menu -->
-         
+
         <li>
             <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-transaksi', this)">
                 <i class="bi bi-arrow-left-right"></i><span>Transaksi</span>
@@ -166,6 +168,7 @@
                         <i class="bi bi-cart"></i><span>Pembelian</span>
                     </a>
                     <ul id="submenu-pembelian" class="nav flex-column ms-3" style="display:none;">
+
                         <li><a href="/orderbeli" class="nav-link submenu-item"><i class="bi bi-cart-plus"></i> Order Pembelian</a></li>
                         <li><a href="/terimabahan" class="nav-link submenu-item"><i class="bi bi-truck"></i> Penerimaan Bahan</a></li>
                         <li><a href="/pembelian" class="nav-link submenu-item"><i class="bi bi-credit-card"></i> Pembelian</a></li>
@@ -188,10 +191,8 @@
                     </ul>
                 </li>
                 @endif
-
                 <!-- Penjualan Submenu -->
                  @if(auth()->user()->role == 'admin' || auth()->user()->role == 'penjualan')
-
                 <li>
                     <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penjualan', this)">
                         <i class="bi bi-basket"></i><span>Penjualan</span>
@@ -203,7 +204,6 @@
                         <li><a href="/returjual" class="nav-link submenu-item"><i class="bi bi-arrow-counterclockwise"></i>Retur Penjualan</a></li>
                     </ul>
                 </li>
-               
 
                 <!-- Konsinyasi Masuk Submenu -->
                 <li>
@@ -212,10 +212,9 @@
                     </a>
                     <ul id="submenu-konsinyasi" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="/konsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Masuk</a></li>
-                        <li><a href="/jualkonsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-arrow-left-right"></i>Penjualan Produk Konsinyasi Masuk</a></li>
-                        <li><a href="/bayarconsignor" class="nav-link submenu-item"><i class="bi bi-credit-card-2-back"></i>Pembayaran ke Consignor</a></li>
-                        <li><a href="/komisijual" class="nav-link submenu-item"><i class="bi bi-percent"></i>Komisi Penjualan Konsinyasi</a></li>
-                        <li><a href="/returconsignor" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i>Retur ke Consignor</a></li>
+                        <li><a href="/jualkonsinyasimasuk" class="nav-link submenu-item"><i class="bi bi-arrow-left-right"></i>Penjualan Produk Konsinyasi Masuk (Per Produk)</a></li>
+                        <li><a href="/bayarconsignor" class="nav-link submenu-item"><i class="bi bi-credit-card-2-back"></i>Pembayaran ke Consignor (Pemilik Barang)</a></li>
+                        <li><a href="/returconsignor" class="nav-link submenu-item"><i class="bi bi-arrow-return-left"></i>Retur ke Consignor (Pemilik Barang)</a></li>
                     </ul>
                 </li>
 
@@ -226,10 +225,11 @@
                     </a>
                     <ul id="submenu-konsinyasikeluar" class="nav flex-column ms-3" style="display:none;">
                         <li><a href="/konsinyasikeluar" class="nav-link submenu-item"><i class="bi bi-box-seam"></i>Input Data Produk Konsinyasi Keluar</a></li>
-                        <li><a href="/penerimaankonsinyasi" class="nav-link submenu-item"><i class="bi bi-cash-coin"></i>Penerimaan Hasil Penjualan Produk Konsinyasi</a></li>
-                        <li><a href="/returconsignee" class="nav-link submenu-item"><i class="bi bi-arrow-return-right"></i>Retur dari Consignee</a></li>
+                        <li><a href="/penerimaankonsinyasi" class="nav-link submenu-item"><i class="bi bi-cash-coin"></i>Penerimaan Hasil Penjualan Produk Konsinyasi Keluar</a></li>
+                        <li><a href="/returconsignee" class="nav-link submenu-item"><i class="bi bi-arrow-return-right"></i>Retur dari Consignee (Mitra)</a></li>
                     </ul>
                 </li>
+
                 @endif
                 <!-- Pengeluaran Kas -->
                 <li>
@@ -241,6 +241,7 @@
         </li>
         
         <!-- Penyesuaian Menu -->
+
         @if(auth()->user()->role == 'admin' || auth()->user()->role == 'gudang')
         <li>
             <a href="javascript:void(0)" class="nav-link submenu-header" onclick="toggleSubMenu('submenu-penyesuaian', this)">
@@ -250,6 +251,7 @@
                 <li><a href="/stokopname/bahan" class="nav-link submenu-item"><i class="bi bi-clipboard-check"></i>Stok Opname Bahan</a></li>
                 <li><a href="/stokopname/produk" class="nav-link submenu-item"><i class="bi bi-clipboard-data"></i>Stok Opname Produk</a></li>
             </ul>
+
             @endif
             @if(auth()->user()->role == 'admin' || auth()->user()->role == 'gudang')
             <ul id="submenu-penyesuaian" class="nav flex-column ms-3" style="display:none;">
@@ -283,6 +285,7 @@
                         <i class="bi bi-journal-bookmark"></i><span>Jurnal Umum</span>
                     </a>
                 </li>
+
                 <!-- Buku Besar -->
                 <li>
                     <a href="/jurnal/buku_besar" class="nav-link">
@@ -330,6 +333,7 @@ window.toggleSubMenu = function(id, header) {
     var clickedUl = document.getElementById(id);
     if (!clickedUl) return;
 
+
     // Cari parent <li> dari submenu yang diklik
     var parentLi = clickedUl.parentElement;
     // Cari parent <ul> dari parent <li>
@@ -372,4 +376,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Highlight current page
     highlightCurrentPage();
 });
+
 </script>

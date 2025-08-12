@@ -12,7 +12,7 @@
                     <h4 class="mb-0 fw-semibold">Daftar Retur Consignor (Pemilik Barang)</h4>
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex justify-content-md-end justify-content-center gap-2">
-                    <a href="{{ route('returconsignor.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                    <a href="{{ route('returconsignor.cetak_laporan_pdf') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
                         <i class="bi bi-printer"></i> Cetak Laporan
                     </a>
                     <a href="{{ route('returconsignor.create') }}" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
@@ -118,7 +118,7 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
-                                <a href="{{ route('returconsignor.cetak', $rc->no_returconsignor) }}" class="btn btn-success btn-sm btn-icon-square" title="Cetak Nota Retur Consignor (Pemilik Barang)" target="_blank">
+                                <a href="{{ route('returconsignor.cetak_pdf', $rc->no_returconsignor) }}" class="btn btn-success btn-sm btn-icon-square" title="Cetak Nota Retur Consignor (Pemilik Barang)" target="_blank">
                                     <i class="bi bi-printer"></i>
                                 </a>
                             </div>
