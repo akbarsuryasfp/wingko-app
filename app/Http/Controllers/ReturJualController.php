@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -125,10 +124,10 @@ class ReturJualController extends Controller
         // Ambil semua no_jual yang sudah pernah diretur
         $noJualSudahRetur = DB::table('t_returjual')->pluck('no_jual')->toArray();
 
-        // Hanya tampilkan penjualan yang belum pernah diretur dan tanggal jual < 1x24 jam dari sekarang
+        // Hanya tampilkan penjualan yang belum pernah diretur dan tanggal jual < 2x24 jam dari sekarang
         $penjualan = DB::table('t_penjualan')
             ->whereNotIn('no_jual', $noJualSudahRetur)
-            ->where('tanggal_jual', '>=', now()->subDay()->toDateString())
+            ->where('tanggal_jual', '>=', now()->subDays(2)->toDateString())
             ->get();
 
         // Generate kode returjual otomatis
@@ -409,4 +408,46 @@ class ReturJualController extends Controller
             'kode_pelanggan' => $penjualan->kode_pelanggan ?? null
         ]);
     }
+
+        /**
+     * Cetak laporan retur penjualan sebagai PDF (stream, bukan download)
+     */
+    public function cetakLaporanPdf(Request $request)
+    {
+        $sort = $request->get('sort', 'asc');
+
+        $query = DB::table('t_returjual')
+            ->leftJoin('t_pelanggan', 't_returjual.kode_pelanggan', '=', 't_pelanggan.kode_pelanggan')
+            ->select('t_returjual.*', 't_pelanggan.nama_pelanggan');
+
+        // Filter periode tanggal retur
+        if ($request->filled('tanggal_awal')) {
+            $query->whereDate('t_returjual.tanggal_returjual', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->whereDate('t_returjual.tanggal_returjual', '<=', $request->tanggal_akhir);
+        }
+
+        // Filter jenis retur
+        if ($request->filled('jenis_retur')) {
+            $query->where('t_returjual.jenis_retur', $request->jenis_retur);
+        }
+
+        // Search by no_returjual or nama_pelanggan
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('t_returjual.no_returjual', 'like', "%$search%")
+                  ->orWhere('t_pelanggan.nama_pelanggan', 'like', "%$search%");
+            });
+        }
+
+        $returjual = $query->orderBy('t_returjual.no_returjual', $sort)->get();
+
+        // View sudah handle query detail per row
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('returjual.cetak_laporan', compact('returjual'));
+        $pdf->setPaper('a4', 'landscape');
+        return $pdf->stream('laporan-retur-penjualan.pdf');
+    }
+
 }

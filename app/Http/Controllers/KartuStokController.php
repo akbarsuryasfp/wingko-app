@@ -174,6 +174,8 @@ class KartuStokController extends Controller
         return view('kartustok.laporan_produk', compact('produkList', 'tanggal'));
     }
 
+
+
     public function laporanBahanPdf(Request $request)
     {
         $bahanList = \DB::table('t_bahan')->select('kode_bahan','nama_bahan','satuan','stokmin')->get();
@@ -192,6 +194,7 @@ class KartuStokController extends Controller
         return Pdf::loadView('kartustok.laporan_bahan_pdf', compact('bahanList'))
             ->setPaper('a4', 'landscape')
             ->download('Laporan_Stok_Bahan_Baku.pdf');
+ 
     }
     public function laporanProdukPdf()
     {
@@ -222,4 +225,6 @@ class KartuStokController extends Controller
             ->value('stok');
         return response()->json(['stok' => $stok ?? 0]);
     }
+  
+    
 }

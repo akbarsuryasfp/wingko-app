@@ -9,7 +9,7 @@
                     <h4 class="mb-0 fw-semibold">Daftar Pembayaran Consignor (Pemilik Barang)</h4>
                 </div>
                 <div class="col-md-6 col-12 text-md-end text-center mt-2 mt-md-0 d-flex justify-content-md-end justify-content-center gap-2">
-                    <a href="{{ route('bayarconsignor.cetak_laporan') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
+                    <a href="{{ route('bayarconsignor.cetak_laporan_pdf') . '?' . http_build_query(request()->all()) }}" target="_blank" class="btn btn-sm btn-success d-flex align-items-center gap-2">
                         <i class="bi bi-printer"></i> Cetak Laporan
                     </a>
                     <a href="{{ route('bayarconsignor.create') }}" class="btn btn-sm btn-primary d-flex align-items-center gap-2">
@@ -92,8 +92,8 @@
                                 <a href="{{ route('bayarconsignor.show', $row->no_bayarconsignor) }}" class="btn btn-info btn-sm me-1" title="Detail" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                @if (\Route::has('bayarconsignor.cetak'))
-                                <a href="{{ route('bayarconsignor.cetak', $row->no_bayarconsignor) }}" class="btn btn-success btn-sm me-1" title="Cetak Bukti Pembayaran Consignor (Pemilik Barang)" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
+                                @if (\Route::has('bayarconsignor.cetak_pdf'))
+                                <a href="{{ route('bayarconsignor.cetak_pdf', $row->no_bayarconsignor) }}" class="btn btn-success btn-sm me-1" title="Cetak Bukti Pembayaran Consignor (Pemilik Barang)" target="_blank" style="padding: 0.25rem 0.5rem; font-size: 1rem;">
                                     <i class="bi bi-printer"></i>
                                 </a>
                                 @endif

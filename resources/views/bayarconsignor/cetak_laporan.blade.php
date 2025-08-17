@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Laporan Pembayaran Consignor</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 13px; background: #fafafa; }
@@ -10,6 +11,8 @@
         h3 { margin-bottom: 0; }
         .table-title { margin-top: 8px; font-size: 15px; font-weight: 600; }
         tr:nth-child(even) { background: #f6f6f6; }
+        @page { margin: 30px 25px 30px 25px; }
+        body { margin: 0; }
     </style>
 </head>
 <body>
@@ -30,7 +33,9 @@
             </tr>
         </thead>
         <tbody>
+            @php $grand_total = 0; @endphp
             @foreach($list as $i => $row)
+            @php $grand_total += $row->total_bayar; @endphp
             <tr>
                 <td>{{ $i + 1 }}</td>
                 <td>{{ $row->no_bayarconsignor ?? '-' }}</td>
@@ -56,6 +61,16 @@
             </tr>
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="7" style="text-align:right;">GRAND TOTAL</th>
+                <th style="text-align:center;">Rp{{ number_format($grand_total, 0, ',', '.') }}</th>
+                <th></th>
+            </tr>
+        </tfoot>
     </table>
+    <div class="footer" style="margin-top:30px;text-align:right;font-size:12px;">
+        Dicetak pada: {{ date('d-m-Y H:i') }}
+    </div>
 </body>
 </html>

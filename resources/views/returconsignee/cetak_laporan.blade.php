@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Laporan Retur Consignee</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 13px; background: #fafafa; }
@@ -33,6 +34,7 @@
             </tr>
         </thead>
         <tbody>
+            @php $grand_total = 0; @endphp
             @foreach($returconsignees as $idx => $rc)
                 @php $rowspan = isset($rc->details) && count($rc->details) ? count($rc->details) : 1; @endphp
                 @if($rc->details && count($rc->details))
@@ -57,6 +59,7 @@
                             @endif
                         </tr>
                     @endforeach
+                @php $grand_total += $rc->total_nilai_retur; @endphp
                 @else
                     <tr>
                         <td>{{ $idx + 1 }}</td>
@@ -71,9 +74,19 @@
                         <td>-</td>
                         <td>Rp{{ number_format($rc->total_nilai_retur, 0, ',', '.') }}</td>
                     </tr>
+                @php $grand_total += $rc->total_nilai_retur; @endphp
                 @endif
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="10" style="text-align:right;">GRAND TOTAL</th>
+                <th>Rp{{ number_format($grand_total, 0, ',', '.') }}</th>
+            </tr>
+        </tfoot>
     </table>
+    <div class="footer" style="margin-top:30px;text-align:right;font-size:12px;">
+        Dicetak pada: {{ date('d-m-Y H:i') }}
+    </div>
 </body>
 </html>

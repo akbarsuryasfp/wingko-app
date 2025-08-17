@@ -78,7 +78,7 @@
                                 <td class="text-center py-1">{{ $psn->tanggal_pengiriman ? \Carbon\Carbon::parse($psn->tanggal_pengiriman)->format('d-m-Y') : '-' }}</td>
                                 <td class="text-center py-1">{{ $psn->nama_pelanggan ?? '-' }}</td>
                                 <td class="text-center py-1">Rp{{ number_format($psn->total_pesanan, 0, '.', '.') }}</td>
-                                <td class="text-center py-1">Rp{{ number_format($psn->uang_muka ?? 0, 0, ',', '.') }}</td>
+                                <td class="text-center py-1">(Rp{{ number_format($psn->uang_muka ?? 0, 0, ',', '.') }})</td>
                                 <td class="text-center py-1">Rp{{ number_format($psn->sisa_tagihan ?? 0, 0, ',', '.') }}</td>
                                 <td class="text-center py-1">
                                     <div class="d-flex justify-content-center gap-1" style="min-width: 120px;">

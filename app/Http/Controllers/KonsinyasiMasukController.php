@@ -378,4 +378,39 @@ class KonsinyasiMasukController extends Controller
         $konsinyasiMasukList = $query->get();
         return view('konsinyasimasuk.cetak_laporan', compact('konsinyasiMasukList'));
     }
+
+    // Cetak laporan konsinyasi masuk format PDF (stream)
+    public function cetakLaporanPdf(Request $request)
+    {
+        $query = \App\Models\KonsinyasiMasuk::with(['consignor', 'details']);
+
+        // Filter periode tanggal_masuk
+        if ($request->filled('tanggal_awal')) {
+            $query->where('tanggal_masuk', '>=', $request->tanggal_awal);
+        }
+        if ($request->filled('tanggal_akhir')) {
+            $query->where('tanggal_masuk', '<=', $request->tanggal_akhir);
+        }
+
+        // Search by no_konsinyasimasuk or nama_consignor
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('no_konsinyasimasuk', 'like', "%$search%")
+                  ->orWhereHas('consignor', function($qc) use ($search) {
+                      $qc->where('nama_consignor', 'like', "%$search%");
+                  });
+            });
+        }
+
+        // Urutkan no_konsinyasimasuk ASC/DESC
+        $sort = $request->get('sort', 'asc');
+        $query->orderBy('no_konsinyasimasuk', $sort);
+
+        $konsinyasiMasukList = $query->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('konsinyasimasuk.cetak_laporan', compact('konsinyasiMasukList'));
+        $pdf->setPaper('a4', 'landscape');
+        return $pdf->stream('laporan-konsinyasi-masuk.pdf');
+    }
 }

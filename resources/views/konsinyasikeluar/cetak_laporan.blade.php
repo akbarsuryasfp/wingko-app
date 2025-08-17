@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>Laporan Konsinyasi Keluar</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 13px; background: #fafafa; }
@@ -30,6 +31,7 @@
             </tr>
         </thead>
         <tbody>
+            @php $grand_total = 0; @endphp
             @foreach($konsinyasiKeluarList as $i => $konsinyasi)
             <tr>
                 <td>{{ $i + 1 }}</td>
@@ -79,8 +81,18 @@
                 </td>
                 <td>Rp{{ number_format($konsinyasi->total_setor, 0, ',', '.') }}</td>
             </tr>
+            @php $grand_total += $konsinyasi->total_setor; @endphp
             @endforeach
         </tbody>
+        <tfoot>
+            <tr>
+                <th colspan="8" style="text-align:right;">GRAND TOTAL</th>
+                <th>Rp{{ number_format($grand_total, 0, ',', '.') }}</th>
+            </tr>
+        </tfoot>
     </table>
+    <div class="footer" style="margin-top:30px;text-align:right;font-size:12px;">
+        Dicetak pada: {{ date('d-m-Y H:i') }}
+    </div>
 </body>
 </html>
