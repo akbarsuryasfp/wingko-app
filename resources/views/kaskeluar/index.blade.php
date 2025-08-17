@@ -102,7 +102,12 @@
                             <td class="text-start">{{ $item->keterangan_teks }}</td>
 <td>
     @if($item->bukti_nota)
-        <a href="{{ asset('storage/' . $item->bukti_nota) }}" target="_blank">Lihat Nota</a>        <span class="text-muted">-</span>
+        <button type="button" class="btn btn-sm btn-outline-primary"
+            onclick="showNotaModal('{{ asset('storage/' . $item->bukti_nota) }}')">
+            Lihat Nota
+        </button>
+    @else
+        <span class="text-muted">-</span>
     @endif
 </td>
                             <td class="text-nowrap">
@@ -137,4 +142,45 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Bukti Nota -->
+<div class="modal fade" id="notaModal" tabindex="-1" aria-labelledby="notaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notaModalLabel">Bukti Nota</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body text-center" id="notaModalBody">
+                <!-- Konten akan dimuat dinamis di sini -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function showNotaModal(url) {
+    document.getElementById('notaModalBody').innerHTML = '';
+    let ext = url.split('.').pop().toLowerCase();
+    let html = '';
+    if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
+        html = `<img src="${url}" alt="Bukti Nota" class="img-fluid" style="max-height: 70vh;">`;
+    } else if(ext === 'pdf') {
+        html = `<embed src="${url}" type="application/pdf" width="100%" height="600px" />`;
+    } else {
+        html = `<div class="alert alert-info">File tidak dapat ditampilkan. <a href="${url}" target="_blank" class="btn btn-primary mt-2">Download File</a></div>`;
+    }
+    document.getElementById('notaModalBody').innerHTML = html;
+    if (typeof bootstrap !== 'undefined') {
+        var modal = new bootstrap.Modal(document.getElementById('notaModal'));
+        modal.show();
+    } else if (window.$ && $('#notaModal').modal) {
+        $('#notaModal').modal('show');
+    } else {
+        alert('Bootstrap JS tidak ditemukan!');
+    }
+}
+</script>
 @endsection

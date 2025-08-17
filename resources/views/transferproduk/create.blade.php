@@ -39,7 +39,7 @@
                         <select name="lokasi_asal" id="lokasi_asal" class="form-control"
                             @if(!auth()->user() || !auth()->user()->hasRole('admin')) disabled @endif required>
                             @foreach($listLokasi as $kode => $nama)
-                                <option value="{{ $nama }}" {{ $nama == $lokasiAsal ? 'selected' : '' }}>
+                                <option value="{{ $kode }}" {{ $kode == $lokasiAsal ? 'selected' : '' }}>
                                     {{ $nama }}
                                 </option>
                             @endforeach
@@ -55,8 +55,8 @@
                         <select name="lokasi_tujuan" id="lokasi_tujuan" class="form-control" required>
                             <option value="">-- Pilih Lokasi Tujuan --</option>
                             @foreach($listLokasi as $kode => $nama)
-                                @if($nama != $lokasiAsal)
-                                    <option value="{{ $nama }}">{{ $nama }}</option>
+                                @if($kode != $lokasiAsal)
+                                    <option value="{{ $kode }}">{{ $nama }}</option>
                                 @endif
                             @endforeach
                         </select>
@@ -130,14 +130,14 @@
 document.addEventListener('DOMContentLoaded', function () {
     const lokasiAsalSelect = document.getElementById('lokasi_asal');
     const lokasiTujuanSelect = document.getElementById('lokasi_tujuan');
-    const allLokasi = @json($listLokasi->values()->all());
+    const allLokasi = @json($listLokasi);
 
     function updateLokasiTujuan() {
         const asal = lokasiAsalSelect.value;
         lokasiTujuanSelect.innerHTML = '<option value="">-- Pilih Lokasi Tujuan --</option>';
-        allLokasi.forEach(function(nama) {
-            if(nama !== asal) {
-                lokasiTujuanSelect.innerHTML += `<option value="${nama}">${nama}</option>`;
+        Object.entries(allLokasi).forEach(function([kode, nama]) {
+            if(kode != asal) {
+                lokasiTujuanSelect.innerHTML += `<option value="${kode}">${nama}</option>`;
             }
         });
     }

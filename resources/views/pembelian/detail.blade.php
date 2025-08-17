@@ -57,13 +57,12 @@
                                     <input type="text" class="form-control bg-light" value="{{ $pembelian->no_nota }}" readonly>
                                 </div>
                             </div>
-                           @if($pembelian->bukti_nota)
-    <a href="{{ asset('storage/' . $pembelian->bukti_nota) }}" 
-       target="_blank"
-       class="btn btn-sm btn-outline-primary"
-       title="Lihat Bukti Nota">
-       <i class="fas fa-file-alt me-1"></i> Lihat Nota
-    </a>
+@if($pembelian->bukti_nota)
+    <button type="button" class="btn btn-sm btn-outline-primary"
+        onclick="showNotaModal('{{ asset('storage/' . $pembelian->bukti_nota) }}')"
+        title="Lihat Bukti Nota">
+        <i class="fas fa-file-alt me-1"></i> Lihat Nota
+    </button>
 @else
     <span class="badge bg-light text-dark">-</span>
 @endif
@@ -246,4 +245,36 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Bukti Nota -->
+<div class="modal fade" id="notaModal" tabindex="-1" aria-labelledby="notaModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="notaModalLabel">Bukti Nota</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body text-center" id="notaModalBody">
+        <!-- Isi nota akan dimuat di sini -->
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
+
+<script>
+function showNotaModal(url) {
+    let ext = url.split('.').pop().toLowerCase();
+    let html = '';
+    if(['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) {
+        html = `<img src="${url}" alt="Bukti Nota" class="img-fluid">`;
+    } else if(ext === 'pdf') {
+        html = `<iframe src="${url}" style="width:100%;height:70vh;" frameborder="0"></iframe>`;
+    } else {
+        html = `<a href="${url}" target="_blank" class="btn btn-primary">Download File</a>`;
+    }
+    document.getElementById('notaModalBody').innerHTML = html;
+    var modal = new bootstrap.Modal(document.getElementById('notaModal'));
+    modal.show();
+}
+</script>

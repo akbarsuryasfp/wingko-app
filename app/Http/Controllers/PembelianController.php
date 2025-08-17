@@ -41,134 +41,101 @@ class PembelianController extends Controller
         return view('pembelian.create', compact('kode_pembelian', 'suppliers', 'bahan', 'terimabahan'));
     }
 
-    public function createLangsung()
-    {
-        // Generate kode pembelian otomatis
-        $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
-        if ($last && preg_match('/PBL(\d+)/', $last->no_pembelian, $match)) {
-            $nextNumber = (int)$match[1] + 1;
-        } else {
-            $nextNumber = 1;
-        }
-        $kode_pembelian = 'PBL' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
-    
-        // Ambil data supplier dan bahan
-        $suppliers = DB::table('t_supplier')->get();
-        $bahan = DB::table('t_bahan')->get();
-    
-        // --- Kebutuhan produksi dari jadwal ---
-        $jadwalList = DB::table('t_jadwal_produksi')
-            ->join('t_jadwal_produksi_detail', 't_jadwal_produksi.no_jadwal', '=', 't_jadwal_produksi_detail.no_jadwal')
-            ->join('t_produk', 't_jadwal_produksi_detail.kode_produk', '=', 't_produk.kode_produk')
-            ->join('t_resep', 't_produk.kode_produk', '=', 't_resep.kode_produk')
-            ->join('t_resep_detail', 't_resep.kode_resep', '=', 't_resep_detail.kode_resep')
-            ->join('t_bahan', 't_resep_detail.kode_bahan', '=', 't_bahan.kode_bahan')
-            ->select(
-                't_bahan.kode_bahan',
-                't_bahan.nama_bahan',
-                't_bahan.satuan',
-                't_bahan.stok',
-                't_jadwal_produksi_detail.jumlah',
-                't_resep_detail.jumlah_kebutuhan'
-            )
-            ->get();
-    
-        $kebutuhan = [];
-        foreach ($jadwalList as $item) {
-            $kode_bahan = $item->kode_bahan;
-            $total = $item->jumlah * $item->jumlah_kebutuhan;
-            if (!isset($kebutuhan[$kode_bahan])) {
-                $kebutuhan[$kode_bahan] = [
-                    'kode_bahan' => $kode_bahan,
-                    'nama_bahan' => $item->nama_bahan,
-                    'satuan' => $item->satuan,
-                    'jumlah' => 0,
-                    'stok' => $item->stok
-                ];
-            }
-            $kebutuhan[$kode_bahan]['jumlah'] += $total;
-        }
-    
-        // --- Kekurangan bahan dari kebutuhan produksi ---
-        $bahanKurangProduksi = [];
-        foreach ($kebutuhan as $kode_bahan => $b) {
-            if ($b['stok'] < $b['jumlah']) {
-                $bahanKurangProduksi[] = [
-                    'kode_bahan' => $kode_bahan,
-                    'nama_bahan' => $b['nama_bahan'],
-                    'satuan' => $b['satuan'],
-                    'jumlah_beli' => $b['jumlah'] - $b['stok']
-                ];
-            }
-        }
-    
-        // --- Bahan di bawah stok minimal ---
-        $bahanKurangStokMin = DB::table('t_bahan')
-            ->select(
-                'kode_bahan',
-                'nama_bahan',
-                'satuan',
-                'stok',
-                'stokmin',
-                DB::raw('(stokmin - stok) as jumlah_beli')
-            )
-            ->whereColumn('stok', '<', 'stokmin')
-            ->get()
-            ->map(function($item) {
-                return [
-                    'kode_bahan' => $item->kode_bahan,
-                    'nama_bahan' => $item->nama_bahan,
-                    'satuan' => $item->satuan,
-                    'jumlah_beli' => $item->jumlah_beli
-                ];
-            })->toArray();
-    
-        // --- Gabungkan kekurangan produksi dan stok minimal ---
-        $bahanKurangLangsung = array_merge($bahanKurangProduksi, $bahanKurangStokMin);
-    
-        // --- Prediksi kebutuhan harian ---
-        $today = date('Y-m-d');
-        $bahansPrediksiHarian = DB::table('t_bahan')
-            ->where('frekuensi_pembelian', 'Harian')
-            ->get()
-            ->map(function($item) {
-                return [
-                    'kode_bahan' => $item->kode_bahan,
-                    'nama_bahan' => $item->nama_bahan,
-                    'satuan' => $item->satuan,
-                    'jumlah_per_order' => $item->jumlah_per_order ?? 1
-                ];
-            })->toArray();
-    
-        // --- Stok minimal untuk modal khusus ---
-        $stokMinList = $this->getBahanStokMinimal();
-    
-        // Ambil tanggal hari ini
-        $tanggal_hari_ini = date('Y-m-d');
+public function createLangsung()
+{
+    // Generate kode pembelian otomatis
+    $last = DB::table('t_pembelian')->orderBy('no_pembelian', 'desc')->first();
+    if ($last && preg_match('/PBL(\d+)/', $last->no_pembelian, $match)) {
+        $nextNumber = (int)$match[1] + 1;
+    } else {
+        $nextNumber = 1;
+    }
+    $kode_pembelian = 'PBL' . str_pad($nextNumber, 9, '0', STR_PAD_LEFT);
 
-        // Ambil kode bahan yang sudah pernah diorder hari ini
-$bahanSudahOrderHariIni = DB::table('t_pembelian')
-    ->join('t_terimabahan', 't_pembelian.no_terima_bahan', '=', 't_terimabahan.no_terima_bahan')
-    ->join('t_terimab_detail', 't_terimabahan.no_terima_bahan', '=', 't_terimab_detail.no_terima_bahan')
-    ->whereDate('t_pembelian.tanggal_pembelian', $tanggal_hari_ini)
-    ->pluck('t_terimab_detail.kode_bahan')
-    ->toArray();
+    // Ambil data supplier dan bahan
+    $suppliers = DB::table('t_supplier')->get();
+    $bahan = DB::table('t_bahan')->get();
 
-        // Filter bahan prediksi harian yang belum pernah diorder hari ini
-        $bahansPrediksiHarian = collect($bahansPrediksiHarian)->filter(function($item) use ($bahanSudahOrderHariIni) {
-            return !in_array($item['kode_bahan'], $bahanSudahOrderHariIni);
-        })->values()->all();
-    
-        return view('pembelian.langsung', compact(
-            'kode_pembelian',
-            'suppliers',
-            'bahan',
-            'bahanKurangProduksi', // Only production shortage
-            'stokMinList',         // Only minimum stock
-            'bahansPrediksiHarian' // Daily prediction
-        ));
+    // --- Kebutuhan produksi dari jadwal ---
+    $jadwalList = DB::table('t_jadwal_produksi')
+        ->join('t_jadwal_produksi_detail', 't_jadwal_produksi.no_jadwal', '=', 't_jadwal_produksi_detail.no_jadwal')
+        ->join('t_produk', 't_jadwal_produksi_detail.kode_produk', '=', 't_produk.kode_produk')
+        ->join('t_resep', 't_produk.kode_produk', '=', 't_resep.kode_produk')
+        ->join('t_resep_detail', 't_resep.kode_resep', '=', 't_resep_detail.kode_resep')
+        ->join('t_bahan', 't_resep_detail.kode_bahan', '=', 't_bahan.kode_bahan')
+        ->select(
+            't_bahan.kode_bahan',
+            't_bahan.nama_bahan',
+            't_bahan.satuan',
+            't_bahan.stok',
+            't_jadwal_produksi_detail.jumlah',
+            't_resep_detail.jumlah_kebutuhan'
+        )
+        ->get();
+
+    $kebutuhan = [];
+    foreach ($jadwalList as $item) {
+        $kode_bahan = $item->kode_bahan;
+        $total = $item->jumlah * $item->jumlah_kebutuhan;
+        if (!isset($kebutuhan[$kode_bahan])) {
+            $kebutuhan[$kode_bahan] = [
+                'kode_bahan' => $kode_bahan,
+                'nama_bahan' => $item->nama_bahan,
+                'satuan' => $item->satuan,
+                'jumlah' => 0,
+                'stok' => $item->stok
+            ];
+        }
+        $kebutuhan[$kode_bahan]['jumlah'] += $total;
     }
 
+    // --- Kekurangan bahan dari kebutuhan produksi ---
+foreach ($kebutuhan as $kode_bahan => $b) {
+    $stok = DB::table('t_kartupersbahan')
+        ->where('kode_bahan', $kode_bahan)
+        ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
+        ->value('stok');
+    if ($stok < $b['jumlah']) {
+        $bahanKurangProduksi[] = [
+            'kode_bahan'  => $kode_bahan,
+            'nama_bahan'  => $b['nama_bahan'],
+            'satuan'      => $b['satuan'],
+            'jumlah_beli' => $b['jumlah'] - $stok,
+        ];
+    }
+}
+
+    // --- Bahan di bawah stok minimal ---
+$stokMinList = DB::table('t_bahan')
+    ->leftJoin('t_kartupersbahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
+    ->select(
+        't_bahan.kode_bahan',
+        't_bahan.nama_bahan',
+        't_bahan.satuan',
+        't_bahan.stokmin',
+        DB::raw('COALESCE(SUM(t_kartupersbahan.masuk),0) - COALESCE(SUM(t_kartupersbahan.keluar),0) as stok')
+    )
+    ->groupBy('t_bahan.kode_bahan', 't_bahan.nama_bahan', 't_bahan.satuan', 't_bahan.stokmin')
+    ->havingRaw('stok < t_bahan.stokmin')
+    ->get()
+    ->map(function($item) {
+        return [
+            'kode_bahan' => $item->kode_bahan,
+            'nama_bahan' => $item->nama_bahan,
+            'satuan'     => $item->satuan,
+            'stokmin'    => $item->stokmin,
+            'stok'       => $item->stok,
+        ];
+    })->toArray();
+
+    return view('pembelian.langsung', compact(
+        'kode_pembelian',
+        'suppliers',
+        'bahan',
+        'bahanKurangProduksi', // Only production shortage
+        'stokMinList'         // Only minimum stock
+    ));
+}
     // Simpan data untuk pembelian berdasarkan order (create.blade.php)
     public function store(Request $request)
     {
@@ -811,24 +778,20 @@ public function edit($no_pembelian)
         $total_harga += $d->bahan_masuk * $d->harga_beli;
     }
 
-    // Gunakan diskon, ongkir, total_bayar dari header
     $diskon = $pembelian->diskon ?? 0;
     $ongkir = $pembelian->ongkir ?? 0;
     $total_bayar = $pembelian->total_bayar ?? 0;
-
-    // Hitung total pembelian dan kurang bayar
     $total_pembelian = $total_harga - $diskon + $ongkir;
     $kurang_bayar = $total_pembelian - $total_bayar;
     if ($kurang_bayar < 0) $kurang_bayar = 0;
 
-    // Data untuk modal kebutuhan bahan (jika pembelian langsung)
+    // Data untuk modal kebutuhan bahan (hanya kekurangan produksi dan stok minimal)
     $bahanKurangProduksi = [];
-    $bahansPrediksiHarian = [];
     $stokMinList = [];
 
     if ($pembelian->jenis_pembelian == 'pembelian langsung') {
         // Ambil data kekurangan produksi
-        $jadwal = JadwalProduksi::latest('tanggal_jadwal')->with('details.produk.resep.details.bahan')->first();
+        $jadwal = \App\Models\JadwalProduksi::latest('tanggal_jadwal')->with('details.produk.resep.details.bahan')->first();
         $kebutuhan = [];
         if ($jadwal) {
             foreach ($jadwal->details as $detail) {
@@ -868,13 +831,6 @@ public function edit($no_pembelian)
             }
         }
 
-        // Ambil prediksi kebutuhan harian
-        $bahansPrediksiHarian = DB::table('t_bahan')
-            ->where('frekuensi_pembelian', 'Harian')
-            ->select('kode_bahan', 'nama_bahan', 'satuan', 'jumlah_per_order')
-            ->get()
-            ->toArray();
-
         // Ambil bahan dengan stok di bawah minimal
         $stokMinList = DB::table('t_bahan')
             ->leftJoin('t_kartupersbahan', 't_bahan.kode_bahan', '=', 't_kartupersbahan.kode_bahan')
@@ -887,7 +843,16 @@ public function edit($no_pembelian)
             )
             ->groupBy('t_bahan.kode_bahan', 't_bahan.nama_bahan', 't_bahan.satuan', 't_bahan.stokmin')
             ->havingRaw('stok < t_bahan.stokmin')
-            ->get();
+            ->get()
+            ->map(function($item) {
+                return [
+                    'kode_bahan' => $item->kode_bahan,
+                    'nama_bahan' => $item->nama_bahan,
+                    'satuan'     => $item->satuan,
+                    'stokmin'    => $item->stokmin,
+                    'stok'       => $item->stok,
+                ];
+            })->toArray();
     }
 
     return view('pembelian.edit', compact(
@@ -898,7 +863,6 @@ public function edit($no_pembelian)
         'nama_supplier',
         'jatuh_tempo',
         'bahanKurangProduksi',
-        'bahansPrediksiHarian',
         'stokMinList',
         'total_harga',
         'total_pembelian',
@@ -1122,7 +1086,8 @@ $nilai_persediaan = $total_harga;
 $ongkir           = $request->ongkir;
 $diskon           = $request->diskon;
 $dibayar_sekarang = $request->total_bayar;
-$sisa_hutang      = $hutang;
+$hutang = $request->total_pembelian - $request->total_bayar;
+$sisa_hutang = $hutang;
 $uang_muka        = 0; // <-- Tambahkan baris ini
 
 // Kode akun dari mapping JurnalHelper

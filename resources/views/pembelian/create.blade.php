@@ -331,6 +331,31 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSubtotal();
     toggleJatuhTempo();
     });
+
+// Tambahkan di bawah fungsi hitungTotal()
+function validateTotalBayarOrder() {
+    let totalPembelian = parseFloat($jq('#total_pembelian').val()) || 0;
+    let uangMuka = parseFloat($jq('#uang_muka').val()) || 0;
+    let totalBayar = parseFloat($jq('#total_bayar').val()) || 0;
+    let maxBayar = totalPembelian - uangMuka;
+    if (totalBayar > maxBayar) {
+        alert('Total Bayar tidak boleh melebihi sisa pembayaran (Total Pembelian - Uang Muka)!');
+        $jq('#total_bayar').val(maxBayar);
+        hitungTotal();
+        return false;
+    }
+    return true;
+}
+
+// Panggil saat input
+$jq('#total_bayar').on('input', validateTotalBayarOrder);
+
+// Validasi sebelum submit
+$jq('form').on('submit', function(e) {
+    if (!validateTotalBayarOrder()) {
+        e.preventDefault();
+    }
+});
 </script>
 @endsection
 

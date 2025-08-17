@@ -84,10 +84,14 @@
                     <tbody>
                         @php
                             $saldo = 0;
+                            $totalMasuk = 0;
+                            $totalKeluar = 0;
                         @endphp
                         @foreach($riwayat as $index => $row)
                             @php
                                 $saldo += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                                $totalMasuk += $row->masuk ?? 0;
+                                $totalKeluar += $row->keluar ?? 0;
                             @endphp
                             <tr>
                                 <td>{{ $index + 1 }}</td>
@@ -101,6 +105,18 @@
                                 <td>{{ $row->lokasi }}</td>
                             </tr>
                         @endforeach
+
+                        @php
+                            $saldoAkhir = 0;
+                            foreach($riwayat as $row) {
+                                $saldoAkhir += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                            }
+                        @endphp
+                        <tr class="table-info fw-bold">
+                            <td colspan="7" class="text-end">Total Qty Akhir</td>
+                            <td>{{ $saldoAkhir }}</td>
+                            <td></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -113,6 +129,25 @@
                 <b>Stok Akhir <span id="nama-produk-stok"></span></b>
                 <ul id="stok-akhir-list-produk" class="mt-2"></ul>
             </div>
+
+            @php
+                $stokPerLokasi = [];
+                foreach($riwayat as $row) {
+                    $lok = $row->lokasi;
+                    if (!isset($stokPerLokasi[$lok])) $stokPerLokasi[$lok] = 0;
+                    $stokPerLokasi[$lok] += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                }
+            @endphp
+            @if(count($stokPerLokasi))
+                <div class="mt-3">
+                    <b>Stok Akhir per Lokasi:</b>
+                    <ul>
+                        @foreach($stokPerLokasi as $lokasi => $qty)
+                            <li>{{ $lokasi }}: {{ $qty }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -175,7 +210,6 @@ function formatTanggal(tgl) {
 function renderTableProduk() {
     let tbody = '';
     let saldoQty = 0;
-    let saldoPerRow = [];
     let data = produkData;
 
     // Filter berdasarkan bulan (periode)
@@ -190,41 +224,61 @@ function renderTableProduk() {
         data = data.filter(row => row.lokasi === filterLokasi);
     }
 
-    let start = 0, end = data.length;
     let showAll = (rowsPerPageProduk === 'all');
-    if (!showAll) {
-        rowsPerPageProduk = parseInt(document.getElementById('rowsPerPageProduk').value);
-        start = (currentPageProduk - 1) * rowsPerPageProduk;
-        end = Math.min(start + rowsPerPageProduk, data.length);
+    let perPage = showAll ? data.length : parseInt(document.getElementById('rowsPerPageProduk').value);
+    let start = showAll ? 0 : (currentPageProduk - 1) * perPage;
+    let end = showAll ? data.length : Math.min(start + perPage, data.length);
+
+    // --- Perbaikan utama: Hitung saldo dari awal data sampai baris ke-i ---
+    let saldoArr = [];
+    let saldo = 0;
+    for (let i = 0; i < data.length; i++) {
+        let masuk = parseFloat(data[i].masuk) || 0;
+        let keluar = parseFloat(data[i].keluar) || 0;
+        saldo += masuk - keluar;
+        saldoArr.push(saldo);
     }
+
     if (data.length === 0) {
         tbody = `<tr><td colspan="9" class="text-center">Tidak ada data persediaan.</td></tr>`;
     } else {
-        for (let i = 0; i < data.length; i++) {
+        for (let i = start; i < end; i++) {
             let row = data[i];
             let masuk = parseFloat(row.masuk) || 0;
             let keluar = parseFloat(row.keluar) || 0;
             let harga = parseFloat(row.hpp) || 0;
-            saldoQty += masuk - keluar;
-            saldoPerRow.push(saldoQty);
-
-            if (showAll || (i >= start && i < end)) {
-                tbody += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${row.no_transaksi}</td>
-                        <td>${row.keterangan || '-'}</td>
-                        <td>${formatTanggal(row.tanggal)}</td>
-                        <td>Rp${harga.toLocaleString('id-ID')}</td>
-                        <td>${masuk}</td>
-                        <td>${keluar}</td>
-                        <td>${saldoQty}</td>
-                        <td>${row.nama_lokasi || '-'}</td>
-                    </tr>
-                `;
-            }
+            tbody += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${row.no_transaksi}</td>
+                    <td>${row.keterangan || '-'}</td>
+                    <td>${formatTanggal(row.tanggal)}</td>
+                    <td>Rp${harga.toLocaleString('id-ID')}</td>
+                    <td>${masuk}</td>
+                    <td>${keluar}</td>
+                    <td>${saldoArr[i]}</td>
+                    <td>${row.nama_lokasi || '-'}</td>
+                </tr>
+            `;
         }
     }
+
+    // Hitung saldo akhir dari seluruh data hasil filter (bukan hanya yang tampil di halaman)
+    let saldoAkhir = 0;
+    for (let i = 0; i < data.length; i++) {
+        let masuk = parseFloat(data[i].masuk) || 0;
+        let keluar = parseFloat(data[i].keluar) || 0;
+        saldoAkhir += masuk - keluar;
+    }
+
+    // Tambahkan baris total qty akhir di bawah tabel
+    tbody += `
+        <tr class="table-info fw-bold">
+            <td colspan="7" class="text-end">Total Qty Akhir</td>
+            <td>${saldoAkhir}</td>
+            <td></td>
+        </tr>
+    `;
     document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
 }
 

@@ -32,6 +32,12 @@ class StokOpnameController extends Controller
         $lastId = DB::table('t_kartupersbahan')->max('id');
         $nextId = $lastId ? $lastId + 1 : 1;
 
+        // Ambil file bukti stok opname jika ada
+        $buktiStok = null;
+        if ($request->hasFile('bukti_stokopname')) {
+            $buktiStok = $request->file('bukti_stokopname')->store('bukti_stokopname', 'public');
+        }
+
         \Log::debug('Data opname bahan', [
             'stok_fisik' => $request->stok_fisik,
             'stok_sistem' => $request->stok_sistem,
@@ -45,6 +51,7 @@ class StokOpnameController extends Controller
                 'no_penyesuaian' => $no_opname,
                 'tanggal'        => $tanggal,
                 'keterangan'     => 'Penyesuaian Stok Opname ' . $no_opname,
+                'bukti_stokopname' => $buktiStok,
             ]);
             \Log::info('Insert t_penyesuaian', ['no_penyesuaian' => $no_opname]);
 
@@ -261,6 +268,13 @@ if ($total_debet > 0 || $total_kredit > 0) {
 
 public function storeProduk(Request $request)
 {
+    \Log::info('StokOpnameProduk: Mulai proses', [
+        'tanggal' => $request->tanggal,
+        'stok_fisik' => $request->stok_fisik,
+        'stok_sistem' => $request->stok_sistem,
+        'file' => $request->file('bukti_stokopname')
+    ]);
+
     $request->validate([
         'tanggal' => 'required|date',
         'stok_fisik' => 'required|array',
@@ -275,12 +289,20 @@ public function storeProduk(Request $request)
     } else {
         $no_opname = 'SOP000001';
     }
+    \Log::info('StokOpnameProduk: Nomor opname', ['no_opname' => $no_opname]);
 
     $tanggal = $request->tanggal;
     $keterangan_umum = $request->keterangan_umum;
 
     $lastId = DB::table('t_kartupersproduk')->max('id');
     $nextId = $lastId ? $lastId + 1 : 1;
+
+    // Ambil file bukti stok opname jika ada
+    $buktiStok = null;
+    if ($request->hasFile('bukti_stokopname')) {
+        $buktiStok = $request->file('bukti_stokopname')->store('bukti_stokopname', 'public');
+        \Log::info('StokOpnameProduk: File bukti terupload', ['buktiStok' => $buktiStok]);
+    }
 
     try {
         DB::beginTransaction();
@@ -290,17 +312,23 @@ public function storeProduk(Request $request)
             'no_penyesuaian' => $no_opname,
             'tanggal'        => $tanggal,
             'keterangan'     => 'Penyesuaian Stok Opname Produk ' . $no_opname,
+            'bukti_stokopname' => $buktiStok,
         ]);
+        \Log::info('StokOpnameProduk: Insert t_penyesuaian', ['no_penyesuaian' => $no_opname]);
 
         $detailData = [];
         foreach ($request->stok_fisik as $kode_produk => $stok_fisik) {
             if (is_null($stok_fisik)) continue;
 
             $produk = DB::table('t_produk')->where('kode_produk', $kode_produk)->first();
-            if (!$produk) continue;
+            if (!$produk) {
+                \Log::warning('StokOpnameProduk: Produk tidak ditemukan', ['kode_produk' => $kode_produk]);
+                continue;
+            }
 
             $stok_sistem = DB::table('t_kartupersproduk')
                 ->where('kode_produk', $kode_produk)
+                ->where('lokasi', 1)
                 ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
                 ->value('stok') ?? 0;
             $selisih = $stok_fisik - $stok_sistem;
@@ -332,10 +360,19 @@ public function storeProduk(Request $request)
                 'total_nilai'    => $total_nilai,
                 'alasan'         => $keterangan,
             ];
+            \Log::info('StokOpnameProduk: Prepare detail', [
+                'kode_produk' => $produk->kode_produk,
+                'stok_fisik' => $stok_fisik,
+                'stok_sistem' => $stok_sistem,
+                'selisih' => $selisih,
+                'hpp' => $hpp,
+                'total_nilai' => $total_nilai
+            ]);
         }
 
         if (count($detailData) > 0) {
             DB::table('t_penyesuaian_detail')->insert($detailData);
+            \Log::info('StokOpnameProduk: Insert t_penyesuaian_detail', ['count' => count($detailData)]);
         }
 
         // Insert ke kartu persediaan produk & update stok
@@ -344,10 +381,10 @@ public function storeProduk(Request $request)
             if (!$produk) continue;
 
             if ($detail['jumlah'] < 0) {
-                // Selisih kurang: keluarkan stok per batch FIFO
                 $qty_keluar = abs($detail['jumlah']);
                 $stokMasuk = DB::table('t_kartupersproduk')
                     ->where('kode_produk', $produk->kode_produk)
+                    ->where('lokasi', 1)
                     ->whereRaw('(masuk - keluar) > 0')
                     ->orderBy('tanggal', 'asc')
                     ->get();
@@ -368,11 +405,17 @@ public function storeProduk(Request $request)
                         'satuan'       => $produk->satuan,
                         'keterangan'   => $detail['alasan'],
                         'tanggal_exp'  => $row->tanggal_exp,
+                        'lokasi'       => 1,
+                    ]);
+                    \Log::info('StokOpnameProduk: Insert kartu keluar', [
+                        'kode_produk' => $produk->kode_produk,
+                        'keluar' => $ambil,
+                        'hpp' => $row->hpp,
+                        'tanggal_exp' => $row->tanggal_exp
                     ]);
                     $qty_keluar -= $ambil;
                 }
             } else {
-                // Selisih lebih: tambah stok, ambil hpp & tanggal_exp dari stok masuk terakhir
                 $lastMasuk = DB::table('t_kartupersproduk')
                     ->where('kode_produk', $produk->kode_produk)
                     ->where('masuk', '>', 0)
@@ -390,17 +433,18 @@ public function storeProduk(Request $request)
                     'satuan'       => $produk->satuan,
                     'keterangan'   => $detail['alasan'],
                     'tanggal_exp'  => $lastMasuk ? $lastMasuk->tanggal_exp : null,
+                    'lokasi'       => 1,
+                ]);
+                \Log::info('StokOpnameProduk: Insert kartu masuk', [
+                    'kode_produk' => $produk->kode_produk,
+                    'masuk' => $detail['jumlah'],
+                    'hpp' => $lastMasuk ? $lastMasuk->hpp : 0,
+                    'tanggal_exp' => $lastMasuk ? $lastMasuk->tanggal_exp : null
                 ]);
             }
 
             // Update stok akhir pada t_produk
-            $stok_akhir = DB::table('t_kartupersproduk')
-                ->where('kode_produk', $produk->kode_produk)
-                ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
-                ->value('stok') ?? 0;
-            DB::table('t_produk')
-                ->where('kode_produk', $produk->kode_produk)
-                ->update(['stok' => $stok_akhir]);
+          
         }
 
         // Jurnal
@@ -428,6 +472,7 @@ public function storeProduk(Request $request)
                 'nomor_bukti' => $no_opname,
                 'jenis_jurnal'=> 'penyesuaian'
             ]);
+            \Log::info('StokOpnameProduk: Insert jurnal umum', ['no_jurnal' => $no_jurnal]);
 
             // Selisih kurang (stok hilang): Debit Beban, Kredit Persediaan
             if ($total_debet > 0) {
@@ -445,6 +490,7 @@ public function storeProduk(Request $request)
                     'debit'            => 0,
                     'kredit'           => $total_debet,
                 ]);
+                \Log::info('StokOpnameProduk: Insert jurnal detail debet', ['total_debet' => $total_debet]);
             }
 
             // Selisih lebih (stok bertambah): Debit Persediaan, Kredit Pendapatan Lain-lain
@@ -463,10 +509,12 @@ public function storeProduk(Request $request)
                     'debit'            => 0,
                     'kredit'           => $total_kredit,
                 ]);
+                \Log::info('StokOpnameProduk: Insert jurnal detail kredit', ['total_kredit' => $total_kredit]);
             }
         }
 
         DB::commit();
+        \Log::info('StokOpnameProduk: Sukses simpan opname', ['no_opname' => $no_opname]);
         return redirect()->back()->with('success', 'Stok opname produk berhasil disimpan. No Opname: ' . $no_opname);
     } catch (\Exception $e) {
         DB::rollBack();
@@ -489,19 +537,53 @@ public function storeProduk(Request $request)
     $produkList = DB::table('t_produk')->get()->map(function($produk) {
         $stok_sistem = DB::table('t_kartupersproduk')
             ->where('kode_produk', $produk->kode_produk)
-            ->where('lokasi', '1') // Filter hanya lokasi Gudang
+            ->where('lokasi', 1) // hanya ambil stok di lokasi 1 (Gudang)
             ->selectRaw('COALESCE(SUM(masuk),0) - COALESCE(SUM(keluar),0) as stok')
             ->value('stok') ?? 0;
         $produk->stok_sistem = $stok_sistem;
         return $produk;
     });
 
-    // Filter produk yang stoknya ada di Gudang saja
-    $produkList = $produkList->filter(function($produk) {
-        return $produk->stok_sistem > 0;
-    })->values();
-
     return view('stokopname.produk', compact('no_opname', 'produkList'));
+}
+
+public function riwayatBahan(Request $request)
+{
+    $periodeAwal = $request->periode_awal ?? date('Y-m-01');
+    $periodeAkhir = $request->periode_akhir ?? date('Y-m-d');
+    $riwayat = DB::table('t_penyesuaian as p')
+        ->join('t_penyesuaian_detail as d', 'p.no_penyesuaian', '=', 'd.no_penyesuaian')
+        ->leftJoin('t_bahan as b', 'd.kode_item', '=', 'b.kode_bahan')
+        ->where('d.tipe_item', 'BAHAN')
+        ->whereBetween('p.tanggal', [$periodeAwal, $periodeAkhir])
+        ->select(
+            'p.no_penyesuaian',
+            'p.tanggal',
+            'p.bukti_stokopname',
+            'd.tipe_item',
+            'd.jumlah',
+            'd.alasan',
+            'b.nama_bahan'
+        )
+        ->orderByDesc('p.tanggal')
+        ->paginate(10);
+
+    return view('stokopname.riwayat_bahan', compact('riwayat', 'periodeAwal', 'periodeAkhir'));
+}
+
+public function riwayatProduk(Request $request)
+{
+    $periodeAwal = $request->periode_awal ?? date('Y-m-01');
+    $periodeAkhir = $request->periode_akhir ?? date('Y-m-d');
+    $riwayat = DB::table('t_penyesuaian as p')
+        ->join('t_penyesuaian_detail as d', 'p.no_penyesuaian', '=', 'd.no_penyesuaian')
+        ->where('d.tipe_item', 'PRODUK')
+        ->whereBetween('p.tanggal', [$periodeAwal, $periodeAkhir])
+        ->select('p.no_penyesuaian', 'p.tanggal', 'p.bukti_stokopname', 'd.tipe_item')
+        ->orderByDesc('p.tanggal')
+        ->paginate(10);
+
+    return view('stokopname.riwayat_produk', compact('riwayat', 'periodeAwal', 'periodeAkhir'));
 }
 }
 
