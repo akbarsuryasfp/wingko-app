@@ -24,12 +24,12 @@ input[readonly] {
         <div class="card h-100 border-light shadow-sm">
             <div class="card-body d-flex flex-column">
                 <h5 class="card-title mb-3">
-                    <i class="fas fa-clipboard-list me-0"></i>Informasi Permintaan Pembelian
+                    <i class="fas fa-clipboard-list me-0"></i>Informasi Order Pembelian
                 </h5>
                 
                 <div class="flex-grow-1">
                     <div class="mb-2 row align-items-center">
-                        <label class="col-sm-4 col-form-label fw-medium">Kode Permintaan</label>
+                        <label class="col-sm-4 col-form-label fw-medium">Kode Order</label>
                         <div class="col-sm-8">
                             <input type="text" name="no_order_beli" class="form-control form-control-sm" value="{{ $no_order_beli }}" readonly>
                         </div>
@@ -132,10 +132,10 @@ input[readonly] {
     </div>
 </div>
 
-                <!-- Daftar Permintaan Pembelian -->
+                <!-- Daftar Order Pembelian -->
                 <div class="card border-light mb-">
                     <div class="card-body">
-                        <h5 class="card-title text-center mb-3">Daftar Permintaan Pembelian</h5>
+                        <h5 class="card-title text-center mb-3">Daftar Order Pembelian</h5>
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle" id="daftar-bahan">
                                 <thead class="table-light">
