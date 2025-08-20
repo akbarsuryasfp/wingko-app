@@ -360,9 +360,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('lokasi').addEventListener('change', function () {
         currentPageProduk = 1;
-        renderTableProduk();
-        renderPaginationProduk();
-        renderStokAkhirProduk(); // <-- ini penting!
+        // Query ulang data dari server sesuai produk & lokasi
+        var select = document.getElementById('kode_produk');
+        var lokasi = document.getElementById('lokasi').value;
+        if (select.value) {
+            fetch('/kartustok/api-produk/' + select.value + '?lokasi=' + encodeURIComponent(lokasi))
+                .then(res => res.json())
+                .then(data => {
+                    produkData = data;
+                    let perPage = document.getElementById('rowsPerPageProduk').value;
+                    let showAll = (perPage === 'all');
+                    let totalPages = showAll ? 1 : Math.ceil(produkData.length / perPage);
+                    currentPageProduk = totalPages > 0 ? totalPages : 1;
+                    renderTableProduk();
+                    renderPaginationProduk();
+                    renderStokAkhirProduk();
+                });
+        } else {
+            renderTableProduk();
+            renderPaginationProduk();
+        }
     });
 });
 </script>

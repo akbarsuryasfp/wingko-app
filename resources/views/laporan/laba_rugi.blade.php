@@ -6,7 +6,14 @@
         <label>Pilih Periode:</label>
         <input type="month" name="periode" value="{{ $periode }}" required>
         <button type="submit" class="btn btn-primary btn-sm">Tampilkan</button>
+        <a href="{{ route('laporan.laba_rugi.pdf', ['periode' => $periode]) }}" target="_blank" class="btn btn-success btn-sm">Cetak</a>
+
     </form>
+    <div class="text-center mb-4">
+        <h4 class="fw-bold">LAPORAN LABA RUGI</h4>
+        <h5>Wingko Pratama</h5>
+        <p>Periode: {{ \Carbon\Carbon::createFromFormat('Y-m', $periode)->translatedFormat('F Y') }}</p>
+    </div>
     <table class="table table-bordered">
         <tr class="fw-bold bg-light"><td colspan="2">Pendapatan Usaha</td></tr>
         <tr>

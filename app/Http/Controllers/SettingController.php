@@ -155,4 +155,10 @@ class SettingController extends Controller
         ]);
         return back()->with('success', 'User berhasil ditambah');
     }
+
+    public function pilihLokasi($kode_lokasi)
+    {
+        session(['lokasi_aktif' => $kode_lokasi]);
+        return redirect()->back()->with('success', 'Lokasi aktif berhasil diubah!');
+    }
 }

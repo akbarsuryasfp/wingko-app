@@ -8,70 +8,77 @@
         <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>No Produksi</th>
-                <th>Tanggal</th>
-                <th>Keterangan</th>
-                <th>Detail Produk</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($produksi as $p)
-                <tr>
-                    <td>{{ $p->no_produksi }}</td>
-                    <td>{{ $p->tanggal_produksi }}</td>
-                    <td>{{ $p->keterangan }}</td>
-                    <td>
-                        {{-- 
-                        <button class="btn btn-sm btn-primary"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#detail-{{ $p->no_produksi }}">
-                            Lihat
-                        </button>
-                        --}}
-                        <a href="{{ route('produksi.show', $p->no_produksi) }}"
-                           class="btn btn-sm btn-info mt-1">
-                            Detail Lengkap
-                        </a>
-                    </td>
-                    <td>
-                        <form action="{{ route('produksi.destroy', $p->no_produksi) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apakah Anda yakin ingin membatalkan produksi ini?')">Batalkan</button>
-                        </form>
-                    </td>
-                </tr>
-                <tr class="collapse" id="detail-{{ $p->no_produksi }}">
-                    <td colspan="4">
-                        <table class="table table-sm mt-2">
-                            <thead>
-                                <tr class="table-secondary">
-                                    <th>Produk</th>
-                                    <th>Jumlah Diproduksi</th>
-                                    <th>Tanggal Expired</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{-- 
-                                @foreach ($p->details as $d)
-                                    <tr>
-                                        <td>{{ $d->produk->nama_produk ?? $d->kode_produk }}</td>
-                                        <td>{{ $d->jumlah_unit }}</td>
-                                        <td>{{ $d->tanggal_expired }}</td>
-                                    </tr>
-                                @endforeach
-                                --}}
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+    <form method="GET" action="{{ route('produksi.index') }}" class="row g-2 mb-3 align-items-end">
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control" placeholder="Cari no produksi/keterangan..." value="{{ request('search') }}">
+        </div>
+        <div class="col-md-2">
+            <input type="hidden" name="sort" value="{{ $sort ?? 'desc' }}">
+            <button type="submit" class="btn btn-outline-secondary bi bi-search"></button>
+        </div>
+         <div class="col-md-6 text-end">
+            <button type="submit" name="sort" value="{{ ($sort ?? 'desc') == 'desc' ? 'asc' : 'desc' }}" class="btn btn-outline-primary">
+                Urutkan: {{ ($sort ?? 'desc') == 'desc' ? 'Terlama' : 'Terbaru' }}
+            </button>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No Produksi</th>
+                            <th>Tanggal</th>
+                            <th>Keterangan</th>
+                            <th>Detail Produk</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($produksi as $p)
+                            <tr>
+                                <td>{{ $p->no_produksi }}</td>
+                                <td>{{ \Carbon\Carbon::parse($p->tanggal_produksi)->format('d-m-Y') }}</td>
+                                <td>{{ $p->keterangan }}</td>
+                                <td>
+                                    <a href="{{ route('produksi.show', $p->no_produksi) }}"
+                                       class="btn btn-sm btn-info mt-1">
+                                        Detail Lengkap
+                                    </a>
+                                </td>
+                                <td>
+                                  <form action="{{ route('produksi.destroy', $p->no_produksi) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger mt-1" onclick="return confirm('Apakah Anda yakin ingin membatalkan produksi ini?')">Batalkan</button>
+                                    </form>
+                                    <a href="{{ route('hpp.index', ['search' => $p->no_produksi]) }}" class="btn btn-sm btn-success mt-1">
+                                        Isi HPP
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Belum ada data produksi.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            {{-- Pagination --}}
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div>
+                    <span class="text-muted">
+                        Menampilkan {{ $produksi->firstItem() ?? 0 }} - {{ $produksi->lastItem() ?? 0 }} dari {{ $produksi->total() }} data
+                    </span>
+                </div>
+                <div>
+                    {{ $produksi->links() }}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection

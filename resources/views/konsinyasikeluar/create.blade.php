@@ -378,5 +378,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function hapusProdukSetor(idx) {
+    produkSetorList.splice(idx, 1);
+    renderTabelProdukSetor();
+}
 </script>
 @endsection

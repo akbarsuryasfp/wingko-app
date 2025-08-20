@@ -2,6 +2,11 @@
 @section('content')
 <div class="container">
     <h3 class="mb-4">Jurnal Umum</h3>
+    <div class="mb-3 d-flex justify-content-end">
+        <a href="{{ route('jurnal.create') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Tambah Jurnal
+        </a>
+    </div>
     <form method="get" class="row g-3 mb-3">
         <div class="col-md-2">
             <input type="date" name="tanggal_awal" class="form-control" value="{{ request('tanggal_awal') }}">

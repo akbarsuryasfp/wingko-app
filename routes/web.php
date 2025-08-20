@@ -64,6 +64,7 @@ Route::middleware(['auth', 'role:gudang,admin'])->group(function () {
     Route::get('/bahan/reminder', [BahanController::class, 'reminderKadaluarsa'])->name('bahan.reminder');
 
     // Semua route di bawah ini hanya untuk gudang & pemilik
+    Route::get('transferproduk/get-stok-akhir-produk/{kode_produk}', [TransferProdukController::class, 'getStokAkhirProduk']);
     Route::get('/transferproduk/produk-by-lokasi', [TransferProdukController::class, 'produkByLokasi'])->name('transferproduk.produkByLokasi');
     Route::resource('transferproduk', TransferProdukController::class);
     Route::get('/transferproduk/create', [TransferProdukController::class, 'create'])->name('transferproduk.create');
@@ -262,12 +263,14 @@ Route::get('/permintaan-produksi/create', [PermintaanProduksiController::class, 
 Route::post('/permintaan-produksi', [PermintaanProduksiController::class, 'store'])->name('permintaan.store');
 Route::resource('permintaan_produksi', \App\Http\Controllers\PermintaanProduksiController::class);
 // Route detail Resep
+Route::get('resep/{kode_resep}/detail', [ResepController::class, 'detail'])->name('resep.detail');
 Route::get('/resep', [ResepController::class, 'index'])->name('resep.index');
 Route::get('/resep/create', [ResepController::class, 'create'])->name('resep.create');
 Route::post('/resep', [ResepController::class, 'store'])->name('resep.store');
+Route::resource('resep', ResepController::class);
 
 // Route jadwal produksi
-Route::get('/jadwal-produksi/create', [JadwalProduksiController::class, 'create'])->name('jadwal_.create');
+Route::get('/jadwal-produksi/create', [JadwalProduksiController::class, 'create'])->name('jadwal.create');
 Route::post('/jadwal-produksi', [JadwalProduksiController::class, 'store'])->name('jadwal.store');
 Route::get('/jadwal-produksi', [JadwalProduksiController::class, 'index'])->name('jadwal.index');
 Route::get('/jadwal-produksi/{kode}', [JadwalProduksiController::class, 'show'])->name('jadwal.show');
@@ -280,6 +283,7 @@ Route::get('/produksi', [ProduksiController::class, 'index'])->name('produksi.in
 Route::get('/produksi/{no_produksi}', [ProduksiController::class, 'show'])->name('produksi.show');
 Route::delete('/produksi/{no_produksi}', [ProduksiController::class, 'destroy'])->name('produksi.destroy');
 // Route HPP
+Route::get('/hpp/laporan/pdf', [App\Http\Controllers\HppController::class, 'laporanPdf'])->name('hpp.laporan.pdf');
 Route::get('/hpp', [HppController::class, 'index'])->name('hpp.index');
 Route::get('/hpp/input/{no_detail}', [HppController::class, 'create'])->name('hpp.input');
 Route::post('/hpp/simpan', [HppController::class, 'store'])->name('hpp.store');
@@ -430,7 +434,7 @@ Route::post('/overhead/store', [OverheadController::class, 'store'])->name('over
 Route::get('/overhead/ajax-overhead', [\App\Http\Controllers\OverheadController::class, 'ajaxOverhead'])->name('overhead.ajaxOverhead');
 
 // Route Aset Tetap
-Route::resource('aset-tetap', AsetTetapController::class)->only(['index', 'create', 'store']);
+Route::resource('aset-tetap', AsetTetapController::class);
 
 
 // Route transaksi penjualan produk konsinyasi masuk
@@ -587,8 +591,10 @@ Route::get('/kartuperskonsinyasi/cetak-laporan-pdf', function (\Illuminate\Http\
 Route::resource('kartuperskonsinyasi', App\Http\Controllers\KartuPersKonsinyasiController::class);
 
 // Route jurnal
+Route::get('jurnal/create', [JurnalController::class, 'create'])->name('jurnal.create');
+Route::post('jurnal/store', [JurnalController::class, 'store'])->name('jurnal.store');
 Route::get('/jurnal', [JurnalController::class, 'index'])->name('jurnal.index');
-Route::get('/buku-besar', [JurnalController::class, 'bukuBesar'])->name('jurnal.buku_besar');
+Route::get('/jurnal/buku_besar', [JurnalController::class, 'bukuBesar'])->name('jurnal.buku_besar');
 Route::get('/jurnalpenyesuaian', [JurnalController::class, 'penyesuaian'])->name('jurnal.penyesuaian');
 
 // Barcode batch routes
@@ -625,7 +631,9 @@ Route::resource('returconsignor', App\Http\Controllers\ReturConsignorController:
 
 // Route laporan
 Route::get('/laporan/neraca', [LaporanKeuanganController::class, 'neraca'])->name('laporan.neraca');
+Route::get('/laporan/neraca/pdf', [LaporanKeuanganController::class, 'neracaPdf'])->name('laporan.neraca.pdf');
 Route::get('/laporan/laba-rugi', [LaporanKeuanganController::class, 'labaRugi'])->name('laporan.laba_rugi');
+Route::get('/laporan/laba-rugi/pdf', [LaporanKeuanganController::class, 'labaRugiPdf'])->name('laporan.laba_rugi.pdf');
 Route::get('/laporan/perubahan-ekuitas', [LaporanKeuanganController::class, 'perubahanEkuitas'])->name('laporan.perubahan_ekuitas');
 Route::get('/laporan/keuangan', [LaporanKeuanganController::class, 'index'])->name('laporan.keuangan');
 Route::get('/laporan/keuangan/cetak', [LaporanKeuanganController::class, 'cetak'])->name('laporan.keuangan.cetak');
@@ -654,6 +662,7 @@ Route::get('/penjualan/cetak-pdf/{no_jual}', [App\Http\Controllers\PenjualanCont
 Route::get('/laporan/hpp-penjualan', [LaporanKeuanganController::class, 'hppPenjualan'])->name('laporan.hpp_penjualan');
 
 
+Route::post('/setting/lokasi/pilih/{kode_lokasi}', [SettingController::class, 'pilihLokasi'])->name('setting.lokasi.pilih');
 Route::post('/lokasi/set', [SettingController::class, 'setLokasi'])->name('lokasi.set');Route::post('/lokasi/set', [SettingController::class, 'setLokasi'])->name('lokasi.set');
 Route::resource('setting', SettingController::class);
 Route::post('/setting/lokasi', [SettingController::class, 'storeLokasi'])->name('setting.lokasi.store');

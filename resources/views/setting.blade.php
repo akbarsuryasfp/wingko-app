@@ -130,6 +130,13 @@
                             <td>{{ $lokasi->alamat }}</td>
                             <td>{{ $lokasi->telepon }}</td>
                             <td class="text-center">
+                                <form method="POST" action="{{ route('setting.lokasi.pilih', $lokasi->kode_lokasi) }}" style="display:inline;">
+                                    @csrf
+                                    <button class="btn btn-success btn-sm rounded-3 shadow-sm d-flex align-items-center gap-2" 
+                                        @if(session('lokasi_aktif') == $lokasi->kode_lokasi) disabled @endif>
+                                        <i class="bi bi-check-circle"></i> Pilih
+                                    </button>
+                                </form>
                                 <form method="POST" action="{{ route('setting.lokasi.destroy', $lokasi->kode_lokasi) }}" style="display:inline;">
                                     @csrf
                                     @method('DELETE')

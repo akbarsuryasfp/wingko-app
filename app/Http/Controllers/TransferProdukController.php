@@ -19,10 +19,10 @@ public function index(Request $request)
         ->select(
             'no_transaksi',
             'tanggal',
-            DB::raw('MIN(lokasi) as lokasi_asal'),
-            DB::raw('MAX(CASE WHEN keterangan LIKE "Transfer ke%" THEN REPLACE(keterangan, "Transfer ke ", "") ELSE NULL END) as lokasi_tujuan')
+            'lokasi as lokasi_asal_kode',
+            DB::raw('SUBSTRING_INDEX(keterangan, " ", -1) as lokasi_tujuan_kode')
         )
-        ->groupBy('no_transaksi', 'tanggal')
+        ->groupBy('no_transaksi', 'tanggal', 'lokasi', 'keterangan')
         ->orderByDesc('tanggal');
 
     // Filter tujuan
@@ -77,7 +77,12 @@ public function index(Request $request)
         $transfer->details = $details;
     }
 
-    
+    // Setelah ambil $transfers, mapping kode ke nama lokasi
+    $lokasiMap = DB::table('t_lokasi')->pluck('nama_lokasi', 'kode_lokasi');
+    foreach ($transfers as $transfer) {
+        $transfer->lokasi_asal = $lokasiMap[$transfer->lokasi_asal_kode] ?? $transfer->lokasi_asal_kode;
+        $transfer->lokasi_tujuan = $lokasiMap[$transfer->lokasi_tujuan_kode] ?? $transfer->lokasi_tujuan_kode;
+    }
 
     return view('transferproduk.index', compact('transfers', 'listLokasi'));
 }
@@ -148,6 +153,14 @@ public function index(Request $request)
 
         DB::beginTransaction();
         try {
+            // Ambil kode lokasi dari request
+            $kodeLokasiAsal = $request->lokasi_asal;
+            $kodeLokasiTujuan = $request->lokasi_tujuan;
+
+            // Ambil nama lokasi dari tabel t_lokasi
+            $namaLokasiAsal = DB::table('t_lokasi')->where('kode_lokasi', $kodeLokasiAsal)->value('nama_lokasi');
+            $namaLokasiTujuan = DB::table('t_lokasi')->where('kode_lokasi', $kodeLokasiTujuan)->value('nama_lokasi');
+
             foreach ($request->produk_id as $idx => $kode_produk) {
                 $jumlah_pindah = $request->jumlah[$idx];
 
@@ -162,7 +175,7 @@ public function index(Request $request)
                         DB::raw('SUM(keluar) as total_keluar')
                     )
                     ->where('kode_produk', $kode_produk)
-                    ->where('lokasi', $request->lokasi_asal)
+                    ->where('lokasi', $kodeLokasiAsal) // gunakan kode lokasi
                     ->groupBy('kode_produk', 'tanggal_exp', 'hpp', 'satuan')
                     ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
                     ->orderBy('tanggal_exp', 'asc')
@@ -184,9 +197,9 @@ public function index(Request $request)
                         'keluar' => $ambil,
                         'hpp' => $batch->hpp,
                         'satuan' => $batch->satuan,
-                        'keterangan' => 'Transfer ke ' . $request->lokasi_tujuan,
+                        'lokasi' => $kodeLokasiAsal,
+                        'keterangan' => 'Transfer ke ' . $namaLokasiTujuan, // gunakan nama lokasi
                         'tanggal_exp' => $batch->tanggal_exp,
-                        'lokasi' => $request->lokasi_asal,
                     ]);
 
                     // Masukkan ke lokasi tujuan
@@ -198,9 +211,9 @@ public function index(Request $request)
                         'keluar' => 0,
                         'hpp' => $batch->hpp,
                         'satuan' => $batch->satuan,
-                        'keterangan' => 'Transfer dari ' . $request->lokasi_asal,
+                        'lokasi' => $kodeLokasiTujuan,
+                        'keterangan' => 'Transfer dari ' . $namaLokasiAsal, // gunakan nama lokasi
                         'tanggal_exp' => $batch->tanggal_exp,
-                        'lokasi' => $request->lokasi_tujuan,
                     ]);
 
                     $sisa -= $ambil;
@@ -284,24 +297,22 @@ public function edit($no_transaksi)
             'tanggal' => 'required|date',
             'lokasi_asal' => 'required',
             'lokasi_tujuan' => 'required|different:lokasi_asal',
-            'lokasi_asal' => 'required',
-            'lokasi_tujuan' => 'required|different:lokasi_asal',
             'produk_id' => 'required|array',
             'jumlah' => 'required|array',
         ]);
 
         DB::beginTransaction();
         try {
-            // Hapus data lama
             DB::table('t_kartupersproduk')->where('no_transaksi', $no_transaksi)->delete();
 
-            // Simpan data baru (mirip store)
+            $kodeLokasiAsal = $request->lokasi_asal;
+            $kodeLokasiTujuan = $request->lokasi_tujuan;
+
             foreach ($request->produk_id as $idx => $kode_produk) {
                 $jumlah_pindah = $request->jumlah[$idx];
                 $satuan = $request->satuan[$idx] ?? '';
                 $tanggal_exp = $request->tanggal_exp[$idx] ?? null;
 
-                // FIFO: Ambil batch stok di lokasi asal, urut tanggal_exp paling tua
                 $batches = DB::table('t_kartupersproduk')
                     ->select(
                         'kode_produk',
@@ -312,7 +323,7 @@ public function edit($no_transaksi)
                         DB::raw('SUM(keluar) as total_keluar')
                     )
                     ->where('kode_produk', $kode_produk)
-                    ->where('lokasi', $request->lokasi_asal)
+                    ->where('lokasi', $kodeLokasiAsal) // gunakan kode lokasi
                     ->groupBy('kode_produk', 'tanggal_exp', 'hpp', 'satuan')
                     ->havingRaw('SUM(masuk) - SUM(keluar) > 0')
                     ->orderBy('tanggal_exp', 'asc')
@@ -325,7 +336,6 @@ public function edit($no_transaksi)
 
                     $ambil = min($sisa, $stok_batch);
 
-                    // Keluarkan dari lokasi asal
                     DB::table('t_kartupersproduk')->insert([
                         'no_transaksi' => $no_transaksi,
                         'tanggal' => $request->tanggal,
@@ -334,12 +344,11 @@ public function edit($no_transaksi)
                         'keluar' => $ambil,
                         'hpp' => $batch->hpp,
                         'satuan' => $batch->satuan,
-                        'keterangan' => 'Transfer ke ' . $request->lokasi_tujuan,
+                        'lokasi' => $kodeLokasiAsal, // harus kode, bukan nama
+                        'keterangan' => 'Transfer ke ' . $kodeLokasiTujuan, // bisa kode, atau jika ingin nama, ambil dari tabel lokasi
                         'tanggal_exp' => $batch->tanggal_exp,
-                        'lokasi' => $request->lokasi_asal,
                     ]);
 
-                    // Masukkan ke lokasi tujuan
                     DB::table('t_kartupersproduk')->insert([
                         'no_transaksi' => $no_transaksi,
                         'tanggal' => $request->tanggal,
@@ -348,9 +357,9 @@ public function edit($no_transaksi)
                         'keluar' => 0,
                         'hpp' => $batch->hpp,
                         'satuan' => $batch->satuan,
-                        'keterangan' => 'Transfer dari ' . $request->lokasi_asal,
+                        'lokasi' => $kodeLokasiTujuan, // harus kode, bukan nama
+                        'keterangan' => 'Transfer dari ' . $kodeLokasiAsal, // bisa kode, atau jika ingin nama, ambil dari tabel lokasi
                         'tanggal_exp' => $batch->tanggal_exp,
-                        'lokasi' => $request->lokasi_tujuan,
                     ]);
 
                     $sisa -= $ambil;

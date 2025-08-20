@@ -11,10 +11,28 @@ use Illuminate\Support\Facades\DB;
 
 class ResepController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $reseps = Resep::with(['produk', 'details.bahan'])->get();
-        return view('resep.index', compact('reseps'));
+        $sort = $request->get('sort', 'desc');
+        $search = $request->get('search');
+
+        $query = Resep::with(['produk', 'details.bahan']);
+
+        if ($search) {
+            $query->where('kode_resep', 'like', "%$search%")
+                  ->orWhereHas('produk', function($q) use ($search) {
+                      $q->where('nama_produk', 'like', "%$search%");
+                  });
+        }
+
+        $reseps = $query->orderBy('kode_resep', $sort)
+                        ->paginate(10)
+                        ->appends([
+                            'search' => $search,
+                            'sort' => $sort,
+                        ]);
+
+        return view('resep.index', compact('reseps', 'sort'));
     }
 
     public function create()
@@ -60,5 +78,73 @@ class ResepController extends Controller
         });
 
         return redirect()->route('resep.index')->with('success', 'Resep berhasil disimpan!');
+    }
+
+    public function edit($kode_resep)
+    {
+        $resep = Resep::with(['details.bahan'])->findOrFail($kode_resep);
+        $produk = Produk::all();
+        $bahan = Bahan::all();
+        return view('resep.edit', compact('resep', 'produk', 'bahan'));
+    }
+
+    public function update(Request $request, $kode_resep)
+    {
+        $request->validate([
+            'kode_produk' => 'required|exists:t_produk,kode_produk',
+            'bahan.*.kode_bahan' => 'required|exists:t_bahan,kode_bahan',
+            'bahan.*.satuan' => 'required|string',
+            'bahan.*.jumlah_kebutuhan' => 'required|numeric|min:0',
+        ]);
+
+        DB::transaction(function () use ($request, $kode_resep) {
+            $resep = Resep::findOrFail($kode_resep);
+            $resep->update([
+                'kode_produk' => $request->kode_produk,
+                'keterangan' => $request->keterangan,
+            ]);
+
+            // Hapus detail lama
+            ResepDetail::where('kode_resep', $kode_resep)->delete();
+
+            // Tambah detail baru
+            foreach ($request->bahan as $i => $row) {
+                ResepDetail::create([
+                    'kode_resep_detail' => $kode_resep . '-' . str_pad($i + 1, 2, '0', STR_PAD_LEFT),
+                    'kode_resep' => $kode_resep,
+                    'kode_bahan' => $row['kode_bahan'],
+                    'jumlah_kebutuhan' => $row['jumlah_kebutuhan'],
+                    'satuan' => $row['satuan'],
+                ]);
+            }
+        });
+
+        return redirect()->route('resep.index')->with('success', 'Resep berhasil diupdate!');
+    }
+
+    public function destroy($kode_resep)
+    {
+        DB::transaction(function () use ($kode_resep) {
+            ResepDetail::where('kode_resep', $kode_resep)->delete();
+            Resep::where('kode_resep', $kode_resep)->delete();
+        });
+        return redirect()->route('resep.index')->with('success', 'Resep berhasil dihapus!');
+    }
+
+    public function detail($kode_resep)
+    {
+        $resep = Resep::with(['produk', 'details.bahan'])->findOrFail($kode_resep);
+        return response()->json([
+            'kode_resep' => $resep->kode_resep,
+            'produk' => $resep->produk->nama_produk ?? '-',
+            'details' => $resep->details->map(function($d){
+                return [
+                    'kode_bahan' => $d->kode_bahan,
+                    'nama_bahan' => $d->bahan->nama_bahan ?? '-',
+                    'jumlah_kebutuhan' => $d->jumlah_kebutuhan,
+                    'satuan' => $d->satuan
+                ];
+            })->values()
+        ]);
     }
 }

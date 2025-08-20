@@ -141,10 +141,12 @@
 
                 <li><a href="/produk" class="nav-link submenu-item"><i class="bi bi-cup-straw"></i>Data Produk</a></li>
                 @endif
-                @if(auth()->user()->role == 'admin' || auth()->user()->role == 'produksi')
+                @if(auth()->user()->role == 'admin' )
                 <li><a href="/aset-tetap" class="nav-link submenu-item"><i class="bi bi-box"></i>Data Aset Tetap</a></li>
-                <li><a href="/resep" class="nav-link submenu-item"><i class="bi bi-egg-fried"></i>Data Resep</a></li>
                 <li><a href="/karyawan" class="nav-link submenu-item"><i class="bi bi-people"></i>Data Karyawan</a></li>
+                @endif
+                @if(auth()->user()->role == 'admin' || auth()->user()->role == 'produksi')
+                <li><a href="/resep" class="nav-link submenu-item"><i class="bi bi-egg-fried"></i>Data Resep</a></li>
                 @endif
                 @if(auth()->user()->role == 'admin' || auth()->user()->role == 'penjualan')
                 <li><a href="/pelanggan" class="nav-link submenu-item"><i class="bi bi-person"></i>Data Pelanggan</a></li>
@@ -286,13 +288,30 @@
                         <i class="bi bi-journal-bookmark"></i><span>Jurnal Umum</span>
                     </a>
                 </li>
-
-                <!-- Buku Besar -->
                 <li>
                     <a href="/jurnal/buku_besar" class="nav-link">
                         <i class="bi bi-book"></i><span>Buku Besar</span>
                     </a>
                 </li>
+                <li>
+                    <a href="/hpp/laporan" class="nav-link">
+                        <i class="bi bi-journal-bookmark"></i><span>Laporan Harga Pokok Produksi</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/laporan/neraca" class="nav-link">
+                        <i class="bi bi-journal-bookmark"></i><span>Neraca</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/laporan/laba-rugi" class="nav-link">
+                        <i class="bi bi-journal-bookmark"></i><span>Laba Rugi</span>
+                    </a>
+                </li>
+              
+              
+                <!-- Buku Besar -->
+                
             </ul>
         </li>
         @endif
@@ -309,21 +328,23 @@ function highlightCurrentPage() {
         const linkPath = new URL(link.href).pathname;
 
         // Gunakan endsWith agar cocok walau ada subfolder
-        if (currentPath.endsWith(linkPath) && linkPath !== "/") {
+        if (currentPath === linkPath && linkPath !== "/") {
             link.classList.add('current-page');
 
-            // Open all parent menus
-            let parentMenu = link.closest('ul');
-            while (parentMenu && parentMenu.id) {
-                parentMenu.style.display = 'block';
-
-                // Find and activate the parent header
-                const parentHeader = parentMenu.previousElementSibling;
-                if (parentHeader && parentHeader.classList.contains('submenu-header')) {
-                    parentHeader.classList.add('submenu-active');
+            // Open only direct parent menus of the active link
+            let parentLi = link.closest('li');
+            while (parentLi) {
+                // Cari submenu UL di dalam parentLi
+                let submenuUl = parentLi.querySelector('ul[id^="submenu-"]');
+                if (submenuUl) {
+                    submenuUl.style.display = 'block';
+                    // Aktifkan header di atas submenu
+                    let header = parentLi.querySelector('.submenu-header');
+                    if (header) header.classList.add('submenu-active');
                 }
-
-                parentMenu = parentMenu.parentElement.closest('ul');
+                // Naik ke parent <ul> lalu ke parent <li>
+                let parentUl = parentLi.parentElement.closest('ul');
+                parentLi = parentUl ? parentUl.parentElement.closest('li') : null;
             }
         }
     });

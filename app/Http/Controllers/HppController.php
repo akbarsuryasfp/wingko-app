@@ -16,6 +16,7 @@ use App\Models\JurnalUmum;
 use App\Models\JurnalDetail;
 use App\Helpers\AkunHelper;
 use App\Helpers\JurnalHelper;
+use Barryvdh\DomPDF\Facade\Pdf; // Pastikan sudah use ini di atas
 
 class HppController extends Controller
 {
@@ -297,22 +298,34 @@ class HppController extends Controller
         $bulan = $request->input('bulan', date('m'));
         $tahun = $request->input('tahun', date('Y'));
 
-        // 1. Persediaan Awal = total pembelian bulan sebelumnya
+        // Hitung bulan dan tahun sebelumnya
         $bulanSebelumnya = $bulan == 1 ? 12 : $bulan - 1;
         $tahunSebelumnya = $bulan == 1 ? $tahun - 1 : $tahun;
 
-        $persediaan_awal = \DB::table('t_pembelian')
+        // Pembelian bahan bulan sebelumnya
+        $pembelian_bahan_bulan_lalu = \DB::table('t_pembelian')
             ->whereMonth('tanggal_pembelian', $bulanSebelumnya)
             ->whereYear('tanggal_pembelian', $tahunSebelumnya)
             ->sum('total_pembelian');
 
-        // 2. Pembelian Bahan = total pembelian bulan berjalan
+        // Penggunaan bahan bulan sebelumnya
+        $penggunaan_bahan_bulan_lalu = \DB::table('t_hpp_bahan_baku_detail')
+            ->join('t_produksi_detail', 't_hpp_bahan_baku_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
+            ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', $bulanSebelumnya)
+            ->whereYear('t_produksi.tanggal_produksi', $tahunSebelumnya)
+            ->sum('t_hpp_bahan_baku_detail.total_bahan');
+
+        // Persediaan awal bulan berjalan
+        $persediaan_awal = $pembelian_bahan_bulan_lalu - $penggunaan_bahan_bulan_lalu;
+
+        // Pembelian Bahan bulan berjalan
         $pembelian_bahan = \DB::table('t_pembelian')
             ->whereMonth('tanggal_pembelian', $bulan)
             ->whereYear('tanggal_pembelian', $tahun)
             ->sum('total_pembelian');
 
-        // 3. Bahan Digunakan = dari HPP bulan berjalan
+        // Bahan Digunakan bulan berjalan
         $bahan_digunakan = \DB::table('t_hpp_bahan_baku_detail')
             ->join('t_produksi_detail', 't_hpp_bahan_baku_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
             ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
@@ -320,10 +333,10 @@ class HppController extends Controller
             ->whereYear('t_produksi.tanggal_produksi', $tahun)
             ->sum('t_hpp_bahan_baku_detail.total_bahan');
 
-        // 4. Persediaan Akhir = persediaan_awal + pembelian_bahan - bahan_digunakan
+        // Persediaan akhir bulan berjalan
         $persediaan_akhir = $persediaan_awal + $pembelian_bahan - $bahan_digunakan;
 
-        // 5. Tenaga Kerja Langsung bulan berjalan
+        // Tenaga Kerja Langsung bulan berjalan
         $total_tk = \DB::table('t_hpp_tenaga_kerja_detail')
             ->join('t_produksi_detail', 't_hpp_tenaga_kerja_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
             ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
@@ -331,7 +344,7 @@ class HppController extends Controller
             ->whereYear('t_produksi.tanggal_produksi', $tahun)
             ->sum('t_hpp_tenaga_kerja_detail.total_biaya_kerja');
 
-        // 6. Overhead bulan berjalan
+        // Overhead bulan berjalan
         $total_overhead = \DB::table('t_hpp_overhead_detail')
             ->join('t_produksi_detail', 't_hpp_overhead_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
             ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
@@ -342,5 +355,71 @@ class HppController extends Controller
         return view('hpp.laporan', compact(
             'bulan', 'tahun', 'pembelian_bahan', 'persediaan_awal', 'persediaan_akhir', 'total_tk', 'total_overhead'
         ));
+    }
+
+    public function laporanPdf(Request $request)
+    {
+        $bulan = $request->input('bulan', date('m'));
+        $tahun = $request->input('tahun', date('Y'));
+
+        // Hitung bulan dan tahun sebelumnya
+        $bulanSebelumnya = $bulan == 1 ? 12 : $bulan - 1;
+        $tahunSebelumnya = $bulan == 1 ? $tahun - 1 : $tahun;
+
+        // Pembelian bahan bulan sebelumnya
+        $pembelian_bahan_bulan_lalu = \DB::table('t_pembelian')
+            ->whereMonth('tanggal_pembelian', $bulanSebelumnya)
+            ->whereYear('tanggal_pembelian', $tahunSebelumnya)
+            ->sum('total_pembelian');
+
+        // Penggunaan bahan bulan sebelumnya
+        $penggunaan_bahan_bulan_lalu = \DB::table('t_hpp_bahan_baku_detail')
+            ->join('t_produksi_detail', 't_hpp_bahan_baku_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
+            ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', $bulanSebelumnya)
+            ->whereYear('t_produksi.tanggal_produksi', $tahunSebelumnya)
+            ->sum('t_hpp_bahan_baku_detail.total_bahan');
+
+        // Persediaan awal bulan berjalan
+        $persediaan_awal = $pembelian_bahan_bulan_lalu - $penggunaan_bahan_bulan_lalu;
+
+        // Pembelian Bahan bulan berjalan
+        $pembelian_bahan = \DB::table('t_pembelian')
+            ->whereMonth('tanggal_pembelian', $bulan)
+            ->whereYear('tanggal_pembelian', $tahun)
+            ->sum('total_pembelian');
+
+        // Bahan Digunakan bulan berjalan
+        $bahan_digunakan = \DB::table('t_hpp_bahan_baku_detail')
+            ->join('t_produksi_detail', 't_hpp_bahan_baku_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
+            ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', $bulan)
+            ->whereYear('t_produksi.tanggal_produksi', $tahun)
+            ->sum('t_hpp_bahan_baku_detail.total_bahan');
+
+        // Persediaan akhir bulan berjalan
+        $persediaan_akhir = $persediaan_awal + $pembelian_bahan - $bahan_digunakan;
+
+        // Tenaga Kerja Langsung bulan berjalan
+        $total_tk = \DB::table('t_hpp_tenaga_kerja_detail')
+            ->join('t_produksi_detail', 't_hpp_tenaga_kerja_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
+            ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', $bulan)
+            ->whereYear('t_produksi.tanggal_produksi', $tahun)
+            ->sum('t_hpp_tenaga_kerja_detail.total_biaya_kerja');
+
+        // Overhead bulan berjalan
+        $total_overhead = \DB::table('t_hpp_overhead_detail')
+            ->join('t_produksi_detail', 't_hpp_overhead_detail.no_detail_produksi', '=', 't_produksi_detail.no_detail_produksi')
+            ->join('t_produksi', 't_produksi_detail.no_produksi', '=', 't_produksi.no_produksi')
+            ->whereMonth('t_produksi.tanggal_produksi', $bulan)
+            ->whereYear('t_produksi.tanggal_produksi', $tahun)
+            ->sum('t_hpp_overhead_detail.biaya_bop');
+
+        $pdf = Pdf::loadView('hpp.laporan_pdf', compact(
+            'bulan', 'tahun', 'pembelian_bahan', 'persediaan_awal', 'persediaan_akhir', 'total_tk', 'total_overhead'
+        ));
+
+        return $pdf->stream('Laporan-HPP-'.$bulan.'-'.$tahun.'.pdf');
     }
 }

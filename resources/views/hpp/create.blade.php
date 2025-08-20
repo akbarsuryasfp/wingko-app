@@ -34,13 +34,19 @@
 
                 <ul class="nav nav-tabs mb-3" id="hppTab" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="bahan-tab" data-bs-toggle="tab" data-bs-target="#bahan" type="button" role="tab">Bahan Baku</button>
+                        <button class="nav-link active fw-bold text-dark bg-white border" id="bahan-tab" data-bs-toggle="tab" data-bs-target="#bahan" type="button" role="tab">
+                            Bahan Baku
+                        </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tenaga-tab" data-bs-toggle="tab" data-bs-target="#tenaga" type="button" role="tab">Tenaga Kerja</button>
+                        <button class="nav-link fw-bold text-dark bg-white border" id="tenaga-tab" data-bs-toggle="tab" data-bs-target="#tenaga" type="button" role="tab">
+                            Tenaga Kerja
+                        </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="overhead-tab" data-bs-toggle="tab" data-bs-target="#overhead" type="button" role="tab">Overhead</button>
+                        <button class="nav-link fw-bold text-dark bg-white border" id="overhead-tab" data-bs-toggle="tab" data-bs-target="#overhead" type="button" role="tab">
+                            Overhead
+                        </button>
                     </li>
                 </ul>
 

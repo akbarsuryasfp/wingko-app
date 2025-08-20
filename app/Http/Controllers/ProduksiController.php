@@ -176,10 +176,28 @@ class ProduksiController extends Controller
     }
     
     
-    public function index()
+    public function index(Request $request)
     {
-        $produksi = Produksi::with('details.produk')->orderBy('tanggal_produksi', 'desc')->get();
-        return view('produksi.index', compact('produksi'));
+        $sort = $request->get('sort', 'desc');
+        $search = $request->get('search');
+
+        $query = Produksi::with('details.produk');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_produksi', 'like', "%$search%")
+                  ->orWhere('keterangan', 'like', "%$search%");
+            });
+        }
+
+        $produksi = $query->orderBy('tanggal_produksi', $sort)
+            ->paginate(10)
+            ->appends([
+                'search' => $search,
+                'sort' => $sort,
+            ]);
+
+        return view('produksi.index', compact('produksi', 'sort'));
     }
     
     public function show($no_produksi)

@@ -2,7 +2,15 @@
 
 @section('content')
 <div class="container">
-    <h3>Laporan Harga Pokok Produksi (HPP) Bulanan</h3>
+    <div class="text-center mb-4">
+        <h4 class="mb-0 fw-bold">Wingko Babat Pratama</h4>
+        <div class="mb-1">Laporan Harga Pokok Produksi</div>
+        <div class="mb-2">
+            Periode: {{ DateTime::createFromFormat('!m', $bulan)->format('F') }} {{ $tahun }}
+        </div>
+        <hr class="my-2">
+    </div>
+    
     <form method="GET" class="row g-2 mb-3">
         <div class="col-auto">
             <select name="bulan" class="form-select">
@@ -20,6 +28,11 @@
         </div>
         <div class="col-auto">
             <button class="btn btn-primary">Tampilkan</button>
+        </div>
+        <div class="col-auto text-end">
+        <a href="{{ route('hpp.laporan.pdf', ['bulan' => $bulan, 'tahun' => $tahun]) }}" target="_blank" class="btn btn-outline-secondary">
+            <i class="bi bi-printer"></i> Print Laporan
+        </a>
         </div>
     </form>
 

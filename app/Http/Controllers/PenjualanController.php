@@ -431,6 +431,19 @@ class PenjualanController extends Controller
                         'kredit' => 0,
                     ]);
                 }
+                // Diskon Penjualan (jika ada)
+                $kode_akun_diskon_penjualan = \App\Helpers\JurnalHelper::getKodeAkun('diskon_penjualan');
+                $total_diskon = $request->diskon ?? 0;
+                if ($total_diskon > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_diskon_penjualan,
+                        'debit' => $total_diskon,
+                        'kredit' => 0,
+                    ]);
+                }
+
                 if ($total_piutang_sendiri > 0) {
                     \App\Models\JurnalDetail::create([
                         'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
@@ -485,27 +498,37 @@ class PenjualanController extends Controller
 
                 // Jurnal Penjualan Barang Konsinyasi (hanya komisi)
                 $kode_akun_komisi_konsinyasi = \App\Helpers\JurnalHelper::getKodeAkun('pendapatan_lain');
+                $kode_akun_hutang_konsinyasi = \App\Helpers\JurnalHelper::getKodeAkun('hutang_konsinyasi');
                 foreach ($details as $detail) {
                     $isKonsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $detail['kode_produk'])->exists();
                     if ($isKonsinyasi) {
-                        $komisi_per_unit = DB::table('t_konsinyasimasuk_detail')
+                        $harga_titip = DB::table('t_konsinyasimasuk_detail')
                             ->where('kode_produk', $detail['kode_produk'])
                             ->orderByDesc('no_detailkonsinyasimasuk')
-                            ->value('komisi');
-                        $komisi_per_unit = $komisi_per_unit ?? 0;
+                            ->value('harga_titip') ?? 0;
                         $jumlah_terjual = $detail['jumlah'] ?? 0;
-                        $komisi_total = $komisi_per_unit * $jumlah_terjual;
+                        $total_hutang = $harga_titip * $jumlah_terjual;
 
-                        if ($komisi_total > 0) {
-                            // Debit Kas/Bank (jumlah komisi yang diterima)
+                        // Jurnal hutang konsinyasi (kredit)
+                        if ($total_hutang > 0) {
                             \App\Models\JurnalDetail::create([
                                 'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
                                 'no_jurnal' => $no_jurnal,
-                                'kode_akun' => $kode_akun_kas,
-                                'debit' => $komisi_total,
-                                'kredit' => 0,
+                                'kode_akun' => $kode_akun_hutang_konsinyasi,
+                                'debit' => 0,
+                                'kredit' => $total_hutang,
                             ]);
-                            // Kredit Pendapatan Komisi Konsinyasi
+                        }
+
+                        // Komisi tetap seperti sebelumnya
+                        $komisi_per_unit = DB::table('t_konsinyasimasuk_detail')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->orderByDesc('no_detailkonsinyasimasuk')
+                            ->value('komisi') ?? 0;
+                        $komisi_total = $komisi_per_unit * $jumlah_terjual;
+
+                        if ($komisi_total > 0) {
+                            // Kredit Pendapatan Komisi Konsinyasi (tidak perlu debit kas lagi)
                             \App\Models\JurnalDetail::create([
                                 'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
                                 'no_jurnal' => $no_jurnal,
@@ -631,13 +654,14 @@ class PenjualanController extends Controller
                     'nomor_bukti' => $nomor_bukti,
                 ]);
 
-                $total_jual = $request->total_jual ?? 0;
+                $total_harga = $request->total_harga ?? 0;
                 $total_bayar = $request->total_bayar ?? 0;
                 $piutang = $request->piutang ?? 0;
                 $kode_akun_kas = \App\Helpers\JurnalHelper::getKodeAkun('kas_bank');
                 $kode_akun_piutang = \App\Helpers\JurnalHelper::getKodeAkun('piutang_usaha');
                 $kode_akun_penjualan = \App\Helpers\JurnalHelper::getKodeAkun('penjualan');
 
+                // Pada bagian jurnal kas/bank, pastikan hanya satu:
                 if ($total_bayar > 0) {
                     \App\Models\JurnalDetail::create([
                         'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
@@ -647,6 +671,19 @@ class PenjualanController extends Controller
                         'kredit' => 0,
                     ]);
                 }
+                // Diskon Penjualan (jika ada)
+                $kode_akun_diskon_penjualan = \App\Helpers\JurnalHelper::getKodeAkun('diskon_penjualan');
+                $total_diskon = $request->diskon ?? 0;
+                if ($total_diskon > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_diskon_penjualan,
+                        'debit' => $total_diskon,
+                        'kredit' => 0,
+                    ]);
+                }
+
                 if ($piutang > 0) {
                     \App\Models\JurnalDetail::create([
                         'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
@@ -656,15 +693,104 @@ class PenjualanController extends Controller
                         'kredit' => 0,
                     ]);
                 }
-                if ($total_jual > 0) {
+                 $total_jual_sendiri = 0;
+                $total_bayar_sendiri = 0;
+                $total_piutang_sendiri = 0;
+                $details = json_decode($request->detail_json, true);
+                foreach ($details as $detail) {
+                    $isProdukSendiri = \DB::table('t_produk')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isProdukSendiri) {
+                        $subtotal = isset($detail['subtotal']) ? $detail['subtotal'] : 0;
+                        $total_jual_sendiri += $subtotal;
+                        $total_bayar_sendiri += $request->total_bayar ?? 0; // jika ingin split, sesuaikan
+                        $total_piutang_sendiri += $request->piutang ?? 0;   // jika ingin split, sesuaikan
+                    }
+                }
+                 if ($total_jual_sendiri > 0) {
                     \App\Models\JurnalDetail::create([
                         'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
                         'no_jurnal' => $no_jurnal,
                         'kode_akun' => $kode_akun_penjualan,
                         'debit' => 0,
-                        'kredit' => $total_jual,
+                        'kredit' => $total_jual_sendiri,
                     ]);
                 }
+                  $kode_akun_hpp = \App\Helpers\JurnalHelper::getKodeAkun('hpp');
+                $kode_akun_persediaan = \App\Helpers\JurnalHelper::getKodeAkun('persediaan_jadi');
+                $total_hpp = 0;
+                $details = json_decode($request->detail_json, true);
+                foreach ($details as $detail) {
+                    $isProdukSendiri = \DB::table('t_produk')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isProdukSendiri) {
+                        // Ambil total HPP dari kartu persediaan produk keluar untuk transaksi ini
+                        $hppKeluar = \DB::table('t_kartupersproduk')
+                            ->where('no_transaksi', $no_jual)
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->where('keluar', '>', 0)
+                            ->sum(\DB::raw('hpp * keluar'));
+                        $total_hpp += $hppKeluar;
+                    }
+                }
+                if ($total_hpp > 0) {
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_hpp,
+                        'debit' => $total_hpp,
+                        'kredit' => 0,
+                    ]);
+                    \App\Models\JurnalDetail::create([
+                        'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                        'no_jurnal' => $no_jurnal,
+                        'kode_akun' => $kode_akun_persediaan,
+                        'debit' => 0,
+                        'kredit' => $total_hpp,
+                    ]);
+                }
+                $kode_akun_komisi_konsinyasi = \App\Helpers\JurnalHelper::getKodeAkun('pendapatan_lain');
+                $kode_akun_hutang_konsinyasi = \App\Helpers\JurnalHelper::getKodeAkun('hutang_konsinyasi');
+                foreach ($details as $detail) {
+                    $isKonsinyasi = \DB::table('t_produk_konsinyasi')->where('kode_produk', $detail['kode_produk'])->exists();
+                    if ($isKonsinyasi) {
+                        $harga_titip = DB::table('t_konsinyasimasuk_detail')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->orderByDesc('no_detailkonsinyasimasuk')
+                            ->value('harga_titip') ?? 0;
+                        $jumlah_terjual = $detail['jumlah'] ?? 0;
+                        $total_hutang = $harga_titip * $jumlah_terjual;
+
+                        // Jurnal hutang konsinyasi (kredit)
+                        if ($total_hutang > 0) {
+                            \App\Models\JurnalDetail::create([
+                                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                                'no_jurnal' => $no_jurnal,
+                                'kode_akun' => $kode_akun_hutang_konsinyasi,
+                                'debit' => 0,
+                                'kredit' => $total_hutang,
+                            ]);
+                        }
+
+                        // Komisi tetap seperti sebelumnya
+                        $komisi_per_unit = DB::table('t_konsinyasimasuk_detail')
+                            ->where('kode_produk', $detail['kode_produk'])
+                            ->orderByDesc('no_detailkonsinyasimasuk')
+                            ->value('komisi') ?? 0;
+                        $komisi_total = $komisi_per_unit * $jumlah_terjual;
+
+                        if ($komisi_total > 0) {
+                            // Kredit Pendapatan Komisi Konsinyasi (tidak perlu debit kas lagi)
+                            \App\Models\JurnalDetail::create([
+                                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                                'no_jurnal' => $no_jurnal,
+                                'kode_akun' => $kode_akun_komisi_konsinyasi,
+                                'debit' => 0,
+                                'kredit' => $komisi_total,
+                            ]);
+                        }
+                    }
+                }
+
+                
                 \Log::info('PenjualanController@update - sebelum update t_penjualan', [
                     'no_jual' => $no_jual,
                     'data' => [

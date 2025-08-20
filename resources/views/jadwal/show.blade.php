@@ -72,10 +72,7 @@
     @endphp
 
     @if($bahanKurang->count())
-        <form action="{{ route('orderbeli.create') }}" method="GET" id="orderBahanForm">
-            <input type="hidden" name="bahan_kurang" id="bahan_kurang_input">
-            <button type="button" class="btn btn-danger" onclick="orderBahan()">Order Bahan Kurang</button>
-        </form>
+    
         @php
             // Siapkan array bahan kurang untuk dikirim ke JS
             $bahanKurangArr = [];
@@ -99,6 +96,6 @@
         </script>
     @endif
 
-    <a href="{{ route('produksi.create', ['jadwal' => $jadwal->no_jadwal]) }}" class="btn btn-primary mt-3">Proses Produksi</a>
+    <a href="{{ route('jadwal.index') }}" class="btn btn-primary mt-3">Kembali</a>
 </div>
 @endsection

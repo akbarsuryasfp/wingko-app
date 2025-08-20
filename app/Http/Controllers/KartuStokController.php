@@ -162,19 +162,20 @@ class KartuStokController extends Controller
         $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();
         $tanggal = date('Y-m-d');
 
-        // Ambil stok akhir per produk dan HPP dari t_kartupersproduk
+        // Ambil semua lokasi dari t_lokasi (kode_lokasi => nama_lokasi)
+        $lokasiList = \DB::table('t_lokasi')->pluck('nama_lokasi', 'kode_lokasi');
+
         $stokAkhirList = \DB::table('t_kartupersproduk')
             ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
             ->groupBy('kode_produk', 'lokasi', 'hpp')
             ->havingRaw('stok > 0')
             ->get();
 
-        // Gabungkan stok akhir ke produkList
         foreach ($produkList as $produk) {
             $produk->stok_akhir = $stokAkhirList->where('kode_produk', $produk->kode_produk)->values();
         }
 
-        return view('kartustok.laporan_produk', compact('produkList', 'tanggal'));
+        return view('kartustok.laporan_produk', compact('produkList', 'tanggal', 'lokasiList'));
     }
 
 
@@ -204,6 +205,8 @@ class KartuStokController extends Controller
         $produkList = \DB::table('t_produk')->select('kode_produk','nama_produk','satuan','stokmin')->get();
         $tanggal = date('Y-m-d');
 
+        $lokasiList = \DB::table('t_lokasi')->pluck('nama_lokasi', 'kode_lokasi');
+
         $stokAkhirList = \DB::table('t_kartupersproduk')
             ->select('kode_produk', 'lokasi', 'hpp', \DB::raw('SUM(masuk) - SUM(keluar) as stok'))
             ->groupBy('kode_produk', 'lokasi', 'hpp')
@@ -214,7 +217,7 @@ class KartuStokController extends Controller
             $produk->stok_akhir = $stokAkhirList->where('kode_produk', $produk->kode_produk)->values();
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_produk_pdf', compact('produkList', 'tanggal'))
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('kartustok.laporan_produk_pdf', compact('produkList', 'tanggal', 'lokasiList'))
             ->setPaper('a4', 'landscape');
 
         return $pdf->stream('Laporan_Stok_Akhir_Produk.pdf');

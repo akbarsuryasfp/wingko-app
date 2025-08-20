@@ -2,20 +2,22 @@
 
 @section('content')
 <div class="container">
-    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-        <h3 class="mb-0">Daftar Produksi untuk Perhitungan HPP</h3>
-        <form method="GET" class="d-flex gap-2 align-items-center" action="{{ route('hpp.index') }}">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari No Produksi / Produk" value="{{ $search }}">
-            <button class="btn btn-sm btn-primary" type="submit">Cari</button>
-        </form>
-    </div>
-   <div class="mb-3" style="text-align: right;">
-    <select name="per_page" class="form-select form-select-sm d-inline-block" onchange="this.form.submit()" style="width: auto;">
-         @foreach([10, 20, 30, 40, 50] as $opt)
+    <h3 class="mb-4">Daftar Produksi untuk Perhitungan HPP</h3>
+
+    <form method="GET" action="{{ route('hpp.index') }}" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        <input type="text" name="search" class="form-control form-control-sm" style="max-width:200px" placeholder="Cari No Produksi / Produk" value="{{ $search }}">
+        <input type="date" name="tanggal_awal" class="form-control form-control-sm" style="max-width:150px" value="{{ request('tanggal_awal') }}" title="Dari Tanggal">
+        <span type="text">-</span>
+        <input type="date" name="tanggal_akhir" class="form-control form-control-sm" style="max-width:150px" value="{{ request('tanggal_akhir') }}" title="Sampai Tanggal">
+        <button class="btn btn-sm btn-primary bi bi-search" type="submit"></button>
+        <div class="ms-auto">
+            <select name="per_page" class="form-select form-select-sm d-inline-block" onchange="this.form.submit()" style="width: auto;">
+                @foreach([10, 20, 30, 40, 50] as $opt)
                     <option value="{{ $opt }}" @selected($perPage == $opt)>{{ $opt }} / page </option>
                 @endforeach
             </select>
-    </div>
+        </div>
+    </form>
 
     <div class="table-responsive">
         <table class="table table-hover align-middle table-bordered rounded shadow-sm">
@@ -71,7 +73,7 @@
             </small>
         </div>
         <div>
-            {{ $produksiDetails->links() }}
+            {{ $produksiDetails->appends(request()->all())->links() }}
         </div>
     </div>
 </div>
