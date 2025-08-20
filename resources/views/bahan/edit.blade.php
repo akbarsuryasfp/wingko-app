@@ -80,40 +80,6 @@
                             </div>
                         </div>
 
-                        {{-- Frekuensi Order --}}
-<div class="form-group row mb-3 align-items-center">
-    <label class="col-sm-4 col-form-label" data-bs-toggle="tooltip" title="Contoh: 2 x Seminggu berarti order dilakukan 2 kali setiap minggu.">Frekuensi Order</label>
-    
-    <div class="col-sm-8 d-flex align-items-center">
-        <!-- Interval Input -->
-        <div class="col-sm-2 me-2">
-            <input type="number" class="form-control" name="interval" min="1" value="{{ old('interval', $bahan->interval) }}">
-        </div>
-        
-        <!-- "x" Label -->
-        <span class="me-2"> x </span>
-
-                            <!-- Dropdown frekuensi -->
-                            <div class="col-sm-9">
-                                <select class="form-select" name="frekuensi_pembelian">
-                                    <option value="">-- Pilih Frekuensi --</option>
-                                    <option value="Sehari" {{ old('frekuensi_pembelian', $bahan->frekuensi_pembelian) == 'Sehari' ? 'selected' : '' }}>Sehari</option>
-                                    <option value="Seminggu" {{ old('frekuensi_pembelian', $bahan->frekuensi_pembelian) == 'Seminggu' ? 'selected' : '' }}>Seminggu</option>
-                                    <option value="Dua Minggu" {{ old('frekuensi_pembelian', $bahan->frekuensi_pembelian) == 'Dua Minggu' ? 'selected' : '' }}>Dua Minggu</option>
-                                    <option value="Sebulan" {{ old('frekuensi_pembelian', $bahan->frekuensi_pembelian) == 'Sebulan' ? 'selected' : '' }}>Sebulan</option>
-                                    <option value="Tiga Bulan" {{ old('frekuensi_pembelian', $bahan->frekuensi_pembelian) == 'Tiga Bulan' ? 'selected' : '' }}>Tiga Bulan</option>
-                                </select>
-                    </div>
-                            </div>
-                        </div>
-
-                        {{-- Jumlah Order --}}
-                        <div class="row mb-3">
-                            <label for="jumlah_per_order" class="col-sm-4 col-form-label">Jumlah Order/Satuan</label>
-                            <div class="col-sm-8">
-                                <input type="number" class="form-control" id="jumlah_per_order" name="jumlah_per_order" value="{{ old('jumlah_per_order', $bahan->jumlah_per_order) }}">
-                            </div>
-                        </div>
 
                         {{-- Tombol Aksi --}}
 <div class="row mt-4">

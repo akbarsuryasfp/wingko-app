@@ -49,10 +49,9 @@
                         <div class="mb-3 row align-items-center">
                             <label class="col-sm-5 col-form-label">Kas yang Digunakan</label>
                             <div class="col-sm-7">
-                                <select name="jenis_kas" class="form-select py-2" required>
-                                    <option value="">-- Pilih Kas --</option>
-                                    <option value="kas">Kas</option>
-                                </select>
+<select name="jenis_kas" class="form-select py-2" required>
+    <option value="bank" selected>Kas di Bank</option>
+</select>
                             </div>
                         </div>
                         <div class="mb-3 row align-items-center">

@@ -51,9 +51,6 @@ class BahanController extends Controller
     'nama_bahan' => 'required',
     'satuan' => 'required',
     'stokmin' => 'nullable|numeric',
-    'frekuensi_pembelian' => 'nullable|string',
-    'interval' => 'nullable|integer',
-    'jumlah_per_order' => 'nullable|numeric',
         ]);
 
         // Generate kode_bahan otomatis
@@ -71,11 +68,7 @@ class BahanController extends Controller
             'kode_kategori' => $request->kode_kategori,
             'nama_bahan' => $request->nama_bahan,
             'satuan' => $request->satuan,
-            'stokmin' => $request->stokmin,
-            'frekuensi_pembelian' => $request->frekuensi_pembelian,
-            'interval' => $request->interval,
-            'jumlah_per_order' => $request->jumlah_per_order,
-   
+            'stokmin' => $request->stokmin,   
         ]);
 
         return redirect()->route('bahan.index')->with('success', 'Data bahan berhasil ditambahkan.');

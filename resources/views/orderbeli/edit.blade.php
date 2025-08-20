@@ -72,12 +72,12 @@
                                             </button>
                                         </div>
                                         
-                                        <!-- Tombol Kebutuhan Produksi -->
+                                        <!-- Tombol Stok Minimal -->
                                         <div class="col-md-6">
-                                            <button type="button" class="btn btn-success w-100 py-2" data-bs-toggle="modal" data-bs-target="#prediksiModal">
-                                                <i class="fas fa-chart-line me-2"></i> Kebutuhan Produksi
-                                                <span class="badge bg-white text-success ms-2">↗</span>
-                                            </button>
+    <button type="button" class="btn btn-warning w-100 py-2" data-bs-toggle="modal" data-bs-target="#stokMinModal">
+        <i class="fas fa-exclamation-triangle me-2"></i> Stok Minimal
+        <span class="badge bg-white text-warning ms-2">!</span>
+    </button>
                                         </div>
                                     </div>
                                 </div>
@@ -210,17 +210,59 @@
   </div>
 </div>
 
-<!-- Modal Prediksi Kebutuhan -->
-<div class="modal fade" id="prediksiModal" tabindex="-1" aria-labelledby="prediksiModalLabel" aria-hidden="true">
+
+<!-- Modal Stok Minimal -->
+<div class="modal fade" id="stokMinModal" tabindex="-1" aria-labelledby="stokMinModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="prediksiModalLabel">Kebutuhan Produksi</h5>
+        <h5 class="modal-title" id="stokMinModalLabel">Daftar Bahan di Bawah Stok Minimal</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <ul class="nav nav-tabs" id="prediksiTab" role="tablist"></ul>
-        <div class="tab-content" id="prediksiTabContent"></div>
+        @if(count($stokMinList) > 0)
+        <table class="table table-bordered table-sm align-middle">
+          <thead>
+            <tr class="text-center">
+              <th style="width: 5%;">No</th>
+              <th class="text-start">Nama Bahan</th>
+              <th style="width: 15%;">Stok Minimal</th>
+              <th style="width: 15%;">Stok Saat Ini</th>
+              <th style="width: 15%;">Selisih</th>
+              <th style="width: 10%;">Satuan</th>
+              <th style="width: 5%;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach ($stokMinList as $i => $item)
+            @php
+                $selisih = $item->stokmin - $item->stok;
+            @endphp
+            <tr>
+              <td class="text-center">{{ $i + 1 }}</td>
+              <td class="text-start">{{ $item->nama_bahan }}</td>
+              <td class="text-center">{{ $item->stokmin }}</td>
+              <td class="text-center">{{ $item->stok }}</td>
+              <td class="text-center">{{ $selisih }}</td>
+              <td class="text-center">{{ $item->satuan }}</td>
+              <td class="text-center">
+                @if ($selisih > 0)
+<button type="button" class="btn btn-sm btn-primary p-1"
+  onclick="isiInputBahan('{{ $item->kode_bahan }}', '{{ $item->nama_bahan }}', '{{ $item->satuan }}', {{ $selisih }})"
+  data-bs-dismiss="modal">
+  Pilih
+</button>
+                @else
+                <span class="text-muted small">Cukup</span>
+                @endif
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
+        @else
+        <div class="alert alert-info">Semua stok bahan mencukupi minimal</div>
+        @endif
       </div>
     </div>
   </div>
@@ -345,13 +387,17 @@ const row = `
                 const li = document.createElement('li');
                 li.className = 'list-group-item d-flex justify-content-between align-items-center';
                 li.style.cursor = 'pointer';
-                li.innerHTML = `
-                    <span>
-                        <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
-                        <small>Kurang: ${item.jumlah_beli}</small>
-                    </span>
-                    <button class="btn btn-sm btn-primary" onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', ${item.jumlah_beli})" data-bs-dismiss="modal">Pilih</button>
-                `;
+li.innerHTML = `
+    <span>
+        <strong>${item.nama_bahan}</strong> (${item.satuan})<br>
+        <small>Kurang: ${item.jumlah_beli}</small>
+    </span>
+    <button type="button" class="btn btn-sm btn-primary"
+        onclick="isiInputBahan('${item.kode_bahan}', '${item.nama_bahan}', '${item.satuan}', ${item.jumlah_beli})"
+        data-bs-dismiss="modal">
+        Pilih
+    </button>
+`;
                 listKekurangan.appendChild(li);
             });
         } else if(listKekurangan) {
@@ -445,31 +491,16 @@ const row = `
     });
 
     function isiInputBahan(kode, nama, satuan, jumlah) {
-        let idx = daftarBahan.findIndex(b => b.kode_bahan === kode);
-        if (idx !== -1) {
-            daftarBahan[idx].jumlah_beli += jumlah;
-            daftarBahan[idx].total = daftarBahan[idx].jumlah_beli * (parseFloat(daftarBahan[idx].harga_beli) || 0);
-        } else {
-            daftarBahan.push({
-                kode_bahan: kode,
-                nama_bahan: nama,
-                satuan: satuan,
-                jumlah_beli: jumlah,
-                harga_beli: 0,
-                total: 0
-            });
+    const bahanSelect = document.getElementById('kode_bahan');
+    for (let i = 0; i < bahanSelect.options.length; i++) {
+        if (bahanSelect.options[i].value == kode) {
+            bahanSelect.selectedIndex = i;
+            break;
         }
-        updateTabel();
-        
-        // Auto-fill the form
-        const bahanSelect = document.getElementById('kode_bahan');
-        for (let i = 0; i < bahanSelect.options.length; i++) {
-            if (bahanSelect.options[i].value == kode) {
-                bahanSelect.selectedIndex = i;
-                break;
-            }
-        }
-        document.getElementById('jumlah_beli').value = jumlah;
     }
+    document.getElementById('jumlah_beli').value = jumlah;
+    // Jika ingin auto-set satuan, bisa tambahkan:
+    // document.getElementById('satuan_bahan').value = satuan;
+}
 </script>
 @endsection

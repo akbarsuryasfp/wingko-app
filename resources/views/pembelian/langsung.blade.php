@@ -245,11 +245,6 @@
             </button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="prediksi-tab" data-bs-toggle="tab" data-bs-target="#prediksi" type="button" role="tab">
-              Prediksi Kebutuhan (Harian)
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
             <button class="nav-link" id="stok-tab" data-bs-toggle="tab" data-bs-target="#stok" type="button" role="tab">
               Stok Minimal
             </button>
@@ -269,7 +264,9 @@
                   <strong>{{ $item['nama_bahan'] }}</strong> ({{ $item['satuan'] }})<br>
                   <small>Kurang: {{ $item['jumlah_beli'] }}</small>
                 </span>
-                <button class="btn btn-sm btn-primary" onclick="tambahBahanKeTabel('{{ $item['kode_bahan'] }}', '{{ $item['nama_bahan'] }}', '{{ $item['satuan'] }}', {{ $item['jumlah_beli'] }})" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-sm btn-primary"
+                  onclick="isiInputBahan('{{ $item['kode_bahan'] }}', '{{ $item['nama_bahan'] }}', '{{ $item['satuan'] }}', {{ $item['jumlah_beli'] }})"
+                  data-bs-dismiss="modal">
                   Pilih
                 </button>
               </li>
@@ -280,41 +277,7 @@
             @endif
           </div>
 
-          <!-- Tab 2: Prediksi Kebutuhan Harian -->
-          <div class="tab-pane fade" id="prediksi" role="tabpanel" aria-labelledby="prediksi-tab">
-            @if(count($bahansPrediksiHarian) > 0)
-            <table class="table table-bordered table-striped">
-              <thead class="table-light text-center align-middle">
-                <tr>
-                <th style="width: 5%;">No</th>
-                  <th style="width: 35%;">Nama Bahan</th>
-                  <th style="width: 25%;">Jumlah Pembelian</th>
-                  <th style="width: 15%;">Satuan</th>
-                  <th style="width: 5%;">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="listPrediksiLangsung">
-                @foreach($bahansPrediksiHarian as $index => $item)
-                <tr>
-                  <td>{{ $index + 1 }}</td>
-                  <td>{{ $item['nama_bahan'] }}</td>
-                  <td>{{ $item['jumlah_per_order'] }}</td>
-                  <td>{{ $item['satuan'] }}</td>
-                  <td>
-                    <button class="btn btn-sm btn-primary" onclick="tambahBahanKeTabel('{{ $item['kode_bahan'] }}', '{{ $item['nama_bahan'] }}', '{{ $item['satuan'] }}', {{ $item['jumlah_per_order'] }})" data-bs-dismiss="modal">
-                      Pilih
-                    </button>
-                  </td>
-                </tr>
-                @endforeach
-              </tbody>
-            </table>
-            @else
-            <div class="alert alert-info">Tidak ada prediksi kebutuhan harian</div>
-            @endif
-          </div>
-
-          <!-- Tab 3: Stok Minimal -->
+          <!-- Tab 2: Stok Minimal -->
           <div class="tab-pane fade" id="stok" role="tabpanel" aria-labelledby="stok-tab">
             @if(count($stokMinList) > 0)
             <table class="table table-bordered table-sm align-middle">
@@ -332,19 +295,19 @@
               <tbody id="listStokMin" class="text-center">
                 @foreach ($stokMinList as $i => $item)
                 @php
-                  $selisih = $item->stokmin - $item->stok;
+                    $selisih = $item['stokmin'] - $item['stok'];
                 @endphp
                 <tr>
                   <td>{{ $i + 1 }}</td>
-                  <td class="text-start">{{ $item->nama_bahan }}</td>
-                  <td>{{ $item->stokmin }}</td>
-                  <td>{{ $item->stok }}</td>
+                  <td class="text-start">{{ $item['nama_bahan'] }}</td>
+                  <td>{{ $item['stokmin'] }}</td>
+                  <td>{{ $item['stok'] }}</td>
                   <td>{{ $selisih }}</td>
-                  <td>{{ $item->satuan }}</td>
+                  <td>{{ $item['satuan'] }}</td>
                   <td>
                     @if ($selisih > 0)
                     <button class="btn btn-sm btn-primary p-1"
-                      onclick="tambahBahanKeTabel('{{ $item->kode_bahan }}', '{{ $item->nama_bahan }}', '{{ $item->satuan }}', {{ $selisih }})"
+                      onclick="isiInputBahan('{{ $item['kode_bahan'] }}', '{{ $item['nama_bahan'] }}', '{{ $item['satuan'] }}', {{ $selisih }})"
                       data-bs-dismiss="modal">
                       Pilih
                     </button>
@@ -397,108 +360,6 @@ let stokMinList = @json($stokMinList ?? []);
 
 var $jq = jQuery.noConflict();
 
-// Tambah bahan baru ke tabel
-$jq('#tambah_bahan').click(function () {
-    let selectHtml = '<select name="bahan[]" class="form-control">';
-    bahanOptions.forEach(b => {
-        selectHtml += `<option value="${b.kode_bahan}">${b.nama_bahan} (${b.satuan})</option>`;
-    });
-    selectHtml += '</select>';
-
-    $jq('#bahan_table tbody').append(`
-        <tr>
-        <td class="text-center align-middle"></td>
-            <td>${selectHtml}</td>
-            <td><input type="number" name="jumlah[]" class="form-control jumlah" value="1" min="0" step="0.01"></td>
-            <td><input type="number" name="harga[]" class="form-control harga" value="0" min="0"></td>
-            <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
-            <td class="subtotal">0</td>
-            <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
-        </tr>
-    `);
-    updateNoUrut(); // <-- Tambahkan ini
-});
-
-// Fungsi untuk menambah bahan ke tabel dari modal
-function tambahBahan() {
-    var bahanSelect = document.getElementById('kode_bahan');
-    var kode = bahanSelect.value;
-    var nama = bahanSelect.options[bahanSelect.selectedIndex].text;
-    var satuan = bahanSelect.options[bahanSelect.selectedIndex].getAttribute('data-satuan') || '';
-    var jumlah = parseFloat(document.getElementById('jumlah_beli').value);
-    var harga = parseFloat(document.getElementById('harga_beli').value);
-
-    if (!kode || !jumlah || !harga) {
-        alert("Silakan lengkapi data bahan, jumlah, dan harga.");
-        return;
-    }
-
-    // Cek duplikasi
-    if ($jq(`#bahan_table tbody tr[data-kode="${kode}"]`).length > 0) {
-        alert('Bahan sudah ada dalam daftar pembelian');
-        return;
-    }
-
-    var tbody = document.querySelector('#bahan_table tbody');
-    var rowCount = tbody.rows.length + 1;
-    var subtotal = jumlah * harga;
-
-    var row = document.createElement('tr');
-    row.setAttribute('data-kode', kode);
-    row.innerHTML = `
-        <td class="text-center">${rowCount}</td>
-        <td>
-            <input type="hidden" name="bahan[]" value="${kode}">
-            ${nama}
-        </td>
-        <td>${satuan}</td>
-        <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah}" min="0" step="0.01"></td>
-        <td><input type="number" name="harga[]" class="form-control harga" value="${harga}" min="0"></td>
-        <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
-        <td class="subtotal">${Math.round(subtotal)}</td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBahan(this)">X</button></td>
-    `;
-    tbody.appendChild(row);
-
-    // Reset input
-    bahanSelect.selectedIndex = 0;
-    document.getElementById('jumlah_beli').value = '';
-    document.getElementById('harga_beli').value = '';
-
-    updateNoUrut();
-    updateTotalHarga();
-}
-function tambahBahanKeTabel(kode_bahan, nama_bahan, satuan, jumlah_beli) {
-    // Cek duplikasi
-    if ($jq(`#bahan_table tbody tr[data-kode="${kode_bahan}"]`).length > 0) {
-        alert('Bahan sudah ada dalam daftar pembelian');
-        return;
-    }
-
-    var harga = 0; // Default harga, user bisa edit
-    var tbody = document.querySelector('#bahan_table tbody');
-    var rowCount = tbody.rows.length + 1;
-
-    var row = document.createElement('tr');
-    row.setAttribute('data-kode', kode_bahan);
-    row.innerHTML = `
-        <td class="text-center">${rowCount}</td>
-        <td>
-            <input type="hidden" name="bahan[]" value="${kode_bahan}">
-            ${nama_bahan}
-        </td>
-        <td>${satuan}</td>
-        <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah_beli}" min="0" step="0.01"></td>
-        <td><input type="number" name="harga[]" class="form-control harga" value="${harga}" min="0"></td>
-        <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
-        <td class="subtotal">0</td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="hapusBahan(this)">X</button></td>
-    `;
-    tbody.appendChild(row);
-
-    updateNoUrut();
-    updateTotalHarga();
-}
 function updateNoUrut() {
     $jq('#bahan_table tbody tr').each(function(i) {
         $jq(this).find('td:first').text(i + 1);
@@ -600,13 +461,105 @@ function hitungTotal() {
     $jq('#status').val(hutang > 0 ? 'Hutang' : 'Lunas');
 }
 
-// Inisialisasi saat dokumen siap
-$jq(document).ready(function() {
-    // Tambahkan event listener untuk input yang mempengaruhi total
-    $jq('#total_bayar, #diskon, #ongkir').on('input', hitungTotal);
-    
-    // Inisialisasi pertama kali
-    updateSubtotal();
+// Tambahkan di bawah fungsi hitungTotal()
+function validateTotalBayar() {
+    let totalPembelian = Math.round(parseFloat($jq('#total_pembelian').val())) || 0;
+    let totalBayar = Math.round(parseFloat($jq('#total_bayar').val())) || 0;
+    if (totalBayar > totalPembelian) {
+        alert('Total Bayar tidak boleh melebihi Total Pembelian!');
+        $jq('#total_bayar').val(totalPembelian);
+        hitungTotal();
+        return false;
+    }
+    return true;
+}
+
+// Panggil saat input
+$jq('#total_bayar').on('input', validateTotalBayar);
+
+// Validasi sebelum submit
+$jq('form').on('submit', function(e) {
+    if (!validateTotalBayar()) {
+        e.preventDefault();
+    }
 });
+
+function isiInputBahan(kode_bahan, nama_bahan, satuan, jumlah_beli) {
+    // Pilih bahan di select
+    const bahanSelect = document.getElementById('kode_bahan');
+    for (let i = 0; i < bahanSelect.options.length; i++) {
+        if (bahanSelect.options[i].value == kode_bahan) {
+            bahanSelect.selectedIndex = i;
+            break;
+        }
+    }
+    // Isi jumlah beli
+    document.getElementById('jumlah_beli').value = jumlah_beli;
+    // Opsional: reset harga
+    document.getElementById('harga_beli').value = '';
+}
+
+function tambahBahan() {
+    const bahanSelect = document.getElementById('kode_bahan');
+    const kode_bahan = bahanSelect.value;
+    const nama_bahan = bahanSelect.options[bahanSelect.selectedIndex].text.split(' (')[0];
+    const satuan = bahanSelect.options[bahanSelect.selectedIndex].getAttribute('data-satuan');
+    const jumlah_beli = document.getElementById('jumlah_beli').value;
+    const harga_beli = document.getElementById('harga_beli').value;
+    const tanggal_exp = ''; // Jika ada input tanggal expired, ambil dari input
+    const subtotal = Math.round((parseFloat(jumlah_beli) || 0) * (parseFloat(harga_beli) || 0));
+
+    if (!kode_bahan || !jumlah_beli || !harga_beli) {
+        alert('Nama bahan, jumlah beli, dan harga harus diisi!');
+        return;
+    }
+
+    // Cek apakah bahan sudah ada di tabel
+    let exists = false;
+    $jq('#bahan_table tbody tr').each(function() {
+        if ($jq(this).find('input[name="kode_bahan[]"]').val() == kode_bahan) {
+            exists = true;
+        }
+    });
+    if (exists) {
+        alert('Bahan sudah ada di daftar!');
+        return;
+    }
+
+    // Tambahkan baris ke tabel
+const row = `
+    <tr>
+        <td class="text-center"></td>
+        <td class="text-center">
+            ${nama_bahan}
+            <input type="hidden" name="bahan[]" value="${kode_bahan}">
+        </td>
+        <td class="text-center">${satuan}</td>
+        <td class="text-center">
+            <input type="number" class="form-control form-control-sm jumlah" name="jumlah[]" value="${jumlah_beli}" min="1" style="width:80px;">
+        </td>
+        <td class="text-center">
+            <input type="number" class="form-control form-control-sm harga" name="harga[]" value="${harga_beli}" min="0" style="width:100px;">
+        </td>
+        <td class="text-center">
+            <input type="date" class="form-control form-control-sm" name="tanggal_exp[]" value="${tanggal_exp}" style="width:130px;">
+        </td>
+        <td class="text-center subtotal">${subtotal}</td>
+        <td class="text-center">
+            <button type="button" class="btn btn-danger btn-sm remove" onclick="hapusBahan(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+`;
+    $jq('#bahan_table tbody').append(row);
+    updateNoUrut();
+    updateSubtotal();
+
+    // Reset input
+    bahanSelect.selectedIndex = 0;
+    document.getElementById('jumlah_beli').value = '';
+    document.getElementById('harga_beli').value = '';
+}
 </script>
 @endsection

@@ -114,9 +114,12 @@ class KartuStokController extends Controller
                 't_lokasi.nama_lokasi'
             )
             ->where('t_kartupersproduk.kode_produk', $kode_produk);
-        if ($lokasi) {
-            $query->where('t_kartupersproduk.lokasi', $lokasi);
-        }
+
+        // Jangan filter lokasi di sini, biar JS bisa rekap semua lokasi
+        // if ($lokasi) {
+        //     $query->where('t_kartupersproduk.lokasi', $lokasi);
+        // }
+
         $data = $query->orderBy('t_kartupersproduk.tanggal')->get();
 
         return response()->json($data);

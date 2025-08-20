@@ -156,7 +156,7 @@ public function getDetail($no_order)
                     'bahan_masuk'       => $detail['bahan_masuk'],
                     'harga_beli'        => $detail['harga_beli'] ?? 0,
                     'total'             => ($detail['bahan_masuk'] ?? 0) * ($detail['harga_beli'] ?? 0),
-                    'tanggal_exp'       => $detail['tanggal_exp'] ?? null,
+                    'tanggal_exp'       => ($detail['tanggal_exp'] ?? null) ?: null,
                 ]);
 
                 // --- Tambahkan ke t_kartupersbahan ---
@@ -168,7 +168,7 @@ public function getDetail($no_order)
                     'id'           => $nextId,
                     'no_transaksi' => $request->no_terima_bahan,
                     'tanggal'      => $request->tanggal_terima,
-                    'tanggal_exp' => $detail['tanggal_exp'] ?? null,
+                    'tanggal_exp' => ($detail['tanggal_exp'] ?? null) ?: null,
                     'kode_bahan'   => $detail['kode_bahan'],
                     'masuk'        => $detail['bahan_masuk'],
                     'keluar'       => 0,
@@ -373,7 +373,7 @@ $terimaBahan->details = $details;
                 'bahan_masuk'       => $detail['bahan_masuk'],
                 'harga_beli'        => $detail['harga_beli'],
                 'total'             => $detail['bahan_masuk'] * $detail['harga_beli'],
-                'tanggal_exp'       => $detail['tanggal_exp'] ?? null,
+                'tanggal_exp'       => ($detail['tanggal_exp'] ?? null) ?: null,
             ]);
             // Update stok untuk bahan ini
             app('App\Http\Controllers\BahanController')->updateStokBahan($detail['kode_bahan']);

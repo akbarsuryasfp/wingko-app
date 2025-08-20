@@ -662,3 +662,6 @@ Route::delete('/setting/lokasi/{kode_lokasi}', [SettingController::class, 'destr
 Route::post('/setting/user', [SettingController::class, 'storeUser'])->name('setting.user.store');
 Route::put('/setting/user/{id}', [SettingController::class, 'updateUser'])->name('setting.user.update');
 Route::delete('/setting/user/{id}', [SettingController::class, 'destroyUser'])->name('setting.user.destroy');
+
+Route::get('/stokopname/riwayat-bahan', [StokOpnameController::class, 'riwayatBahan'])->name('stokopname.riwayatBahan');
+Route::get('/stokopname/riwayat-produk', [StokOpnameController::class, 'riwayatProduk'])->name('stokopname.riwayatProduk');

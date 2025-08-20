@@ -73,8 +73,6 @@
         <th style="width: 220px;">Nama Bahan</th>
         <th style="width: 90px;">Satuan</th>
         <th style="width: 110px;">Stok Minimal</th>
-        <th style="width: 120px;">Jumlah/Order</th>
-        <th style="width: 160px;">Frekuensi Pembelian</th>
         <th style="width: 100px;">Aksi</th>
     </tr>
 </thead>
@@ -86,15 +84,6 @@
             <td class="text-start">{{ $item->nama_bahan }}</td>
             <td>{{ $item->satuan }}</td>
             <td>{{ $item->stokmin }}</td>
-            <td>{{ $item->jumlah_per_order }}</td>
-<td>
-    @php
-        $intervalKey = strtolower($item->interval ?? '');
-        $interval = $intervalMap[$intervalKey] ?? ($item->interval ?? '-');
-        $freq = $item->frekuensi_pembelian ?? 1;
-    @endphp
-     {{ $interval }} x {{ $freq }} 
-</td>
             <td>
                 <div class="d-flex justify-content-center gap-1">
                     <a href="{{ route('bahan.edit', $item->kode_bahan) }}" class="btn btn-sm btn-warning square-icon" title="Edit">

@@ -24,12 +24,12 @@ input[readonly] {
         <div class="card h-100 border-light shadow-sm">
             <div class="card-body d-flex flex-column">
                 <h5 class="card-title mb-3">
-                    <i class="fas fa-clipboard-list me-0"></i>Informasi Permintaan Pembelian
+                    <i class="fas fa-clipboard-list me-0"></i>Informasi Order Pembelian
                 </h5>
                 
                 <div class="flex-grow-1">
                     <div class="mb-2 row align-items-center">
-                        <label class="col-sm-4 col-form-label fw-medium">Kode Permintaan</label>
+                        <label class="col-sm-4 col-form-label fw-medium">Kode Order</label>
                         <div class="col-sm-8">
                             <input type="text" name="no_order_beli" class="form-control form-control-sm" value="{{ $no_order_beli }}" readonly>
                         </div>
@@ -67,10 +67,10 @@ input[readonly] {
         
         <!-- Tombol Kebutuhan Produksi -->
         <div class="col-md-6">
-            <button type="button" class="btn btn-success w-100 py-2" data-bs-toggle="modal" data-bs-target="#prediksiModal">
-                <i class="fas fa-chart-line me-2"></i> Kebutuhan Produksi
-                <span class="badge bg-white text-success ms-2">↗</span>
-            </button>
+<button type="button" class="btn btn-warning w-100 py-2" data-bs-toggle="modal" data-bs-target="#stokMinModal">
+    <i class="fas fa-exclamation-triangle me-2"></i> Stok Minimal
+    <span class="badge bg-white text-warning ms-2">!</span>
+</button>
         </div>
     </div>
 </div>
@@ -132,10 +132,10 @@ input[readonly] {
     </div>
 </div>
 
-                <!-- Daftar Permintaan Pembelian -->
+                <!-- Daftar Order Pembelian -->
                 <div class="card border-light mb-">
                     <div class="card-body">
-                        <h5 class="card-title text-center mb-3">Daftar Permintaan Pembelian</h5>
+                        <h5 class="card-title text-center mb-3">Daftar Order Pembelian</h5>
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle" id="daftar-bahan">
                                 <thead class="table-light">
@@ -246,17 +246,58 @@ input[readonly] {
   </div>
 </div>
 
-<!-- Modal Prediksi Kebutuhan -->
-<div class="modal fade" id="prediksiModal" tabindex="-1" aria-labelledby="prediksiModalLabel" aria-hidden="true">
+<!-- Modal Stok Minimal -->
+<div class="modal fade" id="stokMinModal" tabindex="-1" aria-labelledby="stokMinModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="prediksiModalLabel">Kebutuhan Bahan</h5>
+        <h5 class="modal-title" id="stokMinModalLabel">Daftar Bahan di Bawah Stok Minimal</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <ul class="nav nav-tabs" id="prediksiTab" role="tablist"></ul>
-        <div class="tab-content" id="prediksiTabContent"></div>
+        @if(count($stokMinList) > 0)
+        <table class="table table-bordered table-sm align-middle">
+          <thead>
+            <tr class="text-center">
+              <th style="width: 5%;">No</th>
+              <th class="text-start">Nama Bahan</th>
+              <th style="width: 15%;">Stok Minimal</th>
+              <th style="width: 15%;">Stok Saat Ini</th>
+              <th style="width: 15%;">Selisih</th>
+              <th style="width: 10%;">Satuan</th>
+              <th style="width: 5%;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach ($stokMinList as $i => $item)
+            @php
+                $selisih = $item->stokmin - $item->stok;
+            @endphp
+           <tr>
+              <td class="text-center">{{ $i + 1 }}</td>
+              <td class="text-start">{{ $item->nama_bahan }}</td>
+              <td class="text-center">{{ $item->stokmin }}</td>
+              <td class="text-center">{{ $item->stok }}</td>
+              <td class="text-center">{{ $selisih }}</td>
+              <td class="text-center">{{ $item->satuan }}</td>
+              <td class="text-center">
+                @if ($selisih > 0)
+                <button class="btn btn-sm btn-primary p-1"
+                  onclick="isiInputBahan('{{ $item->kode_bahan }}', '{{ $item->nama_bahan }}', '{{ $item->satuan }}', {{ $selisih }})"
+                  data-bs-dismiss="modal">
+                  Pilih
+                </button>
+                @else
+                <span class="text-muted small">Cukup</span>
+                @endif
+              </td>
+            </tr>
+            @endforeach
+          </tbody>
+        </table>
+        @else
+        <div class="alert alert-info">Semua stok bahan mencukupi minimal</div>
+        @endif
       </div>
     </div>
   </div>
@@ -359,6 +400,7 @@ input[readonly] {
         } else if(listKekurangan) {
             listKekurangan.innerHTML = '<li class="list-group-item text-center text-muted">Tidak ada bahan yang kurang</li>';
         }
+        
     });
 
     // Fungsi untuk mengisi input bahan dari modal
@@ -378,7 +420,6 @@ let stokMinList = [];
     stokMinList = @json($stokMinList);
 @endif
 
-// Tampilkan daftar stok minimal di modal
 document.addEventListener('DOMContentLoaded', function() {
     const listStokMin = document.getElementById('listStokMin');
     if (listStokMin && stokMinList.length) {
@@ -401,100 +442,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Data prediksi dari controller
-let bahansPrediksi = [];
-@if(isset($bahansPrediksi) && count($bahansPrediksi))
-    bahansPrediksi = @json($bahansPrediksi);
-@endif
 
-function groupByFrekuensi(bahans) {
-    const group = {};
-    bahans.forEach(b => {
-        const freq = b.frekuensi_pembelian || 'Lainnya';
-        if (!group[freq]) group[freq] = [];
-        group[freq].push(b);
-    });
-    return group;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Modal Prediksi
-    const prediksiTab = document.getElementById('prediksiTab');
-    const prediksiTabContent = document.getElementById('prediksiTabContent');
-    if (prediksiTab && prediksiTabContent) {
-        const grouped = groupByFrekuensi(bahansPrediksi);
-
-        // Daftar frekuensi tetap
-        const freqs = ['Mingguan', 'Dua Mingguan', 'Bulanan', 'Tiga Bulanan'];
-        let first = true;
-        prediksiTab.innerHTML = '';
-        prediksiTabContent.innerHTML = '';
-
-        freqs.forEach((freq, idx) => {
-            const bahanList = grouped[freq] || [];
-            // Tab header
-            prediksiTab.innerHTML += `
-                <li class="nav-item" role="presentation">
-                  <button class="nav-link ${first ? 'active' : ''}" id="tab-${idx}" data-bs-toggle="tab" data-bs-target="#tab-content-${idx}" type="button" role="tab">${freq}</button>
-                </li>
-            `;
-            // Tab content
-            let rows = '';
-if (bahanList.length) {
-    bahanList.forEach((bahan, i) => {
-        const isStokKurang = parseFloat(bahan.stok ?? 0) < parseFloat(bahan.stokmin ?? 0);
-        rows += `
-            <tr style="background-color: ${isStokKurang ? '#fff3cd' : 'inherit'}">
-                <td class="text-center">${i + 1}</td>
-                <td>${bahan.nama_bahan}</td>
-                <td class="text-center">${bahan.interval ? bahan.interval + 'x' : '-'}</td>
-                <td class="text-center">${bahan.jumlah_per_order ?? '-'}</td>
-                <td class="text-center" style="color:${isStokKurang ? 'red' : 'inherit'}; font-weight:${isStokKurang ? 'bold' : 'normal'}">
-                    ${(bahan.stokmin != null) ? parseFloat(bahan.stokmin).toFixed(2) : '-'}
-                </td>
-                <td class="text-center">
-                    ${(bahan.stok != null) ? parseFloat(bahan.stok).toFixed(2) : '-'}
-                </td>
-                <td class="text-center">${bahan.satuan}</td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-primary"
-                            onclick="isiInputBahan('${bahan.kode_bahan}', '${bahan.nama_bahan}', '${bahan.satuan}', ${bahan.jumlah_per_order ?? 1})"
-                            data-bs-dismiss="modal">
-                        Pilih
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-} else {
-    rows = `<tr><td colspan="8" class="text-center text-muted">Tidak ada bahan untuk periode ini</td></tr>`;
-}
-
-prediksiTabContent.innerHTML += `
-    <div class="tab-pane fade ${first ? 'show active' : ''}" id="tab-content-${idx}" role="tabpanel">
-        <table class="table table-bordered mt-3">
-            <thead class="table-light">
-<tr class="text-center">
-    <th style="vertical-align: middle;">No</th>
-    <th class="col-nama-bahan" style="vertical-align: middle;">Nama Bahan</th>
-    <th style="vertical-align: middle;">Frekuensi Pembelian</th>
-    <th class="col-jumlah-order" style="vertical-align: middle;">Jumlah Dibeli per Periode</th>
-    <th style="vertical-align: middle;">Stok Minimum</th>
-    <th style="vertical-align: middle;">Stok Tersedia</th>
-    <th style="vertical-align: middle;">Satuan</th>
-    <th style="vertical-align: middle;">Aksi</th>
-</tr>
-            </thead>
-            <tbody>
-                ${rows}
-            </tbody>
-        </table>
-    </div>
-`;
-first = false;
-
-        });
-    }
-});
 </script>
 @endsection

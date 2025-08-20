@@ -84,10 +84,14 @@
                     <tbody>
                         @php
                             $saldo = 0;
+                            $totalMasuk = 0;
+                            $totalKeluar = 0;
                         @endphp
                         @foreach($riwayat as $index => $row)
                             @php
                                 $saldo += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                                $totalMasuk += $row->masuk ?? 0;
+                                $totalKeluar += $row->keluar ?? 0;
                             @endphp
                             <tr>
                                 <td>{{ $index + 1 }}</td>
@@ -101,6 +105,18 @@
                                 <td>{{ $row->lokasi }}</td>
                             </tr>
                         @endforeach
+
+                        @php
+                            $saldoAkhir = 0;
+                            foreach($riwayat as $row) {
+                                $saldoAkhir += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                            }
+                        @endphp
+                        <tr class="table-info fw-bold">
+                            <td colspan="7" class="text-end">Total Qty Akhir</td>
+                            <td>{{ $saldoAkhir }}</td>
+                            <td></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -108,11 +124,29 @@
                 <ul class="pagination justify-content-end" id="pagination-produk"></ul>
             </nav>
 
-            <div id="stok-akhir-box-produk" class="mt-4" style="display:none;">
-                <span style="font-size:1.2em;">📊</span>
+            <div id="stok-akhir-box-produk" style="display:none;">
                 <b>Stok Akhir <span id="nama-produk-stok"></span></b>
-                <ul id="stok-akhir-list-produk" class="mt-2"></ul>
+                <ul id="stok-akhir-list-produk" class="mb-0"></ul>
             </div>
+
+            @php
+                $stokPerLokasi = [];
+                foreach($riwayat as $row) {
+                    $lok = $row->lokasi;
+                    if (!isset($stokPerLokasi[$lok])) $stokPerLokasi[$lok] = 0;
+                    $stokPerLokasi[$lok] += ($row->masuk ?? 0) - ($row->keluar ?? 0);
+                }
+            @endphp
+            @if(count($stokPerLokasi))
+                <div class="mt-3">
+                    <b>Stok Akhir per Lokasi:</b>
+                    <ul>
+                        @foreach($stokPerLokasi as $lokasi => $qty)
+                            <li>{{ $lokasi }}: {{ $qty }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -175,7 +209,6 @@ function formatTanggal(tgl) {
 function renderTableProduk() {
     let tbody = '';
     let saldoQty = 0;
-    let saldoPerRow = [];
     let data = produkData;
 
     // Filter berdasarkan bulan (periode)
@@ -187,44 +220,64 @@ function renderTableProduk() {
     // Filter berdasarkan lokasi
     let filterLokasi = document.getElementById('lokasi').value;
     if (filterLokasi) {
-        data = data.filter(row => row.lokasi === filterLokasi);
+        data = data.filter(row => String(row.lokasi) === String(filterLokasi));
     }
 
-    let start = 0, end = data.length;
     let showAll = (rowsPerPageProduk === 'all');
-    if (!showAll) {
-        rowsPerPageProduk = parseInt(document.getElementById('rowsPerPageProduk').value);
-        start = (currentPageProduk - 1) * rowsPerPageProduk;
-        end = Math.min(start + rowsPerPageProduk, data.length);
+    let perPage = showAll ? data.length : parseInt(document.getElementById('rowsPerPageProduk').value);
+    let start = showAll ? 0 : (currentPageProduk - 1) * perPage;
+    let end = showAll ? data.length : Math.min(start + perPage, data.length);
+
+    // --- Perbaikan utama: Hitung saldo dari awal data sampai baris ke-i ---
+    let saldoArr = [];
+    let saldo = 0;
+    for (let i = 0; i < data.length; i++) {
+        let masuk = parseFloat(data[i].masuk) || 0;
+        let keluar = parseFloat(data[i].keluar) || 0;
+        saldo += masuk - keluar;
+        saldoArr.push(saldo);
     }
+
     if (data.length === 0) {
         tbody = `<tr><td colspan="9" class="text-center">Tidak ada data persediaan.</td></tr>`;
     } else {
-        for (let i = 0; i < data.length; i++) {
+        for (let i = start; i < end; i++) {
             let row = data[i];
             let masuk = parseFloat(row.masuk) || 0;
             let keluar = parseFloat(row.keluar) || 0;
             let harga = parseFloat(row.hpp) || 0;
-            saldoQty += masuk - keluar;
-            saldoPerRow.push(saldoQty);
-
-            if (showAll || (i >= start && i < end)) {
-                tbody += `
-                    <tr>
-                        <td>${i + 1}</td>
-                        <td>${row.no_transaksi}</td>
-                        <td>${row.keterangan || '-'}</td>
-                        <td>${formatTanggal(row.tanggal)}</td>
-                        <td>Rp${harga.toLocaleString('id-ID')}</td>
-                        <td>${masuk}</td>
-                        <td>${keluar}</td>
-                        <td>${saldoQty}</td>
-                        <td>${row.nama_lokasi || '-'}</td>
-                    </tr>
-                `;
-            }
+            tbody += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${row.no_transaksi}</td>
+                    <td>${row.keterangan || '-'}</td>
+                    <td>${formatTanggal(row.tanggal)}</td>
+                    <td>Rp${harga.toLocaleString('id-ID')}</td>
+                    <td>${masuk}</td>
+                    <td>${keluar}</td>
+                    <td>${saldoArr[i]}</td>
+                    <td>${row.nama_lokasi || '-'}</td>
+                </tr>
+            `;
         }
     }
+
+    // Hitung saldo akhir dari seluruh data hasil filter (bukan hanya yang tampil di halaman)
+    let saldoAkhir = 0;
+    for (let i = 0; i < data.length; i++) {
+        let masuk = parseFloat(data[i].masuk) || 0;
+        let keluar = parseFloat(data[i].keluar) || 0;
+        saldoAkhir += masuk - keluar;
+    }
+
+    // Tambahkan baris total qty akhir di bawah tabel
+    tbody += `
+        <tr class="table-info fw-bold">
+            <td colspan="7" class="text-end">Total Qty Akhir</td>
+            <td>${saldoAkhir}</td>
+            <td></td>
+        </tr>
+    `;
     document.querySelector('#tabel-persediaan-produk tbody').innerHTML = tbody;
 }
 
@@ -254,25 +307,34 @@ function gotoPageProduk(page) {
 
 function renderStokAkhirProduk() {
     let data = produkData;
-    let stokAkhirMap = {};
-    let adaStok = false;
+    let filterLokasi = document.getElementById('lokasi').value;
+
+    // Filter data sesuai lokasi jika ada filter
+    if (filterLokasi) {
+        data = data.filter(row => row.lokasi == filterLokasi);
+    }
+
+    // Akumulasi saldo akhir per HPP (jika ada beberapa HPP di lokasi tsb)
+    let saldoPerHpp = {};
     data.forEach(function(row) {
         let masuk = parseFloat(row.masuk) || 0;
         let keluar = parseFloat(row.keluar) || 0;
-        let harga = parseFloat(row.hpp) || 0;
-        if (!stokAkhirMap[harga]) stokAkhirMap[harga] = { masuk: 0, keluar: 0 };
-        stokAkhirMap[harga].masuk += masuk;
-        stokAkhirMap[harga].keluar += keluar;
+        let hpp = row.hpp || 0;
+        if (!saldoPerHpp[hpp]) saldoPerHpp[hpp] = 0;
+        saldoPerHpp[hpp] += masuk - keluar;
     });
+
+    // Tampilkan hasil
     let stokAkhirList = '';
-    Object.entries(stokAkhirMap).forEach(([h, v]) => {
-        let sisa = v.masuk - v.keluar;
-        if (sisa > 0) {
-            adaStok = true;
-            stokAkhirList += `<li><b>${sisa} qty</b> dengan HPP <b>Rp${parseFloat(h).toLocaleString('id-ID')}</b></li>`;
+    let totalQty = 0;
+    Object.entries(saldoPerHpp).forEach(([hpp, qty]) => {
+        if (qty > 0) {
+            stokAkhirList += `<li><b>${qty} qty</b> dengan HPP <b>Rp${parseInt(hpp).toLocaleString('id-ID')}</b></li>`;
+            totalQty += qty;
         }
     });
-    if (!adaStok) stokAkhirList = `<li>0</li>`;
+    if (!stokAkhirList) stokAkhirList = `<li>0</li>`;
+
     document.getElementById('stok-akhir-list-produk').innerHTML = stokAkhirList;
     document.getElementById('stok-akhir-box-produk').style.display = '';
 }
@@ -300,6 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
         currentPageProduk = 1;
         renderTableProduk();
         renderPaginationProduk();
+        renderStokAkhirProduk(); // <-- ini penting!
     });
 });
 </script>

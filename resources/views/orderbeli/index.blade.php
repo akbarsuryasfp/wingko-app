@@ -274,14 +274,16 @@
         </form>
         <script>
         function validateUangMuka{{ $order->no_order_beli }}() {
-            var uangMuka = parseFloat(document.getElementById('uang_muka{{ $order->no_order_beli }}').value) || 0;
-            var grandTotal = {{ $grandTotal }};
-            if(uangMuka > grandTotal) {
-                alert('Uang muka tidak boleh melebihi Grand Total!');
-                return false;
-            }
-            return true;
-        }
+    var input = document.getElementById('uang_muka{{ $order->no_order_beli }}').value;
+    // Hilangkan semua karakter non-angka
+    var uangMuka = parseInt(input.replace(/\D/g, '')) || 0;
+    var grandTotal = {{ $grandTotal }};
+    if(uangMuka > grandTotal) {
+        alert('Uang muka tidak boleh melebihi Grand Total!');
+        return false;
+    }
+    return true;
+}
         document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.uang-muka-input').forEach(function(input) {
         // Format saat load

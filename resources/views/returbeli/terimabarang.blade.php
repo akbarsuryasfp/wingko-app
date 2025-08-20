@@ -39,7 +39,7 @@
                         <input type="number" class="form-control" name="harga_beli[]" value="{{ $detail->harga_beli }}" readonly>
                     </td>
     <td>
-        <input type="date" class="form-control" name="tanggal_exp[]" required>
+<input type="date" class="form-control" name="tanggal_exp[]">
     </td>
                 </tr>
                 @endforeach

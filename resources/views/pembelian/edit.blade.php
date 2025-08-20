@@ -81,15 +81,6 @@
                 </div>
 
         <h5 class="mt-4">Daftar Pembelian Bahan</h5>
-        
-        @if($pembelian->jenis_pembelian == 'pembelian langsung')
-        <div class="mb-3">
-            <button type="button" class="btn btn-sm btn-success" id="tambah_bahan">Tambah Bahan</button>
-            <button type="button" class="btn btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#modalGabungan">
-                Kebutuhan Bahan
-            </button>
-        </div>
-        @endif
 
         <table class="table table-bordered" id="bahan_table">
             <thead>
@@ -155,6 +146,15 @@
                 @endforeach
             </tbody>
         </table>
+
+        @if($pembelian->jenis_pembelian == 'pembelian langsung')
+<div class="mb-3 d-flex">
+    <button type="button" class="btn btn-sm btn-success flex-grow-1 py-2" id="tambah_bahan">Tambah Bahan</button>
+    <button type="button" class="btn btn-sm btn-warning flex-grow-1 py-2 ms-2" data-bs-toggle="modal" data-bs-target="#modalGabungan">
+        Kebutuhan Bahan
+    </button>
+</div>
+        @endif
 
         <div class="row mb-2 align-items-center">
             <label class="col-sm-4 col-form-label">Total Harga</label>
@@ -238,11 +238,6 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="prediksi-tab" data-bs-toggle="tab" data-bs-target="#prediksi" type="button" role="tab">
-                            Prediksi Kebutuhan (Harian)
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
                         <button class="nav-link" id="stok-tab" data-bs-toggle="tab" data-bs-target="#stok" type="button" role="tab">
                             Stok Minimal
                         </button>
@@ -261,7 +256,7 @@
                                     <strong>{{ $item['nama_bahan'] }}</strong> ({{ $item['satuan'] }})<br>
                                     <small>Kurang: {{ $item['jumlah_beli'] }}</small>
                                 </span>
-                                <button class="btn btn-sm btn-primary"
+                                <button type="button" class="btn btn-sm btn-primary"
                                     onclick="tambahBahanKeTabel('{{ $item['kode_bahan'] }}', '{{ $item['nama_bahan'] }}', '{{ $item['satuan'] }}', {{ $item['jumlah_beli'] }})"
                                     data-bs-dismiss="modal">
                                     Pilih
@@ -274,43 +269,7 @@
                         @endif
                     </div>
 
-                    <!-- Tab 2: Prediksi Kebutuhan Harian -->
-                    <div class="tab-pane fade" id="prediksi" role="tabpanel" aria-labelledby="prediksi-tab">
-                        @if(count($bahansPrediksiHarian) > 0)
-                        <table class="table table-bordered table-striped">
-                            <thead class="table-light text-center align-middle">
-                                <tr>
-                                    <th style="width: 5%;">No</th>
-                                    <th style="width: 35%;">Nama Bahan</th>
-                                    <th style="width: 25%;">Jumlah Pembelian</th>
-                                    <th style="width: 15%;">Satuan</th>
-                                    <th style="width: 5%;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listPrediksiLangsung">
-                                @foreach($bahansPrediksiHarian as $index => $item)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item->nama_bahan }}</td>
-                                    <td>{{ $item->jumlah_per_order }}</td>
-                                    <td>{{ $item->satuan }}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-primary"
-                                            onclick="tambahBahanKeTabel('{{ $item->kode_bahan }}', '{{ $item->nama_bahan }}', '{{ $item->satuan }}', {{ $item->jumlah_per_order }})"
-                                            data-bs-dismiss="modal">
-                                            Pilih
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                        @else
-                        <div class="alert alert-info">Tidak ada prediksi kebutuhan harian</div>
-                        @endif
-                    </div>
-
-                    <!-- Tab 3: Stok Minimal -->
+                    <!-- Tab 2: Stok Minimal -->
                     <div class="tab-pane fade" id="stok" role="tabpanel" aria-labelledby="stok-tab">
                         @if(count($stokMinList) > 0)
                         <table class="table table-bordered table-sm align-middle">
@@ -328,19 +287,19 @@
                             <tbody id="listStokMin" class="text-center">
                                 @foreach ($stokMinList as $i => $item)
                                 @php
-                                    $selisih = $item->stokmin - $item->stok;
+                                    $selisih = $item['stokmin'] - $item['stok'];
                                 @endphp
                                 <tr>
                                     <td>{{ $i + 1 }}</td>
-                                    <td class="text-start">{{ $item->nama_bahan }}</td>
-                                    <td>{{ $item->stokmin }}</td>
-                                    <td>{{ $item->stok }}</td>
+                                    <td class="text-start">{{ $item['nama_bahan'] }}</td>
+                                    <td>{{ $item['stokmin'] }}</td>
+                                    <td>{{ $item['stok'] }}</td>
                                     <td>{{ $selisih }}</td>
-                                    <td>{{ $item->satuan }}</td>
+                                    <td>{{ $item['satuan'] }}</td>
                                     <td>
                                         @if ($selisih > 0)
-                                        <button class="btn btn-sm btn-primary p-1"
-                                            onclick="tambahBahanKeTabel('{{ $item->kode_bahan }}', '{{ $item->nama_bahan }}', '{{ $item->satuan }}', {{ $selisih }})"
+                                        <button type="button" class="btn btn-sm btn-primary p-1"
+                                            onclick="tambahBahanKeTabel('{{ $item['kode_bahan'] }}', '{{ $item['nama_bahan'] }}', '{{ $item['satuan'] }}', {{ $selisih }})"
                                             data-bs-dismiss="modal">
                                             Pilih
                                         </button>
@@ -361,6 +320,29 @@
         </div>
     </div>
 @endif
+
+<style>
+    /* Warna tab aktif dan tidak aktif pada modal kebutuhan bahan */
+    #modalGabungan .nav-tabs .nav-link {
+        background: linear-gradient(90deg, #f3f4f6 0%, #e0e7ff 100%);
+        color: #1e293b;
+        border: 1px solid #dbeafe;
+        margin-right: 2px;
+        font-weight: 500;
+        transition: background 0.2s, color 0.2s;
+    }
+    #modalGabungan .nav-tabs .nav-link.active {
+        background: linear-gradient(90deg, #2563eb 0%, #60a5fa 100%);
+        color: #fff !important;
+        border-color: #2563eb #2563eb #fff #2563eb;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    #modalGabungan .nav-tabs .nav-link:focus,
+    #modalGabungan .nav-tabs .nav-link:hover {
+        background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%);
+        color: #fff;
+    }
+</style>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -458,6 +440,47 @@ $j(document).ready(function() {
         $j(this).find('.subtotal').text(subtotal);
     });
     // Jangan panggil updateSubtotal() atau hitungTotal() di sini!
+
+    // Fungsi untuk menambahkan bahan ke tabel
+    window.tambahBahanKeTabel = function(kode_bahan, nama_bahan, satuan, jumlah_beli) {
+        let bahanOptions = @json($bahan);
+        let hargaDefault = 0;
+        let selectedBahan = bahanOptions.find(b => b.kode_bahan == kode_bahan);
+        if (selectedBahan) {
+            hargaDefault = selectedBahan.harga_beli ?? 0;
+        }
+
+        // Cek apakah bahan sudah ada di tabel
+        let exists = false;
+        $j('#bahan_table tbody tr').each(function() {
+            let val = $j(this).find('select[name="bahan[]"]').val();
+            if (val == kode_bahan) {
+                exists = true;
+            }
+        });
+        if (exists) {
+            alert('Bahan sudah ada di daftar!');
+            return;
+        }
+
+        let selectHtml = `<select name="bahan[]" class="form-control">
+            <option value="${kode_bahan}" selected>${nama_bahan} (${satuan})</option>
+            ${bahanOptions.filter(b => b.kode_bahan != kode_bahan).map(b => `<option value="${b.kode_bahan}">${b.nama_bahan} (${b.satuan})</option>`).join('')}
+        </select>`;
+
+        $j('#bahan_table tbody').append(`
+            <tr>
+                <td>${selectHtml}</td>
+                <td><input type="text" name="satuan[]" class="form-control satuan" value="${satuan}" readonly></td>
+                <td><input type="number" name="jumlah[]" class="form-control jumlah" value="${jumlah_beli}" min="1" required></td>
+                <td><input type="number" name="harga[]" class="form-control harga" value="${hargaDefault}" min="0" required></td>
+                <td><input type="date" name="tanggal_exp[]" class="form-control"></td>
+                <td class="subtotal">${hargaDefault * jumlah_beli}</td>
+                <td><button type="button" class="btn btn-danger btn-sm remove">X</button></td>
+            </tr>
+        `);
+        updateSubtotal();
+    }
 });
 </script>
 
