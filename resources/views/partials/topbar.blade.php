@@ -7,8 +7,12 @@
         
         <!-- Brand -->
         <div class="d-flex flex-column align-items-start me-auto">
-            <span class="navbar-brand mb-0 h1 fw-bold text-white" style="letter-spacing:1px; line-height:1; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">SIAP</span>
-            <span class="brand-subtitle text-white-50 small" style="margin-top:-2px;">Sistem Informasi Akuntansi Pratama</span>
+            <span class="navbar-brand mb-0 h1 fw-bold text-white"
+                  style="letter-spacing:1px; line-height:1; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); cursor:pointer;"
+                  onclick="window.location.href='/'">
+                SIAP
+            </span>
+            <span class="brand-subtitle text-white-50 small" style="margin-top:-2px; cursor:pointer;" onclick="window.location.href='/'">Sistem Informasi Akuntansi Pratama</span>
         </div>
         
         <!-- Search Form -->
@@ -39,9 +43,7 @@
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="position-relative">
                     <i class="bi bi-person-circle fs-3 text-white"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle">
-                        <span class="visually-hidden">Online</span>
-                    </span>
+                    
                 </div>
                 <span class="ms-2 d-none d-md-inline text-white">{{ Auth::user()->name ?? 'User' }}</span>
             </a>

@@ -7,10 +7,26 @@ use App\Models\Karyawan;
 
 class KaryawanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $karyawan = Karyawan::all();
-        return view('karyawan.index', compact('karyawan'));
+        $sort = $request->get('sort', 'desc');
+        $search = $request->get('search');
+
+        $query = Karyawan::query();
+
+        if ($search) {
+            $query->where('nama', 'like', "%$search%")
+                  ->orWhere('kode_karyawan', 'like', "%$search%");
+        }
+
+        $karyawan = $query->orderBy('kode_karyawan', $sort)
+                          ->paginate(10)
+                          ->appends([
+                              'search' => $search,
+                              'sort' => $sort,
+                          ]);
+
+        return view('karyawan.index', compact('karyawan', 'sort'));
     }
 
     public function create()
@@ -72,5 +88,12 @@ class KaryawanController extends Controller
         $karyawan = Karyawan::findOrFail($kode_karyawan);
         $karyawan->update($request->all());
         return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil diupdate!');
+    }
+
+    public function destroy($kode_karyawan)
+    {
+        $karyawan = Karyawan::findOrFail($kode_karyawan);
+        $karyawan->delete();
+        return redirect()->route('karyawan.index')->with('success', 'Data karyawan berhasil dihapus!');
     }
 }

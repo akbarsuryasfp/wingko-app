@@ -25,9 +25,9 @@
                 <th>Kode Produk</th>
                 <th>Nama Produk</th>
                 <th>Satuan</th>
-                <th>Stok Gudang</th>
-                <th>Stok Toko 1</th>
-                <th>Stok Toko 2</th>
+                @foreach($lokasiList as $kode => $nama)
+                    <th>Stok {{ $nama }}</th>
+                @endforeach
                 <th>Total Stok</th>
                 <th>Status</th>
             </tr>
@@ -35,9 +35,6 @@
         <tbody>
             @foreach($produkList as $i => $produk)
             @php
-                $gudangList = $produk->stok_akhir->where('lokasi', 'Gudang');
-                $toko1List  = $produk->stok_akhir->where('lokasi', 'Toko 1');
-                $toko2List  = $produk->stok_akhir->where('lokasi', 'Toko 2');
                 $totalStok = $produk->stok_akhir->sum('stok');
                 $stokmin = $produk->stokmin ?? 0;
                 $status = ($totalStok <= $stokmin) ? 'Perlu Produksi' : 'Aman';
@@ -48,49 +45,26 @@
                 <td>{{ $produk->kode_produk }}</td>
                 <td>{{ $produk->nama_produk }}</td>
                 <td>{{ $produk->satuan }}</td>
-                <td>
-                    @if($gudangList->count())
-                        @foreach($gudangList as $stok)
-                            <div>
-                                <span style="font-weight: bold;">{{ number_format($stok->stok, 3) }}</span> {{ $produk->satuan }}
-                                @if(isset($stok->hpp))
-                                    @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <span style="color: #dc3545;">Kosong</span>
-                    @endif
-                </td>
-                <td>
-                    @if($toko1List->count())
-                        @foreach($toko1List as $stok)
-                            <div>
-                                <span style="font-weight: bold;">{{ number_format($stok->stok, 3) }}</span> {{ $produk->satuan }}
-                                @if(isset($stok->hpp))
-                                    @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <span style="color: #dc3545;">Kosong</span>
-                    @endif
-                </td>
-                <td>
-                    @if($toko2List->count())
-                        @foreach($toko2List as $stok)
-                            <div>
-                                <span style="font-weight: bold;">{{ number_format($stok->stok, 3) }}</span> {{ $produk->satuan }}
-                                @if(isset($stok->hpp))
-                                    @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
-                                @endif
-                            </div>
-                        @endforeach
-                    @else
-                        <span style="color: #dc3545;">Kosong</span>
-                    @endif
-                </td>
-                <td><strong>{{ number_format($totalStok, 3) }}</strong> {{ $produk->satuan }}</td>
+                @foreach($lokasiList as $kode => $nama)
+                    @php
+                        $stokList = $produk->stok_akhir->where('lokasi', $kode);
+                    @endphp
+                    <td>
+                        @if($stokList->count())
+                            @foreach($stokList as $stok)
+                                <div>
+                                    <span style="font-weight: bold;">{{ number_format($stok->stok, 0) }}</span> {{ $produk->satuan }}
+                                    @if(isset($stok->hpp))
+                                        @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
+                                    @endif
+                                </div>
+                            @endforeach
+                        @else
+                            <span style="color: #dc3545;">Kosong</span>
+                        @endif
+                    </td>
+                @endforeach
+                <td><strong>{{ number_format($totalStok, 0) }}</strong> {{ $produk->satuan }}</td>
                 <td><span class="{{ $statusClass }}">{{ $status }}</span></td>
             </tr>
             @endforeach

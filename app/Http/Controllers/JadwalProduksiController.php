@@ -95,10 +95,36 @@ class JadwalProduksiController extends Controller
         return redirect()->route('jadwal.index')->with('success', 'Jadwal produksi berhasil disimpan!');
     }
     
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua jadwal
-        $jadwal = JadwalProduksi::with('details.produk')->get();
+        $sort = $request->get('sort', 'desc');
+        $search = $request->get('search');
+        $tanggal_awal = $request->get('tanggal_awal');
+        $tanggal_akhir = $request->get('tanggal_akhir');
+
+        $query = JadwalProduksi::with('details.produk');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_jadwal', 'like', "%$search%")
+                  ->orWhere('keterangan', 'like', "%$search%");
+            });
+        }
+        if ($tanggal_awal) {
+            $query->whereDate('tanggal_jadwal', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->whereDate('tanggal_jadwal', '<=', $tanggal_akhir);
+        }
+
+        $jadwal = $query->orderBy('tanggal_jadwal', $sort)
+            ->paginate(10)
+            ->appends([
+                'search' => $search,
+                'tanggal_awal' => $tanggal_awal,
+                'tanggal_akhir' => $tanggal_akhir,
+                'sort' => $sort,
+            ]);
 
         foreach ($jadwal as $j) {
             // Cek apakah sudah diproses produksi
@@ -139,7 +165,7 @@ class JadwalProduksiController extends Controller
             }
         }
 
-        return view('jadwal.index', compact('jadwal'));
+        return view('jadwal.index', compact('jadwal', 'sort'));
     }
 
     public function show($kode)

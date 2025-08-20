@@ -47,17 +47,16 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @foreach ($produk as $i => $p)
                                     <tr>
                                         <td>
-                                            <select name="produk[0][kode_produk]" class="form-select" required>
-                                                <option value="">-- Pilih Produk --</option>
-                                                @foreach ($produk as $p)
-                                                    <option value="{{ $p->kode_produk }}">{{ $p->nama_produk }}</option>
-                                                @endforeach
+                                            <select name="produk[{{ $i }}][kode_produk]" class="form-select" required>
+                                                <option value="{{ $p->kode_produk }}">{{ $p->nama_produk }}</option>
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="number" name="produk[0][unit]" class="form-control" min="1" placeholder="Jumlah unit" required>
+                                            <input type="number" name="produk[{{ $i }}][unit]" class="form-control" min="1" value="{{ $p->selisih }}" required>
+                                            <small class="text-muted">Stok gudang: {{ $p->stok_gudang }}, Min: {{ $p->stokmin }}</small>
                                         </td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="hapusBaris(this)">
@@ -65,6 +64,7 @@
                                             </button>
                                         </td>
                                     </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>

@@ -85,4 +85,43 @@ class JurnalController extends Controller
 
         return view('jurnal.penyesuaian', compact('jurnals'));
     }
+
+    // Form input jurnal manual
+    public function create()
+    {
+        $akuns = \App\Models\Akun::orderBy('kode_akun')->get();
+        return view('jurnal.create', compact('akuns'));
+    }
+
+    // Simpan jurnal manual
+    public function store(Request $request)
+    {
+        $request->validate([
+            'tanggal' => 'required|date',
+            'keterangan' => 'required',
+            'details.*.kode_akun' => 'required',
+            'details.*.debit' => 'nullable|numeric',
+            'details.*.kredit' => 'nullable|numeric',
+        ]);
+
+        $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
+        $jurnal = \App\Models\JurnalUmum::create([
+            'no_jurnal' => $no_jurnal,
+            'tanggal' => $request->tanggal,
+            'keterangan' => $request->keterangan,
+            'nomor_bukti' => $request->nomor_bukti ?? null,
+        ]);
+
+        foreach ($request->details as $i => $detail) {
+            \App\Models\JurnalDetail::create([
+                'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+                'no_jurnal' => $no_jurnal,
+                'kode_akun' => $detail['kode_akun'],
+                'debit' => $detail['debit'] ?? 0,
+                'kredit' => $detail['kredit'] ?? 0,
+            ]);
+        }
+
+        return redirect()->route('jurnal.index')->with('success', 'Jurnal berhasil ditambahkan!');
+    }
 }

@@ -1,58 +1,74 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h3>Input Produksi</h3>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="mb-4">Input Produksi</h3>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
+                    @if(session('success'))
+                        <div class="alert alert-success">{{ session('success') }}</div>
+                    @endif
 
-    <!-- Bagian atas -->
-    <form action="{{ route('produksi.store') }}" method="POST">
-        @csrf
+                    <form action="{{ route('produksi.store') }}" method="POST">
+                        @csrf
 
-        <div class="mb-3">
-            <label for="tanggal_produksi">Tanggal Produksi</label>
-            <input type="date" name="tanggal_produksi" class="form-control" value="{{ date('Y-m-d') }}" required>
+                        <div class="mb-3">
+                            <label for="tanggal_produksi" class="form-label">Tanggal Produksi</label>
+                            <input type="date" name="tanggal_produksi" class="form-control" value="{{ date('Y-m-d') }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="jadwal" class="form-label">Pilih Jadwal Produksi</label>
+                            <select class="form-select" id="jadwal-select" name="no_jadwal"
+                                onchange="tampilkanProduk()" {{ isset($jadwalTerpilih) ? 'disabled' : '' }}>
+                                <option value="">-- Pilih Jadwal --</option>
+                                @foreach ($jadwal as $j)
+                                    <option value="{{ $j->no_jadwal }}" data-json='@json($j)'
+                                        @if(isset($jadwalTerpilih) && $jadwalTerpilih->no_jadwal == $j->no_jadwal) selected @endif>
+                                        {{ $j->no_jadwal }} - {{ \Carbon\Carbon::parse($j->tanggal_jadwal)->format('d-m-Y') }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if(isset($jadwalTerpilih))
+                                <input type="hidden" name="no_jadwal" value="{{ $jadwalTerpilih->no_jadwal }}">
+                            @endif
+                        </div>
+
+                        <h5 class="mt-4 mb-2">Produk yang Diproduksi</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle" id="produk-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Produk</th>
+                                        <th>Jumlah Direncanakan</th>
+                                        <th>Jumlah Aktual</th>
+                                        <th>Expired</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Baris produk akan ditambahkan dengan JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary btn-lg">Simpan Produksi</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-
-        <div class="mb-3">
-            <label for="jadwal">Pilih Jadwal Produksi</label>
-            <select class="form-select" id="jadwal-select" name="no_jadwal" onchange="tampilkanProduk()">
-                <option value="">-- Pilih Jadwal --</option>
-                @foreach ($jadwal as $j)
-                    <option value="{{ $j->no_jadwal }}" data-json='@json($j)'
-                        @if(isset($jadwalTerpilih) && $jadwalTerpilih->no_jadwal == $j->no_jadwal) selected @endif>
-                        {{ $j->no_jadwal }} - {{ $j->tanggal_jadwal }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-
-        <h5>Produk yang Diproduksi</h5>
-        <table class="table table-bordered" id="produk-table">
-            <thead>
-                <tr>
-                    <th>Produk</th>
-                    <th>Jumlah Direncanakan</th>
-                    <th>Jumlah Aktual</th>
-                    <th>Expired</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Baris produk akan ditambahkan dengan JavaScript -->
-            </tbody>
-        </table>
-
-        <button type="submit" class="btn btn-primary">Simpan Produksi</button>
-    </form>
+    </div>
 </div>
 
 <script>
     function tampilkanProduk() {
         const select = document.getElementById('jadwal-select');
         const selectedOption = select.options[select.selectedIndex];
+        if (!selectedOption || !selectedOption.dataset.json) return;
         const data = JSON.parse(selectedOption.dataset.json);
         const tbody = document.querySelector('#produk-table tbody');
         tbody.innerHTML = '';

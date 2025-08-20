@@ -139,12 +139,12 @@ document.addEventListener('DOMContentLoaded', function () {
             if(kode != asal) {
                 lokasiTujuanSelect.innerHTML += `<option value="${kode}">${nama}</option>`;
             }
-        });
+        @endforeach
     }
 
     // Update produk list sesuai lokasi asal
     function updateProdukList() {
-        const lokasi = lokasiAsalSelect.value;
+        const lokasi = lokasiAsalSelect.value; // ini sudah benar, asalkan value-nya kode
         fetch("{{ url('transferproduk/produk-by-lokasi') }}?lokasi=" + encodeURIComponent(lokasi))
             .then(res => res.json())
             .then(data => {

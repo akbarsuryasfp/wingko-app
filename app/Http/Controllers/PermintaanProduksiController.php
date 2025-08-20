@@ -13,16 +13,59 @@ class PermintaanProduksiController extends Controller
     // Form input permintaan produksi
     public function create()
     {
-        $produk = Produk::all();
+        // Ambil semua produk
+        $produk = DB::table('t_produk')->get();
 
-        return view('permintaan_produksi.create', compact('produk'));
+        // Ambil stok akhir produk di lokasi gudang (misal kode_lokasi = '1')
+        $stokAkhir = DB::table('t_kartupersproduk')
+            ->select('kode_produk', DB::raw('SUM(masuk) - SUM(keluar) as stok'))
+            ->where('lokasi', '1') // lokasi gudang
+            ->groupBy('kode_produk')
+            ->get()
+            ->keyBy('kode_produk');
+
+        // Tambahkan properti stok dan selisih ke produk
+        $produkKurangStok = $produk->filter(function($p) use ($stokAkhir) {
+            $stok = $stokAkhir[$p->kode_produk]->stok ?? 0;
+            $p->stok_gudang = $stok;
+            $p->selisih = max($p->stokmin - $stok, 0);
+            return $stok < $p->stokmin;
+        });
+
+        return view('permintaan_produksi.create', ['produk' => $produkKurangStok]);
     }
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua permintaan produksi beserta detail dan produk
-        $permintaanProduksi = \App\Models\PermintaanProduksi::with('details.produk')->orderBy('tanggal', 'desc')->get();
+        $sort = $request->get('sort', 'desc');
+        $search = $request->get('search');
+        $tanggal_awal = $request->get('tanggal_awal');
+        $tanggal_akhir = $request->get('tanggal_akhir');
 
-        return view('permintaan_produksi.index', compact('permintaanProduksi'));
+        $query = PermintaanProduksi::with('details.produk');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_permintaan_produksi', 'like', "%$search%")
+                  ->orWhere('keterangan', 'like', "%$search%");
+            });
+        }
+        if ($tanggal_awal) {
+            $query->whereDate('tanggal', '>=', $tanggal_awal);
+        }
+        if ($tanggal_akhir) {
+            $query->whereDate('tanggal', '<=', $tanggal_akhir);
+        }
+
+        $permintaanProduksi = $query->orderBy('tanggal', $sort)
+            ->paginate(10)
+            ->appends([
+                'search' => $search,
+                'tanggal_awal' => $tanggal_awal,
+                'tanggal_akhir' => $tanggal_akhir,
+                'sort' => $sort,
+            ]);
+
+        return view('permintaan_produksi.index', compact('permintaanProduksi', 'sort'));
     }
 
     

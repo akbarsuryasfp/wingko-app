@@ -147,6 +147,55 @@ class BayarConsignorController extends Controller
             ]);
         }
 
+        // Hitung total bayar dari harga titip x jumlah terjual
+        $total_bayar_harga_titip = 0;
+        foreach ($produk as $p) {
+            // Jumlah terjual
+            $jumlah_terjual = DB::table('t_penjualan_detail')
+                ->where('kode_produk', $p->kode_produk)
+                ->sum('jumlah');
+            // Harga titip terakhir
+            $harga_titip = DB::table('t_konsinyasimasuk_detail')
+                ->where('kode_produk', $p->kode_produk)
+                ->orderByDesc('no_konsinyasimasuk')
+                ->value('harga_titip') ?? 0;
+            $total_bayar_harga_titip += $harga_titip * $jumlah_terjual;
+        }
+
+        // JURNAL PEMBAYARAN CONSIGNOR
+        $no_jurnal = \App\Helpers\JurnalHelper::generateNoJurnal();
+        $keterangan_jurnal = 'Pembayaran hutang konsinyasi ' . $request->no_bayarconsignor;
+        $tanggal_jurnal = $request->tanggal_bayar;
+        $nomor_bukti = $request->no_bayarconsignor;
+
+        // Buat header jurnal
+        $jurnal = \App\Models\JurnalUmum::create([
+            'no_jurnal' => $no_jurnal,
+            'tanggal' => $tanggal_jurnal,
+            'keterangan' => $keterangan_jurnal,
+            'nomor_bukti' => $nomor_bukti,
+        ]);
+
+        // Ambil kode akun dari helper
+        $kode_akun_kas = \App\Helpers\JurnalHelper::getKodeAkun('kas_bank');
+        $kode_akun_hutang_konsinyasi = \App\Helpers\JurnalHelper::getKodeAkun('hutang_konsinyasi');
+
+        // Jurnal: Debit Hutang Konsinyasi, Kredit Kas/Bank
+        \App\Models\JurnalDetail::create([
+            'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+            'no_jurnal' => $no_jurnal,
+            'kode_akun' => $kode_akun_hutang_konsinyasi,
+            'debit' => $total_bayar_harga_titip,
+            'kredit' => 0,
+        ]);
+        \App\Models\JurnalDetail::create([
+            'no_jurnal_detail' => \App\Helpers\JurnalHelper::generateNoJurnalDetail($no_jurnal),
+            'no_jurnal' => $no_jurnal,
+            'kode_akun' => $kode_akun_kas,
+            'debit' => 0,
+            'kredit' => $total_bayar_harga_titip,
+        ]);
+
         return redirect()->route('bayarconsignor.index')->with('success', 'Pembayaran consignor berhasil disimpan!');
     }
     public function create()

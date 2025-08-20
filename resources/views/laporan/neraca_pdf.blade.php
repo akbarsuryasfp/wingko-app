@@ -1,23 +1,31 @@
-@extends('layouts.app')
-@section('content')
-<div class="container">
-    <h3>Laporan Neraca</h3>
-    <form method="get" action="{{ route('laporan.neraca') }}" class="mb-3">
-        <label>Pilih Periode:</label>
-        <input type="month" name="periode" value="{{ $periode }}" required>
-        <button type="submit" class="btn btn-primary btn-sm">Tampilkan</button>
-        <a href="{{ route('laporan.neraca.pdf', ['periode' => $periode]) }}" target="_blank" class="btn btn-success btn-sm">Cetak</a>
-    </form>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Laporan Neraca</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        .container { margin: 0 auto; padding: 20px; }
+        .text-center { text-align: center; }
+        .mb-4 { margin-bottom: 1.5rem; }
+        .fw-bold { font-weight: bold; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .table th, .table td { border: 1px solid #333; padding: 6px 10px; }
+        .table th { background: #eee; }
+        .text-end { text-align: right; }
+        .mt-4 { margin-top: 1.5rem; }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
     <div class="text-center mb-4">
         <h4 class="fw-bold">LAPORAN NERACA</h4>
         <h5>Wingko Pratama</h5>
         <p>Periode: {{ \Carbon\Carbon::createFromFormat('Y-m', $periode)->translatedFormat('F Y') }}</p>
     </div>
-    <table class="table table-bordered">
+    <table class="table">
         <tr>
-        </tr>
-        <tr>
-            <th colspan="2">Aset Lancar</th>
+            <th colspan="2" class="text-center">Aset Lancar</th>
         </tr>
         <tr>
             <td style="padding-left:30px;">Kas di Bank</td>
@@ -44,7 +52,7 @@
             <td class="text-end">Rp {{ number_format($saldo['persediaan_jadi_1040'] ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <th colspan="2">Aset Tetap</th>
+            <th colspan="2" class="text-center">Aset Tetap</th>
         </tr>
         <tr>
             <td style="padding-left:30px;">Tanah</td>
@@ -76,7 +84,7 @@
             </th>
         </tr>
         <tr>
-            <th colspan="2">Kewajiban</th>
+            <th colspan="2" class="text-center">Kewajiban</th>
         </tr>
         <tr>
             <td style="padding-left:30px;">Utang Usaha</td>
@@ -91,7 +99,7 @@
             <td class="text-end">Rp {{ number_format($saldo['utang_pajak_2020'] ?? 0, 0, ',', '.') }}</td>
         </tr>
         <tr>
-            <th colspan="2">Ekuitas</th>
+            <th colspan="2" class="text-center">Ekuitas</th>
         </tr>
         <tr>
             <td style="padding-left:30px;">Modal Pemilik</td>
@@ -112,5 +120,10 @@
             </th>
         </tr>
     </table>
+    <div class="mt-4">
+        <p><strong>Dibuat oleh:</strong> {{ auth()->user()->name ?? 'Admin' }}</p>
+        <p><small>Tanggal cetak: {{ now()->format('d/m/Y H:i') }}</small></p>
+    </div>
 </div>
-@endsection
+</body>
+</html>

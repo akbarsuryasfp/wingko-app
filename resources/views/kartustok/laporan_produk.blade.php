@@ -14,95 +14,53 @@
                 <table class="table table-bordered" style="table-layout: fixed;">
                     <thead class="table-secondary">
                         <tr>
-                            <th style="width: 5%; text-align: center; vertical-align: middle;">No</th>
-                            <th style="width: 10%; text-align: center; vertical-align: middle;">Kode Produk</th>
-                            <th style="width: 20%; text-align: center; vertical-align: middle;">Nama Produk</th>
-                            <th style="width: 8%; text-align: center; vertical-align: middle;">Satuan</th>
-                            <th style="width: 15%; text-align: center; vertical-align: middle;">Stok Gudang</th>
-                            <th style="width: 15%; text-align: center; vertical-align: middle;">Stok Toko 1</th>
-                            <th style="width: 15%; text-align: center; vertical-align: middle;">Stok Toko 2</th>
-                            <th style="width: 12%; text-align: center; vertical-align: middle;">Total Stok</th>
-                            <th style="width: 10%; text-align: center; vertical-align: middle;">Status</th>
+                            <th style="width: 5%; text-align: center;">No</th>
+                            <th style="width: 10%; text-align: center;">Kode Produk</th>
+                            <th style="width: 20%; text-align: center;">Nama Produk</th>
+                            <th style="width: 8%; text-align: center;">Satuan</th>
+                            @foreach($lokasiList as $kode => $nama)
+                                <th style="width: 15%; text-align: center;">Stok {{ $nama }}</th>
+                            @endforeach
+                            <th style="width: 12%; text-align: center;">Total Stok</th>
+                            <th style="width: 10%; text-align: center;">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach($produkList as $i => $produk)
                         @php
-                            // Mapping kode lokasi ke nama
-                            $lokasiMap = [
-                                1 => 'Gudang',
-                                2 => 'Toko 1',
-                                3 => 'Toko 2',
-                            ];
-
-                            $gudangStok = $produk->stok_akhir->first(function($item) {
-                                return $item->lokasi == 1;
-                            });
-                            $toko1Stok = $produk->stok_akhir->first(function($item) {
-                                return $item->lokasi == 2;
-                            });
-                            $toko2Stok = $produk->stok_akhir->first(function($item) {
-                                return $item->lokasi == 3;
-                            });
-
-                            $gudangQty = $gudangStok ? $gudangStok->stok : 0;
-                            $toko1Qty  = $toko1Stok ? $toko1Stok->stok : 0;
-                            $toko2Qty  = $toko2Stok ? $toko2Stok->stok : 0;
-
-                            $totalStok = $gudangQty + $toko1Qty + $toko2Qty;
+                            $totalStok = $produk->stok_akhir->sum('stok');
                             $stokmin = $produk->stokmin ?? 0;
                             $status = ($totalStok <= $stokmin) ? 'Perlu Produksi' : 'Aman';
                             $statusClass = $status == 'Aman' ? 'text-success' : 'text-danger';
                         @endphp
                         <tr>
-                            <td style="padding: 0; border: 1px solid #000; text-align: center; height: 40px; line-height: 40px;">
-                                {{ $i+1 }}
-                            </td>
-                            <td style="padding: 0; border: 1px solid #000; text-align: center; height: 40px; line-height: 40px;">
-                                {{ $produk->kode_produk }}
-                            </td>
-                            <td style="padding: 0; border: 1px solid #000; text-align: center; height: 40px; line-height: 40px;">
-                                {{ $produk->nama_produk }}
-                            </td>
-                            <td style="padding: 0; border: 1px solid #000; text-align: center; height: 40px; line-height: 40px;">
-                                {{ $produk->satuan }}
-                            </td>
-                            <td style="padding: 4px; border: 1px solid #000; text-align: center;">
-                                @if($gudangQty > 0)
-                                    <span style="font-weight: bold;">{{ number_format($gudangQty, 3) }}</span> {{ $produk->satuan }}
-                                    @if($gudangStok && isset($gudangStok->hpp))
-                                        @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($gudangStok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
+                            <td class="text-center">{{ $i+1 }}</td>
+                            <td class="text-center">{{ $produk->kode_produk }}</td>
+                            <td class="text-center">{{ $produk->nama_produk }}</td>
+                            <td class="text-center">{{ $produk->satuan }}</td>
+                            @foreach($lokasiList as $kode => $nama)
+                                @php
+                                    $stokList = $produk->stok_akhir->where('lokasi', $kode);
+                                @endphp
+                                <td style="padding: 4px; border: 1px solid #000; text-align: center;">
+                                    @if($stokList->count())
+                                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;">
+                                        @foreach($stokList as $stok)
+                                            <div style="font-size: 10pt; line-height: 1.3;">
+                                                <span style="font-weight: bold;">{{ number_format($stok->stok, 0) }}</span> {{ $produk->satuan }}
+                                                @if(isset($stok->hpp))
+                                                    @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                        </div>
+                                    @else
+                                        <span style="color: #dc3545;">Kosong</span>
                                     @endif
-                                @else
-                                    <span style="color: #dc3545;">Kosong</span>
-                                @endif
-                            </td>
-                            <td style="padding: 4px; border: 1px solid #000; text-align: center;">
-                                @if($toko1Qty > 0)
-                                    <span style="font-weight: bold;">{{ number_format($toko1Qty, 3) }}</span> {{ $produk->satuan }}
-                                    @if($toko1Stok && isset($toko1Stok->hpp))
-                                        @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($toko1Stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
-                                    @endif
-                                @else
-                                    <span style="color: #dc3545;">Kosong</span>
-                                @endif
-                            </td>
-                            <td style="padding: 4px; border: 1px solid #000; text-align: center;">
-                                @if($toko2Qty > 0)
-                                    <span style="font-weight: bold;">{{ number_format($toko2Qty, 3) }}</span> {{ $produk->satuan }}
-                                    @if($toko2Stok && isset($toko2Stok->hpp))
-                                        @ <span style="font-weight: bold; color: #0d6efd;">Rp{{ number_format($toko2Stok->hpp,0,',','.') }}</span>/{{ $produk->satuan }}
-                                    @endif
-                                @else
-                                    <span style="color: #dc3545;">Kosong</span>
-                                @endif
-                            </td>
-                            <td style="padding: 0; border: 1px solid #000; text-align: center; height: 40px; line-height: 40px;">
-                                <strong>{{ number_format($totalStok, 3) }}</strong> {{ $produk->satuan }}
-                            </td>
-                            <td style="padding: 0; border: 1px solid #000; text-align: center; height: 40px; line-height: 40px; font-weight: bold;">
-                                <span class="{{ $statusClass }}">{{ $status }}</span>
-                            </td>
+                                </td>
+                            @endforeach
+                            <td class="text-center"><strong>{{ number_format($totalStok, 0) }}</strong> {{ $produk->satuan }}</td>
+                            <td class="text-center font-weight-bold"><span class="{{ $statusClass }}">{{ $status }}</span></td>
                         </tr>
                     @endforeach
                     </tbody>

@@ -254,10 +254,23 @@
         const harga_satuan = parseNumberInput(document.getElementById('harga_satuan').value);
         let diskon_satuan = parseNumberInput(document.getElementById('diskon_satuan').value) || 0;
 
-        // Diskon/satuan sekarang bisa diisi manual oleh user, tidak otomatis
+        // Ambil info stok dari stok-info
+        const stokInfo = document.getElementById('stok-info').innerText;
+        let stokTersedia = 0;
+        if (stokInfo.includes('Stok Produk Sendiri:')) {
+            stokTersedia = parseFloat(stokInfo.split('Stok Produk Sendiri:')[1]);
+        } else if (stokInfo.includes('Stok Konsinyasi:')) {
+            stokTersedia = parseFloat(stokInfo.split('Stok Konsinyasi:')[1]);
+        }
 
         if (!kode_produk || !jumlah || !harga_satuan || jumlah <= 0 || harga_satuan <= 0) {
             alert("Silakan lengkapi data produk.");
+            return;
+        }
+
+        // Validasi stok
+        if (jumlah > stokTersedia) {
+            alert("Jumlah melebihi stok tersedia (" + stokTersedia + " " + satuan + ").");
             return;
         }
 
